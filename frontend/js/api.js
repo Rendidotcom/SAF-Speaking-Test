@@ -10,25 +10,19 @@ async function callAPI(action, data = {}) {
 
     try {
 
-        const response = await fetch(CONFIG.API_URL, {
+        const text = await response.text();
 
-            method: "POST",
+console.log("STATUS :", response.status);
+console.log("RAW RESPONSE :", text);
 
-            headers: {
-
-                "Content-Type": "application/json"
-
-            },
-
-            body: JSON.stringify({
-
-                action: action,
-
-                data: data
-
-            })
-
-        });
+try{
+    return JSON.parse(text);
+}catch(err){
+    return {
+        success:false,
+        message:"Invalid JSON",
+        raw:text
+    };
 
         const result = await response.json();
 
