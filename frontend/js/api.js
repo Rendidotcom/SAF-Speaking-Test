@@ -2,15 +2,36 @@
  * ==========================================
  * SAF Speaking Online Test
  * API Service
- * Version 1.0
+ * Version 2.0
  * ==========================================
  */
 
 async function callAPI(action, data = {}) {
 
+    const endpoint = {
+
+        login: "login",
+
+        insertQuestion: "question",
+
+        getQuestion: "question",
+
+        saveScore: "score"
+
+    };
+
     try {
 
-        const response = await fetch(CONFIG.API_URL, {
+        if (!endpoint[action]) {
+
+            return {
+                success: false,
+                message: "Unknown API action: " + action
+            };
+
+        }
+
+        const response = await fetch(`/api/${endpoint[action]}`, {
 
             method: "POST",
 
@@ -27,30 +48,35 @@ async function callAPI(action, data = {}) {
 
         const text = await response.text();
 
+        console.log("=================================");
+        console.log("API :", action);
         console.log("STATUS :", response.status);
-        console.log("RAW RESPONSE :", text);
+        console.log("RAW :", text);
 
         let result;
 
         try {
+
             result = JSON.parse(text);
+
         } catch (err) {
+
             return {
                 success: false,
                 message: "Invalid JSON Response",
                 raw: text
             };
+
         }
 
         if (CONFIG.DEBUG) {
 
-            console.log("=================================");
-            console.log("API REQUEST");
-            console.log(action);
+            console.log("REQUEST");
             console.log(data);
 
-            console.log("API RESPONSE");
+            console.log("RESPONSE");
             console.log(result);
+
             console.log("=================================");
 
         }
@@ -80,9 +106,11 @@ async function callAPI(action, data = {}) {
 async function apiLogin(username, password, role) {
 
     return await callAPI("login", {
+
         username,
         password,
         role
+
     });
 
 }
