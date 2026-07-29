@@ -30,34 +30,32 @@ async function callAPI(action, data = {}) {
         console.log("STATUS :", response.status);
         console.log("RAW RESPONSE :", text);
 
+        let result;
+
         try {
-
-            const result = JSON.parse(text);
-
-            if (CONFIG.DEBUG) {
-
-                console.log("=================================");
-                console.log("API REQUEST");
-                console.log(action);
-                console.log(data);
-
-                console.log("API RESPONSE");
-                console.log(result);
-                console.log("=================================");
-
-            }
-
-            return result;
-
+            result = JSON.parse(text);
         } catch (err) {
-
             return {
                 success: false,
                 message: "Invalid JSON Response",
                 raw: text
             };
+        }
+
+        if (CONFIG.DEBUG) {
+
+            console.log("=================================");
+            console.log("API REQUEST");
+            console.log(action);
+            console.log(data);
+
+            console.log("API RESPONSE");
+            console.log(result);
+            console.log("=================================");
 
         }
+
+        return result;
 
     } catch (err) {
 
