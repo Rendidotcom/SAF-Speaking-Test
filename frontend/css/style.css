@@ -1,0 +1,189 @@
+/* ==========================================
+   SAF Speaking Online Test
+   Foundation Version 1.0
+========================================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+
+    background:#edf4fb;
+
+    min-height:100vh;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:#1f2937;
+
+}
+
+.container{
+
+    width:100%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    padding:30px;
+
+}
+
+.card{
+
+    width:420px;
+
+    max-width:95%;
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:40px;
+
+    text-align:center;
+
+    box-shadow:0 10px 35px rgba(0,0,0,.12);
+
+}
+
+.logo{
+
+    width:150px;
+
+    height:auto;
+
+    margin-bottom:25px;
+
+}
+
+h1{
+
+    font-size:32px;
+
+    color:#0b72b9;
+
+    margin-bottom:10px;
+
+}
+
+p{
+
+    color:#666;
+
+    margin-bottom:35px;
+
+    line-height:1.6;
+
+}
+
+.button-group{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+.btn{
+
+    display:block;
+
+    text-decoration:none;
+
+    padding:15px;
+
+    border-radius:10px;
+
+    font-weight:bold;
+
+    transition:.3s;
+
+    font-size:18px;
+
+}
+
+.teacher{
+
+    background:#0b72b9;
+
+    color:white;
+
+}
+
+.teacher:hover{
+
+    background:#08598f;
+
+}
+
+.student{
+
+    background:white;
+
+    color:#0b72b9;
+
+    border:2px solid #0b72b9;
+
+}
+
+.student:hover{
+
+    background:#0b72b9;
+
+    color:white;
+
+}
+
+footer{
+
+    margin-top:35px;
+
+    color:#999;
+
+    font-size:14px;
+
+}
+
+/* Responsive */
+
+@media(max-width:600px){
+
+.card{
+
+    padding:30px 20px;
+
+}
+
+.logo{
+
+    width:120px;
+
+}
+
+h1{
+
+    font-size:26px;
+
+}
+
+.btn{
+
+    font-size:17px;
+
+}
+
+}
