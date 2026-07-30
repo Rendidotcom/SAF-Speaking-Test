@@ -13,7 +13,7 @@ const CONFIG = {
 
     SCHOOL: "SMP Salman Al Farisi Bandung",
 
-    API_URL: "https://script.google.com/macros/s/AKfycbzxD7oRoz4JD1edGlkSt_ecefoJbuDWfm49AjD9u070XTtDO_Z_iIBYlaX5IJEFD044/exec",
+    API_URL: "https://script.google.com/macros/s/AKfycbzYttnrs2zFuvMdELWr8dH_Bj9a6166UpK19SuBCBgvTAsJEUyKSugIxgND37P0GySt/exec",
 
     DEBUG: true,
 
