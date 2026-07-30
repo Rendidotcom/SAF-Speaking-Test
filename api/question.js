@@ -6,56 +6,54 @@ export default async function handler(req, res) {
     if (req.method !== "POST") {
 
         return res.status(405).json({
-
-            success: false,
-            message: "Method Not Allowed"
-
+            success:false,
+            message:"Method Not Allowed"
         });
 
     }
 
-    try {
+    try{
 
-        const response = await fetch(GAS, {
+        const response = await fetch(GAS,{
 
-            method: "POST",
+            method:"POST",
 
-            headers: {
-
-                "Content-Type": "application/json"
-
+            headers:{
+                "Content-Type":"application/json"
             },
 
-            body: JSON.stringify(req.body)
+            body:JSON.stringify(req.body)
 
         });
 
         const text = await response.text();
 
-        try {
+        let data;
 
-            const data = JSON.parse(text);
+        try{
 
-            return res.status(200).json(data);
+            data = JSON.parse(text);
 
-        } catch (err) {
+        }catch(err){
 
             return res.status(500).json({
 
-                success: false,
-                message: "Invalid JSON from Apps Script",
-                raw: text
+                success:false,
+                message:"Invalid JSON Response",
+                raw:text
 
             });
 
         }
 
-    } catch (err) {
+        return res.status(200).json(data);
+
+    }catch(err){
 
         return res.status(500).json({
 
-            success: false,
-            message: err.message
+            success:false,
+            message:err.message
 
         });
 

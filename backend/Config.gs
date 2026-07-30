@@ -22,7 +22,7 @@ const CONFIG = {
 
     STUDENT: "Student",
 
-    QUESTION: "Question",
+    QUESTION: "Questions",
 
     TOKEN: "Token",
 
