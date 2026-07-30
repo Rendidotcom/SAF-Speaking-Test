@@ -2,6 +2,9 @@
  * =====================================
  * SAF Speaking Online Test
  * Global Configuration
+ * Stable Foundation v3.0
+ * Frontend : Vercel API Proxy
+ * Backend  : Google Apps Script
  * =====================================
  */
 
@@ -13,7 +16,24 @@ const CONFIG = {
 
     SCHOOL: "SMP Salman Al Farisi Bandung",
 
-    API_URL: "https://script.google.com/macros/s/AKfycbzYttnrs2zFuvMdELWr8dH_Bj9a6166UpK19SuBCBgvTAsJEUyKSugIxgND37P0GySt/exec",
+    /*
+      API Proxy Vercel
+
+      Frontend tidak langsung memanggil Google Apps Script
+      untuk menghindari masalah CORS.
+
+      Request flow:
+
+      Frontend
+          ↓
+      Vercel Serverless API
+          ↓
+      Google Apps Script
+          ↓
+      Google Spreadsheet
+    */
+
+    API_URL: "/api/login",
 
     DEBUG: true,
 
