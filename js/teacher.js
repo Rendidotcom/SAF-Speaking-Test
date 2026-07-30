@@ -225,7 +225,13 @@ async function saveQuestion(e) {
 
     const res = await apiInsertQuestion(data);
 
-    alert(res.message);
+    if (!res.success) {
+
+    tableMessage(res.message, "#d32f2f");
+
+    return;
+
+}
 
     if (res.success) {
 
