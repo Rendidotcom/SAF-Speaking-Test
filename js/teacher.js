@@ -2,11 +2,18 @@
  * ==========================================
  * SAF Speaking Online Test
  * Teacher Dashboard
- * Stable Foundation v2.0
+ * Stable Foundation v3.0
  * ==========================================
  */
 
 document.addEventListener("DOMContentLoaded", init);
+
+/* =====================================================
+   GLOBAL STATE
+===================================================== */
+
+let editMode = false;
+let selectedQuestionId = "";
 
 /* =====================================================
    INITIALIZE
@@ -127,7 +134,9 @@ required></textarea>
 <select id="level">
 
 <option value="Easy">Easy</option>
+
 <option value="Medium">Medium</option>
+
 <option value="Hard">Hard</option>
 
 </select>
@@ -146,6 +155,7 @@ required>
 <br><br>
 
 <button
+id="btnSaveQuestion"
 type="submit"
 class="btn teacher">
 
@@ -154,6 +164,16 @@ Save Question
 </button>
 
 </form>
+
+<br>
+
+<input
+id="searchQuestion"
+type="text"
+placeholder="🔍 Search topic or question..."
+onkeyup="filterQuestion()">
+
+<br><br>
 
 <hr>
 
@@ -166,6 +186,32 @@ Loading database...
 `);
 
     bindQuestion();
+
+    function getLevelBadge(level) {
+
+    switch (level) {
+
+        case "Easy":
+            return '<span class="badge easy">Easy</span>';
+
+        case "Medium":
+            return '<span class="badge medium">Medium</span>';
+
+        case "Hard":
+            return '<span class="badge hard">Hard</span>';
+
+        default:
+            return level;
+
+    }
+
+}
+
+function getStatusBadge(status) {
+
+    return '<span class="badge active">' + status + '</span>';
+
+}
 
     loadQuestions();
 
@@ -204,6 +250,17 @@ function bindQuestion() {
         .addEventListener("submit", saveQuestion);
 
 }
+/* =====================================================
+   SAVE QUESTION
+===================================================== */
+
+function bindQuestion() {
+
+    document
+        .getElementById("questionForm")
+        .addEventListener("submit", saveQuestion);
+
+}
 
 async function saveQuestion(e) {
 
@@ -223,25 +280,40 @@ async function saveQuestion(e) {
 
     };
 
-    const res = await apiInsertQuestion(data);
+    let res;
+
+    if (editMode) {
+
+        data.id = selectedQuestionId;
+
+        res = await apiUpdateQuestion(data);
+
+    } else {
+
+        res = await apiInsertQuestion(data);
+
+    }
 
     if (!res.success) {
 
-    tableMessage(res.message, "#d32f2f");
+        alert(res.message);
 
-    return;
-
-}
-
-    if (res.success) {
-
-        document.getElementById("questionForm").reset();
-
-        document.getElementById("timeLimit").value = 30;
-
-        loadQuestions();
+        return;
 
     }
+
+    document.getElementById("questionForm").reset();
+
+    document.getElementById("timeLimit").value = 30;
+
+    editMode = false;
+
+    selectedQuestionId = "";
+
+    document.getElementById("btnSaveQuestion").innerText =
+        "Save Question";
+
+    loadQuestions();
 
 }
 
@@ -253,19 +325,30 @@ async function loadQuestions() {
 
     const res = await apiGetQuestion();
 
-    const table = document.getElementById("questionTable");
+    const table =
+        document.getElementById("questionTable");
 
     if (!res.success) {
 
-        table.innerHTML = res.message;
+        table.innerHTML =
+
+            "<p style='color:red'>" +
+
+            res.message +
+
+            "</p>";
 
         return;
 
     }
 
+    updateQuestionCounter(res.data.length);
+
     if (res.data.length === 0) {
 
-        table.innerHTML = "No speaking question.";
+        table.innerHTML =
+
+            "<p>No speaking question.</p>";
 
         return;
 
@@ -280,17 +363,19 @@ cellpadding="8">
 
 <tr>
 
-<th>No</th>
+<th width="60">No</th>
 
 <th>Topic</th>
 
 <th>Question</th>
 
-<th>Level</th>
+<th width="90">Level</th>
 
-<th>Time</th>
+<th width="80">Time</th>
 
-<th>Status</th>
+<th width="80">Status</th>
+
+<th width="170">Action</th>
 
 </tr>
 
@@ -308,11 +393,31 @@ cellpadding="8">
 
 <td>${item.question}</td>
 
-<td>${item.level}</td>
+<td>${getLevelBadge(item.level)}</td>
 
 <td>${item.timeLimit}s</td>
 
-<td>${item.status}</td>
+<td>${getStatusBadge(item.status)}</td>
+
+<td>
+
+<button
+class="btn edit"
+onclick="editQuestion('${item.id}')">
+
+✏ Edit
+
+</button>
+
+<button
+class="btn delete"
+onclick="deleteQuestion('${item.id}')">
+
+🗑 Delete
+
+</button>
+
+</td>
 
 </tr>
 
@@ -325,3 +430,185 @@ cellpadding="8">
     table.innerHTML = html;
 
 }
+
+/* =====================================================
+   DASHBOARD COUNTER
+===================================================== */
+
+function updateQuestionCounter(total) {
+
+    const card =
+
+        document.getElementById("totalQuestion");
+
+    if (card) {
+
+        card.textContent = total;
+
+    }
+
+}
+/* =====================================================
+   EDIT QUESTION
+===================================================== */
+
+async function editQuestion(id) {
+
+    const res = await apiGetQuestion();
+
+    if (!res.success) {
+
+        alert(res.message);
+
+        return;
+
+    }
+
+    const item = res.data.find(q => q.id === id);
+
+    if (!item) {
+
+        alert("Question not found.");
+
+        return;
+
+    }
+
+    editMode = true;
+
+    selectedQuestionId = id;
+
+    document.getElementById("topic").value =
+        item.topic;
+
+    document.getElementById("question").value =
+        item.question;
+
+    document.getElementById("level").value =
+        item.level;
+
+    document.getElementById("timeLimit").value =
+        item.timeLimit;
+
+    document.getElementById("btnSaveQuestion").innerText =
+        "Update Question";
+
+    document
+        .getElementById("topic")
+        .scrollIntoView({
+
+            behavior: "smooth",
+            block: "center"
+
+        });
+
+}
+
+/* =====================================================
+   DELETE QUESTION
+===================================================== */
+
+async function deleteQuestion(id) {
+
+    const confirmDelete = confirm(
+
+        "Delete this speaking question?"
+
+    );
+
+    if (!confirmDelete) {
+
+        return;
+
+    }
+
+    const res = await apiDeleteQuestion({
+
+        id: id
+
+    });
+
+    alert(res.message);
+
+    if (res.success) {
+
+        loadQuestions();
+
+    }
+
+}
+
+/* =====================================================
+   CANCEL EDIT
+===================================================== */
+
+function resetQuestionForm() {
+
+    editMode = false;
+
+    selectedQuestionId = "";
+
+    const form =
+        document.getElementById("questionForm");
+
+    if (form) {
+
+        form.reset();
+
+    }
+
+    const time =
+        document.getElementById("timeLimit");
+
+    if (time) {
+
+        time.value = 30;
+
+    }
+
+    const btn =
+        document.getElementById("btnSaveQuestion");
+
+    if (btn) {
+
+        btn.innerText = "Save Question";
+
+    }
+
+}
+
+
+/* =====================================================
+   SEARCH QUESTION
+===================================================== */
+
+function filterQuestion() {
+
+    const keyword =
+        document
+        .getElementById("searchQuestion")
+        .value
+        .toLowerCase();
+
+    const rows =
+        document.querySelectorAll(
+            "#questionTable table tbody tr"
+        );
+
+    rows.forEach(row => {
+
+        const text =
+            row.innerText.toLowerCase();
+
+        row.style.display =
+            text.includes(keyword)
+            ? ""
+            : "none";
+
+    });
+
+}
+
+/* =====================================================
+   END OF FILE
+===================================================== */

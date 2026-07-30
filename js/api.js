@@ -163,3 +163,31 @@ async function apiSaveScore(data) {
     return await callAPI("saveScore", data);
 
 }
+
+/* =====================================================
+   STUDENT
+===================================================== */
+
+async function apiInsertStudent(data) {
+
+    return await callAPI("insertStudent", data);
+
+}
+
+async function apiGetStudent(data = {}) {
+
+    return await callAPI("getStudent", data);
+
+}
+
+async function apiUpdateStudent(data) {
+
+    return await callAPI("updateStudent", data);
+
+}
+
+async function apiDeleteStudent(data) {
+
+    return await callAPI("deleteStudent", data);
+
+}
