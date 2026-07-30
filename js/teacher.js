@@ -1,13 +1,18 @@
 /**
  * ==========================================
- * SAF Teacher Dashboard
- * Version 1.0
+ * SAF Speaking Online Test
+ * Teacher Dashboard
+ * Stable Foundation v2.0
  * ==========================================
  */
 
 document.addEventListener("DOMContentLoaded", init);
 
-function init(){
+/* =====================================================
+   INITIALIZE
+===================================================== */
+
+function init() {
 
     bindMenu();
 
@@ -15,47 +20,39 @@ function init(){
 
 }
 
-function bindMenu(){
+/* =====================================================
+   MENU
+===================================================== */
 
-    document.querySelectorAll("[data-page]").forEach(menu=>{
+function bindMenu() {
 
-        menu.addEventListener("click",function(e){
+    document.querySelectorAll("[data-page]").forEach(menu => {
+
+        menu.addEventListener("click", function (e) {
 
             e.preventDefault();
 
-            const page=this.dataset.page;
-
-            switch(page){
+            switch (this.dataset.page) {
 
                 case "dashboard":
-
                     loadDashboard();
-
-                break;
+                    break;
 
                 case "question":
-
                     loadQuestionPage();
-
-                break;
+                    break;
 
                 case "student":
-
                     loadStudentPage();
-
-                break;
+                    break;
 
                 case "token":
-
                     loadTokenPage();
-
-                break;
+                    break;
 
                 case "result":
-
                     loadResultPage();
-
-                break;
+                    break;
 
             }
 
@@ -65,27 +62,39 @@ function bindMenu(){
 
 }
 
-function setContent(html){
+function setContent(html) {
 
-    document.getElementById("content").innerHTML=html;
+    document.getElementById("content").innerHTML = html;
 
 }
 
-function loadDashboard(){
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
+function loadDashboard() {
 
     setContent(`
 
         <h2>Dashboard</h2>
 
-        <p>Selamat datang di SAF Speaking Online Test.</p>
+        <p>
+
+        Welcome to SAF Speaking Online Test.
+
+        </p>
 
     `);
 
 }
 
-function loadQuestionPage(){
+/* =====================================================
+   QUESTION PAGE
+===================================================== */
 
-setContent(`
+function loadQuestionPage() {
+
+    setContent(`
 
 <h2>Speaking Question Database</h2>
 
@@ -93,50 +102,52 @@ setContent(`
 
 <form id="questionForm">
 
-<label>Question Title</label>
+<label>Topic</label>
 
 <input
-id="title"
+id="topic"
 type="text"
 placeholder="Greeting"
+required>
 
 <br><br>
 
-<label>Answer Key</label>
+<label>Speaking Question</label>
 
 <textarea
-id="answer"
+id="question"
 rows="5"
-placeholder="Good morning everyone."></textarea>
+placeholder="Introduce yourself..."
+required></textarea>
 
 <br><br>
 
-<label>Difficulty</label>
+<label>Level</label>
 
-<select id="difficulty">
+<select id="level">
 
-<option>Easy</option>
-
-<option>Medium</option>
-
-<option>Hard</option>
+<option value="Easy">Easy</option>
+<option value="Medium">Medium</option>
+<option value="Hard">Hard</option>
 
 </select>
 
 <br><br>
 
-<label>Duration (seconds)</label>
+<label>Time Limit (seconds)</label>
 
 <input
-id="duration"
+id="timeLimit"
 type="number"
-value="30">
+value="30"
+min="10"
+required>
 
 <br><br>
 
 <button
-class="btn teacher"
-type="submit">
+type="submit"
+class="btn teacher">
 
 Save Question
 
@@ -148,154 +159,163 @@ Save Question
 
 <div id="questionTable">
 
-Loading Database...
+Loading database...
 
 </div>
 
 `);
 
-bindQuestion();
+    bindQuestion();
 
-loadQuestions();
+    loadQuestions();
 
 }
 
-function loadStudentPage(){
+/* =====================================================
+   OTHER PAGE
+===================================================== */
+
+function loadStudentPage() {
 
     setContent("<h2>Students</h2>");
 
 }
 
-function loadTokenPage(){
+function loadTokenPage() {
 
     setContent("<h2>Exam Token</h2>");
 
 }
 
-function loadResultPage(){
+function loadResultPage() {
 
     setContent("<h2>Speaking Results</h2>");
 
 }
 
-function bindQuestion(){
+/* =====================================================
+   SAVE QUESTION
+===================================================== */
 
-document
+function bindQuestion() {
 
-.getElementById("questionForm")
-
-.addEventListener("submit",saveQuestion);
-
-}
-
-async function saveQuestion(e){
-
-e.preventDefault();
-
-const data={
-
-title:
-
-title.value,
-
-answer:
-
-answer.value,
-
-difficulty:
-
-difficulty.value,
-
-duration:
-
-duration.value,
-
-createdBy:"Administrator"
-
-};
-
-const res=
-
-await callAPI(
-
-"insertQuestion",
-
-data
-
-);
-
-alert(res.message);
-
-loadQuestions();
+    document
+        .getElementById("questionForm")
+        .addEventListener("submit", saveQuestion);
 
 }
 
-async function loadQuestions(){
+async function saveQuestion(e) {
 
-const res=
+    e.preventDefault();
 
-await callAPI(
+    const data = {
 
-"getQuestion"
+        topic: document.getElementById("topic").value.trim(),
 
-);
+        question: document.getElementById("question").value.trim(),
 
-if(!res.success){
+        level: document.getElementById("level").value,
 
-document
+        timeLimit: Number(
+            document.getElementById("timeLimit").value
+        )
 
-.getElementById("questionTable")
+    };
 
-.innerHTML="Database kosong.";
+    const res = await apiInsertQuestion(data);
 
-return;
+    alert(res.message);
+
+    if (res.success) {
+
+        document.getElementById("questionForm").reset();
+
+        document.getElementById("timeLimit").value = 30;
+
+        loadQuestions();
+
+    }
 
 }
 
-let html=`
+/* =====================================================
+   LOAD QUESTION
+===================================================== */
 
-<table border="1"
+async function loadQuestions() {
 
+    const res = await apiGetQuestion();
+
+    const table = document.getElementById("questionTable");
+
+    if (!res.success) {
+
+        table.innerHTML = res.message;
+
+        return;
+
+    }
+
+    if (res.data.length === 0) {
+
+        table.innerHTML = "No speaking question.";
+
+        return;
+
+    }
+
+    let html = `
+
+<table
+border="1"
 width="100%"
-
 cellpadding="8">
 
 <tr>
 
-<th>Title</th>
+<th>No</th>
 
-<th>Difficulty</th>
+<th>Topic</th>
 
-<th>Duration</th>
+<th>Question</th>
+
+<th>Level</th>
+
+<th>Time</th>
+
+<th>Status</th>
 
 </tr>
 
 `;
 
-res.data.forEach(item=>{
+    res.data.forEach((item, index) => {
 
-html+=`
+        html += `
 
 <tr>
 
-<td>${item.title}</td>
+<td>${index + 1}</td>
 
-<td>${item.difficulty}</td>
+<td>${item.topic}</td>
 
-<td>${item.duration}s</td>
+<td>${item.question}</td>
+
+<td>${item.level}</td>
+
+<td>${item.timeLimit}s</td>
+
+<td>${item.status}</td>
 
 </tr>
 
 `;
 
-});
+    });
 
-html+="</table>";
+    html += "</table>";
 
-document
-
-.getElementById("questionTable")
-
-.innerHTML=html;
+    table.innerHTML = html;
 
 }
