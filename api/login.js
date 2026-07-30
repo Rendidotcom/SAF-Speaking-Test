@@ -1,33 +1,70 @@
-const API_URL="https://script.google.com/macros/s/AKfycbzYttnrs2zFuvMdELWr8dH_Bj9a6166UpK19SuBCBgvTAsJEUyKSugIxgND37P0GySt/exec";
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbzYttnrs2zFuvMdELWr8dH_Bj9a6166UpK19SuBCBgvTAsJEUyKSugIxgND37P0GySt/exec";
 
 export default async function handler(req, res) {
 
     if (req.method !== "POST") {
+
         return res.status(405).json({
-            success:false,
-            message:"Method Not Allowed"
+
+            success: false,
+
+            message: "Method Not Allowed"
+
         });
+
     }
 
-    try{
+    try {
 
-        const response = await fetch(GAS,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
+        const response = await fetch(API_URL, {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
             },
-            body:JSON.stringify(req.body)
+
+            body: JSON.stringify(req.body)
+
         });
 
-        const data = await response.json();
+        const text = await response.text();
 
-        res.status(200).json(data);
+        let data;
 
-    }catch(err){
+        try {
 
-        res.status(500).json({
-            success:false,
-            message:err.message
+            data = JSON.parse(text);
+
+        } catch {
+
+            return res.status(500).json({
+
+                success: false,
+
+                message: "Invalid JSON from Google Apps Script",
+
+                raw: text
+
+            });
+
+        }
+
+        return res.status(200).json(data);
+
+    }
+
+    catch (err) {
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: err.message
+
         });
 
     }

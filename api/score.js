@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
     try{
 
-        const response = await fetch(GAS,{
+        const response = await fetch(API_URL, {
             method:"POST",
             headers:{
                 "Content-Type":"application/json"
