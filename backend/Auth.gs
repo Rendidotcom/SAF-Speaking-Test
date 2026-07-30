@@ -2,137 +2,284 @@
  * ==========================================
  * SAF Speaking Online Test
  * Authentication Module
- * Version 1.0
+ * Stable Foundation v3.1
  * ==========================================
  */
 
+
 /**
- * Login
+ * ==========================================
+ * LOGIN ROUTER
+ * ==========================================
  */
+
 function login(data) {
 
   try {
 
-    const username = (data.username || "").trim();
-    const password = (data.password || "").trim();
-    const role = (data.role || "").trim();
+    const username = String(data.username || "").trim();
+    const password = String(data.password || "").trim();
+    const role = String(data.role || "").trim().toLowerCase();
+
 
     if (!username || !password) {
-      return failed("Username dan password wajib diisi.");
+
+      return failed(
+        "Username dan password wajib diisi."
+      );
+
     }
 
-    if (role === "teacher") {
-      return teacherLogin(username, password);
+
+    switch(role) {
+
+
+      case "teacher":
+
+        return teacherLogin(
+          username,
+          password
+        );
+
+
+      case "student":
+
+        return studentLogin(
+          username,
+          password
+        );
+
+
+      default:
+
+        return failed(
+          "Role tidak valid."
+        );
+
     }
 
-    if (role === "student") {
-      return studentLogin(username, password);
-    }
 
-    return failed("Role tidak valid.");
+  } catch(err) {
 
-  } catch (err) {
 
-    writeLog("LOGIN", err.toString());
+    try {
 
-    return failed(err.toString());
+      writeLog(
+        "LOGIN ERROR",
+        err.toString()
+      );
+
+    } catch(e){}
+
+
+    return failed(
+      err.toString()
+    );
+
 
   }
 
 }
 
+
 /**
  * ==========================================
- * Teacher Login
+ * TEACHER LOGIN
+ * Sheet : Teacher
+ *
+ * Struktur:
+ * id
+ * nama
+ * username
+ * password
+ * role
  * ==========================================
  */
 
 function teacherLogin(username, password) {
 
-  const rows = getRows(CONFIG.SHEET.TEACHER);
 
-  for (let i = 1; i < rows.length; i++) {
+  const rows = getRows("Teacher");
+
+
+  if (!rows || rows.length <= 1) {
+
+    return failed(
+      "Data Teacher kosong atau tidak ditemukan."
+    );
+
+  }
+
+
+  for (
+    let i = 1;
+    i < rows.length;
+    i++
+  ) {
+
 
     const row = rows[i];
 
+
+    const dbUsername =
+      String(row[2] || "").trim();
+
+
+    const dbPassword =
+      String(row[3] || "").trim();
+
+
+
     if (
-      row[2] === username &&
-      row[3] === password
+
+      dbUsername === username &&
+
+      dbPassword === password
+
     ) {
+
 
       return success({
 
-        message: "Login berhasil.",
+        message:
+          "Login teacher berhasil.",
 
-        token: uuid(),
+
+        token:
+          uuid(),
+
 
         user: {
 
-          id: row[0],
+          id:
+            row[0],
 
-          nama: row[1],
+          nama:
+            row[1],
 
-          username: row[2],
+          username:
+            row[2],
 
-          role: row[4]
+          role:
+            row[4]
 
         }
 
       });
 
+
     }
+
 
   }
 
-  return failed("Username atau password salah.");
+
+  return failed(
+    "Username atau password teacher salah."
+  );
+
 
 }
 
+
 /**
  * ==========================================
- * Student Login
+ * STUDENT LOGIN
+ * Sheet : Student
+ *
+ * Struktur:
+ * id
+ * nama
+ * kelas
+ * username
+ * password
  * ==========================================
  */
 
 function studentLogin(username, password) {
 
-  const rows = getRows(CONFIG.SHEET.STUDENT);
 
-  for (let i = 1; i < rows.length; i++) {
+  const rows = getRows("Student");
+
+
+  if (!rows || rows.length <= 1) {
+
+    return failed(
+      "Data Student kosong atau tidak ditemukan."
+    );
+
+  }
+
+
+  for (
+    let i = 1;
+    i < rows.length;
+    i++
+  ) {
+
 
     const row = rows[i];
 
+
+    const dbUsername =
+      String(row[3] || "").trim();
+
+
+    const dbPassword =
+      String(row[4] || "").trim();
+
+
+
     if (
-      row[3] === username &&
-      row[4] === password
+
+      dbUsername === username &&
+
+      dbPassword === password
+
     ) {
+
 
       return success({
 
-        message: "Login berhasil.",
+        message:
+          "Login student berhasil.",
 
-        token: uuid(),
+
+        token:
+          uuid(),
+
 
         user: {
 
-          nis: row[0],
+          nis:
+            row[0],
 
-          nama: row[1],
+          nama:
+            row[1],
 
-          kelas: row[2],
+          kelas:
+            row[2],
 
-          username: row[3],
+          username:
+            row[3],
 
-          role: "student"
+          role:
+            "student"
 
         }
 
       });
 
+
     }
+
 
   }
 
-  return failed("Username atau password salah.");
+
+  return failed(
+    "Username atau password student salah."
+  );
+
 
 }
