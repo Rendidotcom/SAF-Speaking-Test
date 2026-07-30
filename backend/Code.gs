@@ -62,9 +62,10 @@ function doPost(e) {
 
 function insertQuestion(data) {
 
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName("Questions");
+    const sheet =
+      SpreadsheetApp
+      .openById(SPREADSHEET_ID)
+      .getSheetByName("Questions");
 
   if (!sheet) {
 
