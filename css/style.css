@@ -1,7 +1,13 @@
-/* ==========================================
+/* ==========================================================
    SAF Speaking Online Test
-   Stable UI v3.1
-========================================== */
+   Stable UI v4.0
+   PART 1
+   Global + Landing Page + Login
+========================================================== */
+
+/* ==========================================================
+   RESET
+========================================================== */
 
 *{
     margin:0;
@@ -9,19 +15,311 @@
     box-sizing:border-box;
 }
 
+html{
+
+    scroll-behavior:smooth;
+
+}
+
 body{
 
-    font-family:Arial,Helvetica,sans-serif;
+    font-family:
+        "Segoe UI",
+        Arial,
+        Helvetica,
+        sans-serif;
 
     background:#eef3f8;
 
     color:#333;
 
+    line-height:1.6;
+
 }
 
-/* ==========================================
-   LAYOUT
-========================================== */
+/* ==========================================================
+   LINK
+========================================================== */
+
+a{
+
+    text-decoration:none;
+
+    color:inherit;
+
+}
+
+/* ==========================================================
+   IMAGE
+========================================================== */
+
+img{
+
+    max-width:100%;
+
+    display:block;
+
+}
+
+/* ==========================================================
+   LANDING PAGE
+========================================================== */
+
+.container{
+
+    width:100%;
+
+    min-height:100vh;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    padding:40px;
+
+}
+
+/* ==========================================================
+   CARD
+========================================================== */
+
+.card{
+
+    width:100%;
+
+    max-width:620px;
+
+    background:#fff;
+
+    border-radius:20px;
+
+    padding:45px;
+
+    text-align:center;
+
+    box-shadow:
+        0 10px 35px
+        rgba(0,0,0,.08);
+
+}
+
+/* ==========================================================
+   LOGO
+========================================================== */
+
+.logo{
+
+    width:120px;
+
+    height:120px;
+
+    object-fit:contain;
+
+    margin:0 auto 25px;
+
+}
+
+/* ==========================================================
+   TITLE
+========================================================== */
+
+.card h1{
+
+    color:#0B72B9;
+
+    font-size:34px;
+
+    margin-bottom:18px;
+
+}
+
+/* ==========================================================
+   DESCRIPTION
+========================================================== */
+
+.card p{
+
+    color:#666;
+
+    font-size:16px;
+
+    margin-bottom:35px;
+
+}
+
+/* ==========================================================
+   BUTTON GROUP
+========================================================== */
+
+.button-group{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+/* ==========================================================
+   BUTTON
+========================================================== */
+
+.btn{
+
+    display:block;
+
+    width:100%;
+
+    padding:16px;
+
+    border:none;
+
+    border-radius:12px;
+
+    font-size:17px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+/* ==========================================================
+   TEACHER BUTTON
+========================================================== */
+
+.btn.teacher{
+
+    background:#0B72B9;
+
+    color:#fff;
+
+}
+
+.btn.teacher:hover{
+
+    background:#095d97;
+
+}
+
+/* ==========================================================
+   STUDENT BUTTON
+========================================================== */
+
+.btn.student{
+
+    background:#2E7D32;
+
+    color:#fff;
+
+}
+
+.btn.student:hover{
+
+    background:#236527;
+
+}
+
+/* ==========================================================
+   LOGIN PAGE
+========================================================== */
+
+.login-box{
+
+    width:100%;
+
+    max-width:520px;
+
+    margin:auto;
+
+}
+
+.login-title{
+
+    color:#0B72B9;
+
+    font-size:30px;
+
+    margin-bottom:10px;
+
+}
+
+.login-subtitle{
+
+    color:#666;
+
+    margin-bottom:30px;
+
+}
+
+.login-box label{
+
+    display:block;
+
+    text-align:left;
+
+    margin-bottom:8px;
+
+    font-weight:600;
+
+}
+
+.login-box input,
+
+.login-box select{
+
+    width:100%;
+
+    padding:14px;
+
+    border:1px solid #d7d7d7;
+
+    border-radius:10px;
+
+    font-size:15px;
+
+    margin-bottom:18px;
+
+}
+
+.login-box input:focus,
+
+.login-box select:focus{
+
+    outline:none;
+
+    border-color:#0B72B9;
+
+}
+
+/* ==========================================================
+   FOOTER
+========================================================== */
+
+footer{
+
+    margin-top:35px;
+
+    color:#777;
+
+    font-size:14px;
+
+    line-height:1.8;
+
+}
+/* ==========================================================
+   PART 2
+   Dashboard Layout + Sidebar + Header + Cards
+========================================================== */
+
+/* ==========================================================
+   DASHBOARD LAYOUT
+========================================================== */
 
 .dashboard{
 
@@ -29,7 +327,13 @@ body{
 
     min-height:100vh;
 
+    background:#eef3f8;
+
 }
+
+/* ==========================================================
+   SIDEBAR
+========================================================== */
 
 .sidebar{
 
@@ -39,39 +343,46 @@ body{
 
     color:#fff;
 
-    padding:30px;
+    padding:30px 24px;
 
-    box-shadow:4px 0 18px rgba(0,0,0,.12);
+    box-shadow:
+        5px 0 20px rgba(0,0,0,.10);
+
+    position:sticky;
+
+    top:0;
+
+    height:100vh;
+
+    overflow:auto;
 
 }
 
-.main{
-
-    flex:1;
-
-    padding:40px;
-
-}
-
-/* ==========================================
-   SIDEBAR
-========================================== */
+/* ==========================================================
+   SIDEBAR LOGO
+========================================================== */
 
 .sidebar img{
 
-    width:120px;
+    width:95px;
 
-    display:block;
+    height:95px;
 
-    margin:auto;
+    object-fit:contain;
 
-    margin-bottom:20px;
+    margin:0 auto 18px;
 
 }
+
+/* ==========================================================
+   SIDEBAR TITLE
+========================================================== */
 
 .sidebar h2{
 
     text-align:center;
+
+    font-size:22px;
 
     margin-bottom:8px;
 
@@ -81,13 +392,17 @@ body{
 
     text-align:center;
 
-    opacity:.8;
-
-    margin-bottom:35px;
-
     font-size:14px;
 
+    opacity:.85;
+
+    margin-bottom:30px;
+
 }
+
+/* ==========================================================
+   MENU
+========================================================== */
 
 .menu{
 
@@ -99,33 +414,73 @@ body{
 
 }
 
+/* ==========================================================
+   MENU LINK
+========================================================== */
+
 .menu a{
 
-    color:white;
+    display:flex;
 
-    text-decoration:none;
+    align-items:center;
+
+    gap:12px;
 
     padding:14px 18px;
 
-    border-radius:10px;
+    border-radius:12px;
+
+    color:#fff;
+
+    font-size:15px;
+
+    font-weight:600;
 
     transition:.25s;
 
-    font-weight:bold;
-
 }
+
+/* ==========================================================
+   MENU HOVER
+========================================================== */
 
 .menu a:hover{
 
-    background:white;
+    background:#ffffff;
+
+    color:#0B72B9;
+
+    transform:translateX(5px);
+
+}
+
+/* ==========================================================
+   ACTIVE MENU
+========================================================== */
+
+.menu a.active{
+
+    background:#ffffff;
 
     color:#0B72B9;
 
 }
 
-/* ==========================================
+/* ==========================================================
+   MAIN
+========================================================== */
+
+.main{
+
+    flex:1;
+
+    padding:40px;
+
+}
+
+/* ==========================================================
    HEADER
-========================================== */
+========================================================== */
 
 .header{
 
@@ -139,49 +494,65 @@ body{
 
 }
 
+/* ==========================================================
+   HEADER TITLE
+========================================================== */
+
 .header h1{
+
+    font-size:34px;
 
     color:#0B72B9;
 
-    font-size:34px;
+    margin-bottom:8px;
 
 }
 
 .header p{
 
-    margin-top:10px;
-
     color:#666;
 
 }
 
-/* ==========================================
-   DASHBOARD CARD
-========================================== */
+/* ==========================================================
+   DASHBOARD CARDS
+========================================================== */
 
 .cards{
 
     display:grid;
 
-    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    grid-template-columns:
 
-    gap:25px;
+        repeat(auto-fit,minmax(230px,1fr));
+
+    gap:22px;
 
 }
 
+/* ==========================================================
+   CARD
+========================================================== */
+
 .card-box{
 
-    background:white;
+    background:#fff;
 
-    border-radius:16px;
+    border-radius:18px;
 
     padding:28px;
 
-    box-shadow:0 8px 25px rgba(0,0,0,.08);
+    box-shadow:
+
+        0 10px 25px rgba(0,0,0,.08);
 
     transition:.25s;
 
 }
+
+/* ==========================================================
+   CARD HOVER
+========================================================== */
 
 .card-box:hover{
 
@@ -189,7 +560,61 @@ body{
 
 }
 
+/* ==========================================================
+   CARD TITLE
+========================================================== */
+
 .card-box h3{
+
+    color:#0B72B9;
+
+    font-size:18px;
+
+    margin-bottom:18px;
+
+}
+
+/* ==========================================================
+   CARD NUMBER
+========================================================== */
+
+.number{
+
+    font-size:42px;
+
+    font-weight:700;
+
+    color:#0B72B9;
+
+}
+
+/* ==========================================================
+   CONTENT PANEL
+========================================================== */
+
+.content{
+
+    margin-top:35px;
+
+    background:#fff;
+
+    border-radius:18px;
+
+    padding:35px;
+
+    box-shadow:
+
+        0 10px 25px rgba(0,0,0,.08);
+
+    min-height:520px;
+
+}
+
+/* ==========================================================
+   CONTENT TITLE
+========================================================== */
+
+.content h2{
 
     color:#0B72B9;
 
@@ -197,39 +622,31 @@ body{
 
 }
 
-.number{
+/* ==========================================================
+   CONTENT PARAGRAPH
+========================================================== */
 
-    font-size:42px;
+.content p{
 
-    font-weight:bold;
+    color:#555;
 
-    color:#0B72B9;
-
-}
-
-/* ==========================================
-   CONTENT
-========================================== */
-
-.content{
-
-    margin-top:35px;
-
-    background:white;
-
-    border-radius:16px;
-
-    padding:35px;
-
-    box-shadow:0 8px 25px rgba(0,0,0,.08);
-
-    min-height:520px;
+    line-height:1.8;
 
 }
+/* ==========================================================
+   PART 3
+   Form + Button + Table + Badge + Message
+========================================================== */
 
-/* ==========================================
+/* ==========================================================
    FORM
-========================================== */
+========================================================== */
+
+form{
+
+    width:100%;
+
+}
 
 label{
 
@@ -237,7 +654,9 @@ label{
 
     margin-bottom:8px;
 
-    font-weight:bold;
+    font-weight:600;
+
+    color:#444;
 
 }
 
@@ -247,13 +666,27 @@ select{
 
     width:100%;
 
-    padding:12px;
+    padding:14px 16px;
+
+    font-size:15px;
+
+    font-family:inherit;
 
     border:1px solid #d9d9d9;
 
-    border-radius:8px;
+    border-radius:10px;
 
-    font-size:15px;
+    background:#fff;
+
+    transition:.25s;
+
+}
+
+textarea{
+
+    resize:vertical;
+
+    min-height:120px;
 
 }
 
@@ -265,39 +698,57 @@ select:focus{
 
     border-color:#0B72B9;
 
+    box-shadow:0 0 0 4px rgba(11,114,185,.12);
+
 }
 
-/* ==========================================
+/* ==========================================================
    BUTTON
-========================================== */
+========================================================== */
 
 button{
 
     cursor:pointer;
 
+    font-family:inherit;
+
+    border:none;
+
 }
 
 .btn{
 
-    border:none;
+    display:inline-flex;
 
-    padding:12px 20px;
+    align-items:center;
 
-    border-radius:8px;
+    justify-content:center;
+
+    gap:8px;
+
+    min-width:120px;
+
+    padding:13px 22px;
+
+    border-radius:10px;
 
     font-size:15px;
 
-    font-weight:bold;
+    font-weight:700;
 
     transition:.25s;
 
 }
 
+/* ==========================================================
+   SAVE BUTTON
+========================================================== */
+
 .btn.teacher{
 
     background:#0B72B9;
 
-    color:white;
+    color:#fff;
 
 }
 
@@ -307,41 +758,73 @@ button{
 
 }
 
+/* ==========================================================
+   EDIT BUTTON
+========================================================== */
+
 .btn.edit{
 
     background:#1976D2;
 
-    color:white;
-
-    padding:8px 14px;
+    color:#fff;
 
 }
 
 .btn.edit:hover{
 
-    background:#125ea7;
+    background:#1565C0;
 
 }
+
+/* ==========================================================
+   DELETE BUTTON
+========================================================== */
 
 .btn.delete{
 
     background:#E53935;
 
-    color:white;
-
-    padding:8px 14px;
+    color:#fff;
 
 }
 
 .btn.delete:hover{
 
-    background:#c62828;
+    background:#C62828;
 
 }
 
-/* ==========================================
+/* ==========================================================
+   CANCEL BUTTON
+========================================================== */
+
+.btn.cancel{
+
+    background:#9E9E9E;
+
+    color:#fff;
+
+}
+
+.btn.cancel:hover{
+
+    background:#757575;
+
+}
+
+/* ==========================================================
    TABLE
-========================================== */
+========================================================== */
+
+.table-wrapper{
+
+    overflow-x:auto;
+
+    margin-top:20px;
+
+    border-radius:12px;
+
+}
 
 table{
 
@@ -349,57 +832,87 @@ table{
 
     border-collapse:collapse;
 
-    margin-top:15px;
-
-    background:white;
+    background:#fff;
 
 }
 
-th{
+thead{
 
     background:#0B72B9;
 
-    color:white;
+}
 
-    padding:12px;
+thead th{
+
+    color:#fff;
+
+    padding:14px;
+
+    font-size:15px;
+
+    text-align:left;
 
 }
 
-td{
+tbody td{
 
-    padding:12px;
+    padding:14px;
 
-    border-bottom:1px solid #e5e5e5;
+    border-bottom:1px solid #ececec;
 
-}
-
-tr:hover{
-
-    background:#f5f9fc;
+    vertical-align:middle;
 
 }
 
-/* ==========================================
+tbody tr{
+
+    transition:.20s;
+
+}
+
+tbody tr:hover{
+
+    background:#F5F9FC;
+
+}
+
+/* ==========================================================
+   ACTION BUTTON
+========================================================== */
+
+.action{
+
+    display:flex;
+
+    gap:8px;
+
+    flex-wrap:wrap;
+
+}
+
+/* ==========================================================
    BADGE
-========================================== */
+========================================================== */
 
 .badge{
 
+    display:inline-block;
+
     padding:6px 12px;
 
-    border-radius:20px;
+    border-radius:30px;
 
-    color:white;
+    font-size:12px;
 
-    font-size:13px;
+    font-weight:700;
 
-    font-weight:bold;
+    color:#fff;
 
 }
 
 .badge.easy{
 
-    background:#2E7D32;
+    background:#43A047;
 
 }
 
@@ -411,7 +924,7 @@ tr:hover{
 
 .badge.hard{
 
-    background:#C62828;
+    background:#E53935;
 
 }
 
@@ -421,17 +934,25 @@ tr:hover{
 
 }
 
-/* ==========================================
+.badge.inactive{
+
+    background:#9E9E9E;
+
+}
+
+/* ==========================================================
    MESSAGE
-========================================== */
+========================================================== */
 
 .message{
 
-    padding:15px;
-
-    border-radius:8px;
-
     margin:20px 0;
+
+    padding:15px 18px;
+
+    border-radius:10px;
+
+    font-size:15px;
 
 }
 
@@ -441,6 +962,8 @@ tr:hover{
 
     color:#2E7D32;
 
+    border-left:5px solid #43A047;
+
 }
 
 .message.error{
@@ -449,13 +972,308 @@ tr:hover{
 
     color:#C62828;
 
+    border-left:5px solid #E53935;
+
 }
 
-/* ==========================================
-   RESPONSIVE
-========================================== */
+.message.info{
 
-@media(max-width:900px){
+    background:#E3F2FD;
+
+    color:#1565C0;
+
+    border-left:5px solid #0B72B9;
+
+}
+
+/* ==========================================================
+   HR
+========================================================== */
+
+hr{
+
+    border:none;
+
+    border-top:1px solid #E0E0E0;
+
+    margin:25px 0;
+
+}
+
+/* ==========================================================
+   SMALL TEXT
+========================================================== */
+
+small{
+
+    color:#777;
+
+    font-size:13px;
+
+}
+/* ==========================================================
+   PART 4
+   Responsive + Loading + Utility
+   FINAL
+========================================================== */
+
+/* ==========================================================
+   LOADING
+========================================================== */
+
+.loading{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    padding:40px;
+
+    color:#0B72B9;
+
+    font-weight:600;
+
+}
+
+.spinner{
+
+    width:40px;
+
+    height:40px;
+
+    border:4px solid #E3F2FD;
+
+    border-top:4px solid #0B72B9;
+
+    border-radius:50%;
+
+    animation:spin .9s linear infinite;
+
+    margin-right:15px;
+
+}
+
+@keyframes spin{
+
+    from{
+
+        transform:rotate(0deg);
+
+    }
+
+    to{
+
+        transform:rotate(360deg);
+
+    }
+
+}
+
+/* ==========================================================
+   FADE
+========================================================== */
+
+.fade{
+
+    animation:fadeIn .25s ease;
+
+}
+
+@keyframes fadeIn{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(10px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+/* ==========================================================
+   SHADOW
+========================================================== */
+
+.shadow{
+
+    box-shadow:
+
+        0 8px 25px rgba(0,0,0,.08);
+
+}
+
+/* ==========================================================
+   TEXT
+========================================================== */
+
+.text-center{
+
+    text-align:center;
+
+}
+
+.text-right{
+
+    text-align:right;
+
+}
+
+.text-left{
+
+    text-align:left;
+
+}
+
+/* ==========================================================
+   MARGIN
+========================================================== */
+
+.mt-10{
+
+    margin-top:10px;
+
+}
+
+.mt-20{
+
+    margin-top:20px;
+
+}
+
+.mt-30{
+
+    margin-top:30px;
+
+}
+
+.mb-10{
+
+    margin-bottom:10px;
+
+}
+
+.mb-20{
+
+    margin-bottom:20px;
+
+}
+
+.mb-30{
+
+    margin-bottom:30px;
+
+}
+
+/* ==========================================================
+   FLEX
+========================================================== */
+
+.flex{
+
+    display:flex;
+
+}
+
+.flex-between{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.flex-center{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+.gap-10{
+
+    gap:10px;
+
+}
+
+.gap-20{
+
+    gap:20px;
+
+}
+
+/* ==========================================================
+   WIDTH
+========================================================== */
+
+.w-100{
+
+    width:100%;
+
+}
+
+.w-50{
+
+    width:50%;
+
+}
+
+/* ==========================================================
+   CARD TITLE
+========================================================== */
+
+.section-title{
+
+    color:#0B72B9;
+
+    font-size:24px;
+
+    font-weight:700;
+
+    margin-bottom:20px;
+
+}
+
+/* ==========================================================
+   TABLE RESPONSIVE
+========================================================== */
+
+.table-wrapper{
+
+    overflow-x:auto;
+
+}
+
+/* ==========================================================
+   TABLE BUTTON
+========================================================== */
+
+table button{
+
+    margin:2px;
+
+}
+
+/* ==========================================================
+   RESPONSIVE TABLET
+========================================================== */
+
+@media (max-width:1024px){
 
 .dashboard{
 
@@ -467,11 +1285,71 @@ tr:hover{
 
     width:100%;
 
+    height:auto;
+
+    position:relative;
+
 }
 
 .main{
 
+    padding:25px;
+
+}
+
+.cards{
+
+    grid-template-columns:
+
+        repeat(2,minmax(220px,1fr));
+
+}
+
+.logo{
+
+    width:100px;
+
+    height:100px;
+
+}
+
+}
+
+/* ==========================================================
+   RESPONSIVE MOBILE
+========================================================== */
+
+@media (max-width:768px){
+
+.container{
+
     padding:20px;
+
+}
+
+.card{
+
+    padding:30px;
+
+}
+
+.card h1{
+
+    font-size:28px;
+
+}
+
+.header{
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+}
+
+.header h1{
+
+    font-size:28px;
 
 }
 
@@ -481,12 +1359,92 @@ tr:hover{
 
 }
 
-table{
+.main{
 
-    display:block;
+    padding:18px;
 
-    overflow-x:auto;
+}
+
+.content{
+
+    padding:20px;
+
+}
+
+.btn{
+
+    width:100%;
+
+}
+
+.action{
+
+    flex-direction:column;
+
+}
+
+.logo{
+
+    width:90px;
+
+    height:90px;
+
+}
+
+.sidebar{
+
+    padding:20px;
 
 }
 
 }
+
+/* ==========================================================
+   SMALL MOBILE
+========================================================== */
+
+@media (max-width:480px){
+
+.card{
+
+    padding:22px;
+
+}
+
+.card h1{
+
+    font-size:24px;
+
+}
+
+.card p{
+
+    font-size:14px;
+
+}
+
+.header h1{
+
+    font-size:24px;
+
+}
+
+.number{
+
+    font-size:32px;
+
+}
+
+.sidebar img{
+
+    width:75px;
+
+    height:75px;
+
+}
+
+}
+
+/* ==========================================================
+   END OF FILE
+========================================================== */
