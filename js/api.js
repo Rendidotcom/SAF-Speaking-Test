@@ -2,39 +2,16 @@
  * ==========================================
  * SAF Speaking Online Test
  * API Service
- * Version 2.0 (Stable Foundation)
+ * Stable Foundation v3.0
+ * Backend : Google Apps Script
  * ==========================================
  */
 
 async function callAPI(action, data = {}) {
 
-    const endpoint = {
-
-        login: "login",
-
-        insertQuestion: "question",
-        getQuestion: "question",
-        updateQuestion: "question",
-        deleteQuestion: "question",
-
-        saveScore: "score"
-
-    };
-
     try {
 
-        if (!endpoint[action]) {
-
-            return {
-
-                success: false,
-                message: "Unknown API action: " + action
-
-            };
-
-        }
-
-        const response = await fetch(`/api/${endpoint[action]}`, {
+        const response = await fetch(CONFIG.API_URL, {
 
             method: "POST",
 
@@ -47,6 +24,7 @@ async function callAPI(action, data = {}) {
             body: JSON.stringify({
 
                 action: action,
+
                 data: data
 
             })
@@ -56,10 +34,10 @@ async function callAPI(action, data = {}) {
         const text = await response.text();
 
         console.log("=================================");
-        console.log("API ACTION :", action);
-        console.log("ENDPOINT   :", endpoint[action]);
-        console.log("STATUS     :", response.status);
-        console.log("RAW        :", text);
+        console.log("ACTION :", action);
+        console.log("STATUS :", response.status);
+        console.log("RAW RESPONSE:");
+        console.log(text);
         console.log("=================================");
 
         let result;
@@ -68,24 +46,56 @@ async function callAPI(action, data = {}) {
 
             result = JSON.parse(text);
 
-        } catch (err) {
+        }
+
+        catch (err) {
 
             return {
 
                 success: false,
-                message: "Invalid JSON Response",
+
+                message: "Invalid JSON response.",
+
                 raw: text
 
             };
 
         }
 
-        if (typeof CONFIG !== "undefined" && CONFIG.DEBUG) {
+        /* -----------------------------------------
+           Safety
+        ----------------------------------------- */
+
+        if (typeof result.success === "undefined") {
+
+            result.success = false;
+
+        }
+
+        if (!result.message) {
+
+            result.message = result.success
+
+                ? "Success"
+
+                : "Unknown server response.";
+
+        }
+
+        if (CONFIG.DEBUG) {
 
             console.log("REQUEST");
-            console.log(data);
+
+            console.log({
+
+                action,
+
+                data
+
+            });
 
             console.log("RESPONSE");
+
             console.log(result);
 
             console.log("=================================");
@@ -94,14 +104,18 @@ async function callAPI(action, data = {}) {
 
         return result;
 
-    } catch (err) {
+    }
+
+    catch (err) {
 
         console.error(err);
 
         return {
 
             success: false,
-            message: "Cannot connect to server.",
+
+            message: "Cannot connect to Google Apps Script.",
+
             error: err.message
 
         };
@@ -119,7 +133,9 @@ async function apiLogin(username, password, role) {
     return await callAPI("login", {
 
         username,
+
         password,
+
         role
 
     });
@@ -127,7 +143,7 @@ async function apiLogin(username, password, role) {
 }
 
 /* =====================================================
-   SPEAKING QUESTIONS
+   QUESTION
 ===================================================== */
 
 async function apiInsertQuestion(data) {
@@ -136,9 +152,9 @@ async function apiInsertQuestion(data) {
 
 }
 
-async function apiGetQuestion(data = {}) {
+async function apiGetQuestion() {
 
-    return await callAPI("getQuestion", data);
+    return await callAPI("getQuestion");
 
 }
 
@@ -158,25 +174,15 @@ async function apiDeleteQuestion(data) {
    STUDENT
 ===================================================== */
 
-async function apiSaveScore(data) {
-
-    return await callAPI("saveScore", data);
-
-}
-
-/* =====================================================
-   STUDENT
-===================================================== */
-
 async function apiInsertStudent(data) {
 
     return await callAPI("insertStudent", data);
 
 }
 
-async function apiGetStudent(data = {}) {
+async function apiGetStudent() {
 
-    return await callAPI("getStudent", data);
+    return await callAPI("getStudent");
 
 }
 
@@ -189,5 +195,15 @@ async function apiUpdateStudent(data) {
 async function apiDeleteStudent(data) {
 
     return await callAPI("deleteStudent", data);
+
+}
+
+/* =====================================================
+   SCORE
+===================================================== */
+
+async function apiSaveScore(data) {
+
+    return await callAPI("saveScore", data);
 
 }
