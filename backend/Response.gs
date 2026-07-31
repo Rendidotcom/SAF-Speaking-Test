@@ -1,9 +1,14 @@
 /**
  * ==========================================
  * Response Helper
+ * SAF Speaking Online Test
+ * Stable Foundation v3.1
  * ==========================================
  */
 
+/**
+ * Mengubah Object menjadi JSON Response
+ */
 function json(data) {
 
   return ContentService
@@ -12,26 +17,34 @@ function json(data) {
 
 }
 
-function success(data = {}) {
+/**
+ * Response Success
+ * Mengembalikan OBJECT
+ * (bukan TextOutput)
+ */
+function success(data) {
 
-  return json({
+  return Object.assign({
 
-    success: true,
+    success: true
 
-    ...data
-
-  });
+  }, data || {});
 
 }
 
-function failed(message = "Unknown Error") {
+/**
+ * Response Failed
+ * Mengembalikan OBJECT
+ * (bukan TextOutput)
+ */
+function failed(message) {
 
-  return json({
+  return {
 
     success: false,
 
-    message
+    message: message || "Unknown Error"
 
-  });
+  };
 
 }
