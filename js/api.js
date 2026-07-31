@@ -207,3 +207,16 @@ async function apiSaveScore(data) {
     return await callAPI("saveScore", data);
 
 }
+async function api(data){
+
+const response=await fetch(CONFIG.API_URL,{
+
+method:"POST",
+
+body:JSON.stringify(data)
+
+});
+
+return await response.json();
+
+}
