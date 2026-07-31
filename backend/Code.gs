@@ -2,7 +2,7 @@
  * ==========================================
  * SAF Speaking Online Test
  * API ROUTER
- * Stable Foundation v1.1
+ * Stable Foundation v1.3
  * ==========================================
  */
 
@@ -11,7 +11,9 @@ function doGet(e) {
   return json({
 
     success: true,
+
     app: APP_NAME,
+
     version: VERSION
 
   });
@@ -73,23 +75,42 @@ function doPost(e) {
          EXAM TOKEN
       ========================== */
 
-      case "createExamToken":
-        return json(createExamToken(data));
+      case "insertExam":
+        return json(insertExam(data));
 
-      case "getExamToken":
-        return json(getExamToken());
+      case "getExam":
+        return json(getExam());
 
-      case "updateExamToken":
-        return json(updateExamToken(data));
+      case "updateExam":
+        return json(updateExam(data));
 
-      case "deleteExamToken":
-        return json(deleteExamToken(data));
+      case "deleteExam":
+        return json(deleteExam(data));
 
-      case "validateExamToken":
-        return json(validateExamToken(data));
+      case "validateToken":
+        return json(validateToken(data));
 
       /* ==========================
-         SCORE
+         RESULT
+      ========================== */
+
+      case "saveResult":
+        return json(saveResult(data));
+
+      case "getResult":
+        return json(getResult());
+
+      case "getStudentResult":
+        return json(getStudentResult(data));
+
+      case "updateResultScore":
+        return json(updateResultScore(data));
+
+      case "deleteResult":
+        return json(deleteResult(data));
+
+      /* ==========================
+         SCORE (Legacy)
       ========================== */
 
       case "saveScore":
@@ -102,7 +123,9 @@ function doPost(e) {
       default:
 
         return json(
+
           failed("Unknown API Action : " + action)
+
         );
 
     }
@@ -110,7 +133,9 @@ function doPost(e) {
   } catch (err) {
 
     return json(
+
       failed(err.toString())
+
     );
 
   }
