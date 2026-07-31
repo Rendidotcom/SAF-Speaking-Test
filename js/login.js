@@ -2,7 +2,7 @@
  * ==========================================
  * SAF Speaking Online Test
  * Login Module
- * Version 1.0
+ * Stable Foundation v1.1
  * ==========================================
  */
 
@@ -44,19 +44,15 @@ async function loginProcess(e) {
 
     e.preventDefault();
 
-    const username =
-        document.getElementById("username")
+    const username = document
+        .getElementById("username")
         .value
         .trim();
 
-    const password =
-        document.getElementById("password")
+    const password = document
+        .getElementById("password")
         .value
         .trim();
-
-    // ===========================
-    // Validation
-    // ===========================
 
     if (!username) {
 
@@ -132,10 +128,6 @@ async function loginProcess(e) {
 
         }
 
-        // =======================
-        // Success
-        // =======================
-
         alert("Login successful.");
 
         if (role === "teacher") {
@@ -171,37 +163,60 @@ async function loginProcess(e) {
 (function () {
 
     const session = sessionStorage.getItem(
-
         CONFIG.SESSION_KEY
-
     );
 
-    if (!session) return;
+    if (!session) {
+
+        return;
+
+    }
 
     try {
 
         const user = JSON.parse(session);
 
-        if (user.role === "teacher") {
+        // Redirect hanya jika role session
+        // sama dengan role halaman login
+
+        if (
+
+            role === "teacher" &&
+
+            user.role === "teacher"
+
+        ) {
 
             window.location.href =
                 "dashboard_teacher.html";
 
+            return;
+
         }
 
-        if (user.role === "student") {
+        if (
+
+            role === "student" &&
+
+            user.role === "student"
+
+        ) {
 
             window.location.href =
                 "dashboard_student.html";
+
+            return;
 
         }
 
     } catch (e) {
 
         sessionStorage.removeItem(
-
             CONFIG.SESSION_KEY
+        );
 
+        sessionStorage.removeItem(
+            CONFIG.TOKEN_KEY
         );
 
     }
