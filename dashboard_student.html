@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Student Dashboard</title>
+
+<link rel="icon" href="images/logo.png">
+
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#eef3f8;
+    font-family:Arial,Helvetica,sans-serif;
+    color:#333;
+}
+
+.dashboard{
+    display:flex;
+    min-height:100vh;
+}
+
+/* =====================================
+SIDEBAR
+===================================== */
+
+.sidebar{
+    width:280px;
+    background:#0B72B9;
+    color:white;
+    padding:30px;
+    box-shadow:4px 0 20px rgba(0,0,0,.15);
+}
+
+.sidebar img{
+    width:120px;
+    display:block;
+    margin:auto;
+    margin-bottom:15px;
+}
+
+.sidebar h2{
+    text-align:center;
+    font-size:22px;
+    margin-bottom:5px;
+}
+
+.sidebar p{
+    text-align:center;
+    font-size:13px;
+    opacity:.85;
+    margin-bottom:35px;
+}
+
+.menu{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.menu a{
+    color:white;
+    text-decoration:none;
+    padding:14px 18px;
+    border-radius:10px;
+    transition:.25s;
+    font-size:15px;
+    font-weight:bold;
+}
+
+.menu a:hover{
+    background:white;
+    color:#0B72B9;
+    transform:translateX(6px);
+}
+
+/* =====================================
+MAIN
+===================================== */
+
+.main{
+    flex:1;
+    padding:40px;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:35px;
+}
+
+.header h1{
+    font-size:34px;
+    color:#0B72B9;
+    margin-bottom:8px;
+}
+
+.header p{
+    color:#666;
+    line-height:1.6;
+}
+
+/* =====================================
+CARDS
+===================================== */
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:25px;
+}
+
+.card-box{
+    background:white;
+    border-radius:16px;
+    padding:30px;
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+    transition:.25s;
+}
+
+.card-box:hover{
+    transform:translateY(-6px);
+    box-shadow:0 15px 35px rgba(0,0,0,.12);
+}
+
+.card-box h3{
+    color:#0B72B9;
+    margin-bottom:15px;
+    font-size:18px;
+}
+
+.number{
+    font-size:42px;
+    font-weight:bold;
+    color:#0B72B9;
+}
+
+/* =====================================
+CONTENT
+===================================== */
+
+.content{
+    margin-top:35px;
+    background:white;
+    border-radius:16px;
+    padding:35px;
+    min-height:500px;
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+}
+
+/* =====================================
+BUTTON
+===================================== */
+
+.btn{
+    padding:14px 24px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:bold;
+}
+
+.student{
+    background:#0B72B9;
+    color:white;
+}
+
+.student:hover{
+    background:#095c95;
+}
+
+/* =====================================
+RESPONSIVE
+===================================== */
+
+@media(max-width:900px){
+
+.dashboard{
+    flex-direction:column;
+}
+
+.sidebar{
+    width:100%;
+}
+
+.main{
+    padding:25px;
+}
+
+.cards{
+    grid-template-columns:1fr;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="dashboard">
+
+<!-- =====================================
+SIDEBAR
+===================================== -->
+
+<aside class="sidebar">
+
+<img
+src="images/logo.png"
+alt="Logo">
+
+<h2>SAF Student Panel</h2>
+
+<p>
+Speaking Online Test
+</p>
+
+<nav class="menu">
+
+<a href="#">
+🏠 Dashboard
+</a>
+
+<a href="speaking.html">
+🎤 Speaking Test
+</a>
+
+<a href="#">
+📊 My Results
+</a>
+
+<a href="#">
+👤 My Profile
+</a>
+
+<a href="index.html">
+🚪 Logout
+</a>
+
+</nav>
+
+</aside>
+
+<!-- =====================================
+MAIN
+===================================== -->
+
+<main class="main">
+
+<div class="header">
+
+<div>
+
+<h1>
+
+Welcome,
+<span id="studentName">
+
+Student
+
+</span>
+
+👋
+
+</h1>
+
+<p>
+
+SAF Speaking Online Test
+
+<br>
+
+<span id="todayDate">
+
+Loading...
+
+</span>
+
+</p>
+
+</div>
+
+</div>
+
+<!-- =====================================
+CARDS
+===================================== -->
+
+<section class="cards">
+
+<div class="card-box">
+
+<h3>Exam Status</h3>
+
+<div
+class="number"
+id="examStatus">
+
+READY
+
+</div>
+
+</div>
+
+<div class="card-box">
+
+<h3>Current Token</h3>
+
+<div
+class="number"
+id="examToken">
+
+-
+
+</div>
+
+</div>
+
+<div class="card-box">
+
+<h3>Latest Score</h3>
+
+<div
+class="number"
+id="latestScore">
+
+0
+
+</div>
+
+</div>
+
+<div class="card-box">
+
+<h3>Attempts</h3>
+
+<div
+class="number"
+id="attemptCount">
+
+0
+
+</div>
+
+</div>
+
+</section>
+
+<!-- =====================================
+CONTENT
+===================================== -->
+
+<section
+class="content">
+
+<h2>
+
+Welcome Student
+
+</h2>
+
+<br>
+
+<p>
+
+Welcome to the SAF Speaking Online Test Student Dashboard.
+
+</p>
+
+<br>
+
+<p>
+
+You can use this dashboard to:
+
+</p>
+
+<br>
+
+<ul style="padding-left:25px;line-height:2;">
+
+<li>Join Speaking Test</li>
+
+<li>Enter Exam Token</li>
+
+<li>View Speaking Results</li>
+
+<li>Monitor Your Progress</li>
+
+</ul>
+
+<br>
+
+<hr>
+
+<br>
+
+<h3>
+
+Quick Action
+
+</h3>
+
+<br>
+
+<button
+class="btn student"
+onclick="location.href='speaking.html'">
+
+🎤 Start Speaking Test
+
+</button>
+
+</section>
+
+</main>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/student.js"></script>
+
+<script>
+
+/* ==========================================
+Dashboard Helper
+========================================== */
+
+(function(){
+
+const session =
+JSON.parse(
+sessionStorage.getItem(CONFIG.SESSION_KEY) || "{}"
+);
+
+if(session.nama){
+
+document.getElementById("studentName").textContent =
+session.nama;
+
+}
+
+const today = new Date();
+
+document.getElementById("todayDate").textContent =
+today.toLocaleDateString(
+"en-US",
+{
+weekday:"long",
+year:"numeric",
+month:"long",
+day:"numeric"
+}
+);
+
+})();
+
+</script>
+
+</body>
+
+</html>

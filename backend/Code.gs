@@ -1,22 +1,20 @@
 /**
  * ==========================================
  * SAF Speaking Online Test
- * Main Entry Point
- * Version 1.0
+ * API ROUTER
+ * Stable Foundation v1.1
  * ==========================================
  */
 
 function doGet(e) {
 
-  return ContentService
-    .createTextOutput(
-      JSON.stringify({
-        success: true,
-        app: APP_NAME,
-        version: VERSION
-      })
-    )
-    .setMimeType(ContentService.MimeType.JSON);
+  return json({
+
+    success: true,
+    app: APP_NAME,
+    version: VERSION
+
+  });
 
 }
 
@@ -27,117 +25,94 @@ function doPost(e) {
     const request = JSON.parse(e.postData.contents);
 
     const action = request.action;
+
     const data = request.data || {};
 
     switch (action) {
 
+      /* ==========================
+         AUTH
+      ========================== */
+
       case "login":
-        return login(data);
+        return json(login(data));
+
+      /* ==========================
+         QUESTION
+      ========================== */
 
       case "insertQuestion":
-        return insertQuestion(data);
+        return json(insertQuestion(data));
 
       case "getQuestion":
-        return getQuestion();
+        return json(getQuestion());
+
+      case "updateQuestion":
+        return json(updateQuestion(data));
+
+      case "deleteQuestion":
+        return json(deleteQuestion(data));
+
+      /* ==========================
+         STUDENT
+      ========================== */
+
+      case "insertStudent":
+        return json(insertStudent(data));
+
+      case "getStudent":
+        return json(getStudent());
+
+      case "updateStudent":
+        return json(updateStudent(data));
+
+      case "deleteStudent":
+        return json(deleteStudent(data));
+
+      /* ==========================
+         EXAM TOKEN
+      ========================== */
+
+      case "createExamToken":
+        return json(createExamToken(data));
+
+      case "getExamToken":
+        return json(getExamToken());
+
+      case "updateExamToken":
+        return json(updateExamToken(data));
+
+      case "deleteExamToken":
+        return json(deleteExamToken(data));
+
+      case "validateExamToken":
+        return json(validateExamToken(data));
+
+      /* ==========================
+         SCORE
+      ========================== */
 
       case "saveScore":
-        return saveScore(data);
+        return json(saveScore(data));
+
+      /* ==========================
+         DEFAULT
+      ========================== */
 
       default:
-        return failed("Unknown API Action : " + action);
+
+        return json(
+          failed("Unknown API Action : " + action)
+        );
 
     }
 
   } catch (err) {
 
-    return failed(err.toString());
+    return json(
+      failed(err.toString())
+    );
 
   }
-
-}
-
-/* =====================================================
-   QUESTIONS
-===================================================== */
-
-function insertQuestion(data) {
-
-    const sheet =
-      SpreadsheetApp
-      .openById(SPREADSHEET_ID)
-      .getSheetByName("Questions");
-
-  if (!sheet) {
-
-    return failed("Sheet 'Questions' tidak ditemukan.");
-
-  }
-
-  const id = Utilities.getUuid();
-
-  sheet.appendRow([
-    id,
-    data.topic,
-    data.question,
-    data.level,
-    data.timeLimit,
-    "active",
-    new Date(),
-    new Date()
-  ]);
-
-  return {
-    success: true,
-    message: "Question added successfully."
-  };
-
-}
-
-function getQuestion() {
-
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName("Questions");
-
-  if (!sheet) {
-
-    return failed("Sheet 'Questions' tidak ditemukan.");
-
-  }
-
-  const values = sheet.getDataRange().getValues();
-
-  if (values.length <= 1) {
-
-    return {
-      success: true,
-      data: []
-    };
-
-  }
-
-  const result = [];
-
-  for (let i = 1; i < values.length; i++) {
-
-    result.push({
-
-      id: values[i][0],
-      topic: values[i][1],
-      question: values[i][2],
-      level: values[i][3],
-      timeLimit: values[i][4],
-      status: values[i][5]
-
-    });
-
-  }
-
-  return {
-
-    success: true,
-    data: result
-
-  };
 
 }
