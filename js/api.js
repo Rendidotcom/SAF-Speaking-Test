@@ -2,7 +2,7 @@
  * ==========================================
  * SAF Speaking Online Test
  * API Service
- * Stable Foundation v3.0
+ * Stable Foundation v4.0
  * Backend : Google Apps Script
  * ==========================================
  */
@@ -16,17 +16,12 @@ async function callAPI(action, data = {}) {
             method: "POST",
 
             headers: {
-
                 "Content-Type": "application/json"
-
             },
 
             body: JSON.stringify({
-
                 action: action,
-
                 data: data
-
             })
 
         });
@@ -46,9 +41,7 @@ async function callAPI(action, data = {}) {
 
             result = JSON.parse(text);
 
-        }
-
-        catch (err) {
+        } catch (err) {
 
             return {
 
@@ -62,10 +55,6 @@ async function callAPI(action, data = {}) {
 
         }
 
-        /* -----------------------------------------
-           Safety
-        ----------------------------------------- */
-
         if (typeof result.success === "undefined") {
 
             result.success = false;
@@ -75,9 +64,7 @@ async function callAPI(action, data = {}) {
         if (!result.message) {
 
             result.message = result.success
-
                 ? "Success"
-
                 : "Unknown server response.";
 
         }
@@ -87,11 +74,8 @@ async function callAPI(action, data = {}) {
             console.log("REQUEST");
 
             console.log({
-
                 action,
-
                 data
-
             });
 
             console.log("RESPONSE");
@@ -104,9 +88,7 @@ async function callAPI(action, data = {}) {
 
         return result;
 
-    }
-
-    catch (err) {
+    } catch (err) {
 
         console.error(err);
 
@@ -125,7 +107,7 @@ async function callAPI(action, data = {}) {
 }
 
 /* =====================================================
-   LOGIN
+   AUTH
 ===================================================== */
 
 async function apiLogin(username, password, role) {
@@ -199,24 +181,79 @@ async function apiDeleteStudent(data) {
 }
 
 /* =====================================================
-   SCORE
+   EXAM TOKEN
+===================================================== */
+
+async function apiCreateToken(data) {
+
+    return await callAPI("createToken", data);
+
+}
+
+async function apiGetToken() {
+
+    return await callAPI("getToken");
+
+}
+
+async function apiValidateToken(data) {
+
+    return await callAPI("validateToken", data);
+
+}
+
+async function apiDisableToken(data) {
+
+    return await callAPI("disableToken", data);
+
+}
+
+async function apiDeleteToken(data) {
+
+    return await callAPI("deleteToken", data);
+
+}
+
+/* =====================================================
+   RESULT
+===================================================== */
+
+async function apiSaveResult(data) {
+
+    return await callAPI("saveResult", data);
+
+}
+
+async function apiGetResult() {
+
+    return await callAPI("getResult");
+
+}
+
+async function apiGetStudentResult(data) {
+
+    return await callAPI("getStudentResult", data);
+
+}
+
+async function apiUpdateResultScore(data) {
+
+    return await callAPI("updateResultScore", data);
+
+}
+
+async function apiDeleteResult(data) {
+
+    return await callAPI("deleteResult", data);
+
+}
+
+/* =====================================================
+   SCORE (Legacy)
 ===================================================== */
 
 async function apiSaveScore(data) {
 
     return await callAPI("saveScore", data);
-
-}
-async function api(data){
-
-const response=await fetch(CONFIG.API_URL,{
-
-method:"POST",
-
-body:JSON.stringify(data)
-
-});
-
-return await response.json();
 
 }
