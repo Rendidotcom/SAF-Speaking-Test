@@ -229,7 +229,20 @@ function loadStudentPage() {
 
 function loadTokenPage() {
 
-    setContent("<h2>Exam Token</h2>");
+    if (typeof loadExamPage === "function") {
+
+        loadExamPage();
+
+        return;
+
+    }
+
+    setContent(`
+        <h2>Exam Token</h2>
+        <p style="color:red">
+            exam.js belum berhasil dimuat.
+        </p>
+    `);
 
 }
 
