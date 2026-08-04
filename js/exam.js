@@ -13,6 +13,21 @@ let tokenList = [];
 /* ==========================================
 LOAD PAGE
 ========================================== */
+async function generateExamToken() {
+    console.log("STEP 1");
+
+const kelas = document.getElementById("examClass").value;
+const expired = document.getElementById("expiredMinute").value;
+
+console.log("STEP 2", kelas, expired);
+
+const result = await apiCreateToken({
+    kelas,
+    expired
+});
+
+console.log("STEP 3", result);
+}
 
 async function loadExamPage() {
 
