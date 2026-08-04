@@ -3,10 +3,6 @@ const API_URL =
 
 export default async function handler(req, res) {
    
-    return res.status(200).json({
-  debug: "VERCEL LOGIN API BARU"
-});
-
     if (req.method !== "POST") {
 
         return res.status(405).json({
