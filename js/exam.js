@@ -2,22 +2,23 @@
  * ==========================================
  * SAF Speaking Online Test
  * Exam Token Module
- * Stable Foundation v1.0
+ * Stable Foundation v2.0
+ * Frontend : Vercel
+ * Backend  : Google Apps Script
  * ==========================================
  */
 
-let tokenList=[];
+let tokenList = [];
 
 /* ==========================================
 LOAD PAGE
 ========================================== */
 
-async function loadExamPage(){
+async function loadExamPage() {
 
-const content=document.getElementById("content");
+    const content = document.getElementById("content");
 
-content.innerHTML=`
-
+    content.innerHTML = `
 <h2>🔑 Exam Token Management</h2>
 
 <br>
@@ -27,28 +28,26 @@ content.innerHTML=`
 <label>Class</label>
 
 <select id="examClass">
-
 <option>7A</option>
 <option>7B</option>
 <option>7C</option>
 <option>7D</option>
-
 </select>
 
 <label>Expired (Minutes)</label>
 
 <select id="expiredMinute">
-
 <option value="30">30 Minutes</option>
 <option value="60">60 Minutes</option>
 <option value="90">90 Minutes</option>
 <option value="120">120 Minutes</option>
-
 </select>
 
 <br><br>
 
-<button class="btn teacher"
+<button
+id="btnGenerateToken"
+class="btn teacher"
 onclick="generateExamToken()">
 
 Generate Token
@@ -76,13 +75,11 @@ No Active Token
 <thead>
 
 <tr>
-
 <th>Token</th>
 <th>Class</th>
 <th>Status</th>
 <th>Expired</th>
 <th>Action</th>
-
 </tr>
 
 </thead>
@@ -92,10 +89,9 @@ No Active Token
 </tbody>
 
 </table>
-
 `;
 
-loadToken();
+    await loadToken();
 
 }
 
@@ -103,47 +99,57 @@ loadToken();
 GENERATE TOKEN
 ========================================== */
 
-async function generateExamToken(){
+async function generateExamToken() {
 
-const kelas=document.getElementById("examClass").value;
+    const kelas = document.getElementById("examClass").value;
+    const expired = document.getElementById("expiredMinute").value;
 
-const expired=document.getElementById("expiredMinute").value;
+    const btn = document.getElementById("btnGenerateToken");
 
-try{
+    btn.disabled = true;
+    btn.innerHTML = "Generating...";
 
-const result=await api({
+    try {
 
-action:"createToken",
+        console.log("Create Token Request");
 
-data:{
+        const result = await apiCreateToken({
 
-kelas,
+            kelas,
+            expired
 
-expired
+        });
 
-}
+        console.log(result);
 
-});
+        if (!result.success) {
 
-if(!result.success){
+            alert(result.message);
 
-alert(result.message);
+            return;
 
-return;
+        }
 
-}
+        alert("Token Created Successfully");
 
-alert("Token Created");
+        await loadToken();
 
-loadToken();
+    }
 
-}catch(err){
+    catch (err) {
 
-console.log(err);
+        console.error(err);
 
-alert("Server Error");
+        alert("Server Error");
 
-}
+    }
+
+    finally {
+
+        btn.disabled = false;
+        btn.innerHTML = "Generate Token";
+
+    }
 
 }
 
@@ -151,60 +157,64 @@ alert("Server Error");
 LOAD TOKEN
 ========================================== */
 
-async function loadToken(){
+async function loadToken() {
 
-try{
+    try {
 
-const result=await api({
+        const result = await apiGetToken();
 
-action:"getToken"
+        console.log("Get Token");
 
-});
+        console.log(result);
 
-if(!result.success){
+        if (!result.success) {
 
-return;
+            tokenList = [];
 
-}
+            renderToken();
 
-tokenList=result.data||[];
+            return;
 
-renderToken();
+        }
 
-}catch(err){
+        tokenList = result.data || [];
 
-console.log(err);
+        renderToken();
 
-}
+    }
+
+    catch (err) {
+
+        console.error(err);
+
+    }
 
 }
 
 /* ==========================================
-RENDER
+RENDER TOKEN
 ========================================== */
 
-function renderToken(){
+function renderToken() {
 
-const tbody=document.getElementById("tokenTable");
+    const tbody = document.getElementById("tokenTable");
+    const current = document.getElementById("currentToken");
 
-const current=document.getElementById("currentToken");
+    if (!tbody) return;
 
-if(!tbody)return;
+    tbody.innerHTML = "";
 
-tbody.innerHTML="";
+    let active = null;
 
-let active=null;
+    tokenList.forEach(item => {
 
-tokenList.forEach(item=>{
+        if (item.status === "ACTIVE") {
 
-if(item.status==="ACTIVE"){
+            active = item;
 
-active=item;
+        }
 
-}
-
-tbody.innerHTML+=`
-
+        tbody.innerHTML += `
 <tr>
 
 <td>${item.token}</td>
@@ -217,15 +227,13 @@ tbody.innerHTML+=`
 
 <td>
 
-<button
-onclick="disableToken('${item.token}')">
+<button onclick="disableToken('${item.token}')">
 
 Disable
 
 </button>
 
-<button
-onclick="deleteToken('${item.token}')">
+<button onclick="deleteToken('${item.token}')">
 
 Delete
 
@@ -234,135 +242,106 @@ Delete
 </td>
 
 </tr>
-
 `;
 
-});
+    });
 
-if(active){
+    if (active) {
 
-current.innerHTML=`
-
+        current.innerHTML = `
 <div class="card-box">
 
 <h2>${active.token}</h2>
 
-<p>
+<p><b>Class :</b> ${active.kelas}</p>
 
-Class :
+<p><b>Expired :</b> ${active.expired}</p>
 
-${active.kelas}
-
-</p>
-
-<p>
-
-Expired :
-
-${active.expired}
-
-</p>
-
-<p>
-
-Status :
-
-${active.status}
-
-</p>
+<p><b>Status :</b> ${active.status}</p>
 
 </div>
-
 `;
 
-}else{
+    }
 
-current.innerHTML="No Active Token";
+    else {
 
-}
+        current.innerHTML = "No Active Token";
 
-}
-
-/* ==========================================
-DISABLE
-========================================== */
-
-async function disableToken(token){
-
-if(!confirm("Disable Token?"))return;
-
-await api({
-
-action:"disableToken",
-
-data:{token}
-
-});
-
-loadToken();
+    }
 
 }
 
 /* ==========================================
-DELETE
+DISABLE TOKEN
 ========================================== */
 
-async function deleteToken(token){
+async function disableToken(token) {
 
-if(!confirm("Delete Token?"))return;
+    if (!confirm("Disable this token?")) return;
 
-await api({
+    const result = await apiDisableToken({
 
-action:"deleteToken",
+        token
 
-data:{token}
+    });
 
-});
+    alert(result.message);
 
-loadToken();
+    await loadToken();
 
 }
 
 /* ==========================================
-SIDEBAR EVENT
+DELETE TOKEN
 ========================================== */
 
-document.querySelectorAll("[data-page]").forEach(menu=>{
+async function deleteToken(token) {
 
-menu.addEventListener("click",function(e){
+    if (!confirm("Delete this token?")) return;
 
-e.preventDefault();
+    const result = await apiDeleteToken({
 
-const page=this.dataset.page;
+        token
 
-switch(page){
+    });
 
-case "dashboard":
+    alert(result.message);
 
-location.reload();
-
-break;
-
-case "question":
-
-loadQuestionPage();
-
-break;
-
-case "student":
-
-loadStudentPage();
-
-break;
-
-case "token":
-
-loadExamPage();
-
-break;
+    await loadToken();
 
 }
 
-});
+/* ==========================================
+SIDEBAR
+========================================== */
+
+document.querySelectorAll("[data-page]").forEach(menu => {
+
+    menu.addEventListener("click", function (e) {
+
+        e.preventDefault();
+
+        switch (this.dataset.page) {
+
+            case "dashboard":
+                location.reload();
+                break;
+
+            case "question":
+                loadQuestionPage();
+                break;
+
+            case "student":
+                loadStudentPage();
+                break;
+
+            case "token":
+                loadExamPage();
+                break;
+
+        }
+
+    });
 
 });
