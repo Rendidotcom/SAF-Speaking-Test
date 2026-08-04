@@ -2,6 +2,10 @@ const API_URL =
   "https://script.google.com/macros/s/AKfycbyZ8wABQXupXLiqoeCYnGTvTTpXAQPZu5LJtAwJTntNCFfJBTgmwhyPA14LPKEVwNft/exec";
 
 export default async function handler(req, res) {
+   
+    return res.status(200).json({
+  debug: "VERCEL LOGIN API BARU"
+});
 
     if (req.method !== "POST") {
 
