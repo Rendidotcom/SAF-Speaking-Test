@@ -1,124 +1,239 @@
 /**
  * ==========================================
  * SAF Speaking Online Test
- * Database Installer
- * Version 1.0
+ * Installer.gs
+ * Stable Foundation v4.0
+ * ==========================================
+ *
+ * Database Initializer
+ *
+ * NOTE:
+ * Menjalankan installDatabase()
+ * akan menghapus seluruh isi sheet.
+ *
+ * Jalankan hanya saat pertama kali
+ * membuat database atau reset sistem.
  * ==========================================
  */
 
-/**
- * Membuat seluruh sheet database
- */
+
+/* ==========================================
+   INSTALL DATABASE
+========================================== */
+
 function installDatabase() {
 
-  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const ss = SpreadsheetApp.openById(
+    CONFIG.SPREADSHEET_ID
+  );
 
   const tables = [
 
-    // =========================
-    // Teacher
-    // =========================
+    /* ======================================
+       TEACHER
+    ====================================== */
+
     {
+
       name: CONFIG.SHEET.TEACHER,
+
       header: [
+
         "id",
+
         "nama",
+
         "username",
+
         "password",
+
         "role",
+
         "createdAt"
+
       ]
+
     },
 
-    // =========================
-    // Student
-    // =========================
+
+    /* ======================================
+       STUDENT
+    ====================================== */
+
     {
+
       name: CONFIG.SHEET.STUDENT,
+
       header: [
+
         "nis",
+
         "nama",
+
         "kelas",
+
         "username",
+
         "password",
-        "createdAt"
-      ]
-    },
 
-    // =========================
-    // Speaking Question
-    // =========================
-    {
-      name: CONFIG.SHEET.QUESTION,
-      header: [
-        "id",
-        "title",
-        "answer",
-        "difficulty",
-        "duration",
         "status",
-        "createdBy",
-        "createdAt"
+
+        "createdAt",
+
+        "updatedAt"
+
       ]
+
     },
 
-    // =========================
-    // Exam Token
-    // =========================
-    {
-      name: CONFIG.SHEET.TOKEN,
-      header: [
-        "token",
-        "examName",
-        "expiredAt",
-        "status"
-      ]
-    },
 
-    // =========================
-    // Result
-    // =========================
+    /* ======================================
+       QUESTION
+    ====================================== */
+
     {
-      name: CONFIG.SHEET.RESULT,
+
+      name: CONFIG.SHEET.QUESTION,
+
       header: [
-        "timestamp",
-        "nis",
-        "nama",
-        "kelas",
-        "questionId",
-        "recognizedText",
+
+        "id",
+
+        "title",
+
         "answer",
-        "accuracy",
-        "score"
+
+        "difficulty",
+
+        "duration",
+
+        "status",
+
+        "createdBy",
+
+        "createdAt"
+
       ]
+
     },
 
-    // =========================
-    // Log
-    // =========================
+
+    /* ======================================
+       TOKEN
+    ====================================== */
+
     {
-      name: CONFIG.SHEET.LOG,
+
+      name: CONFIG.SHEET.TOKEN,
+
       header: [
-        "timestamp",
-        "module",
-        "message"
+
+        "token",
+
+        "kelas",
+
+        "status",
+
+        "expired",
+
+        "createdBy",
+
+        "createdAt",
+
+        "updatedAt",
+
+        "note"
+
       ]
+
+    },
+
+
+    /* ======================================
+       RESULT
+    ====================================== */
+
+    {
+
+      name: CONFIG.SHEET.RESULT,
+
+      header: [
+
+        "id",
+
+        "nis",
+
+        "nama",
+
+        "kelas",
+
+        "questionId",
+
+        "question",
+
+        "transcript",
+
+        "score",
+
+        "feedback",
+
+        "token",
+
+        "createdAt",
+
+        "updatedAt"
+
+      ]
+
+    },
+
+
+    /* ======================================
+       LOG
+    ====================================== */
+
+    {
+
+      name: CONFIG.SHEET.LOG,
+
+      header: [
+
+        "timestamp",
+
+        "module",
+
+        "message"
+
+      ]
+
     }
 
   ];
+
 
   tables.forEach(table => {
 
     let sh = ss.getSheetByName(table.name);
 
     if (!sh) {
+
       sh = ss.insertSheet(table.name);
+
     }
 
     sh.clearContents();
 
-    sh.getRange(1, 1, 1, table.header.length)
-      .setValues([table.header]);
+    sh.getRange(
+
+      1,
+
+      1,
+
+      1,
+
+      table.header.length
+
+    ).setValues([table.header]);
 
     sh.setFrozenRows(1);
 
@@ -126,34 +241,52 @@ function installDatabase() {
 
 }
 
-/**
- * Membuat akun administrator pertama
- */
+
+
+/* ==========================================
+   INSTALL DEFAULT ADMIN
+========================================== */
+
 function installAdmin() {
 
-  const rows = getRows(CONFIG.SHEET.TEACHER);
+  const rows = getRows(
+    CONFIG.SHEET.TEACHER
+  );
 
   if (rows.length === 1) {
 
     append(
+
       CONFIG.SHEET.TEACHER,
+
       [
+
         "T001",
+
         "Administrator",
+
         "admin",
+
         "admin123",
+
         "teacher",
+
         timestamp()
+
       ]
+
     );
 
   }
 
 }
 
-/**
- * Setup Database
- */
+
+
+/* ==========================================
+   SETUP DATABASE
+========================================== */
+
 function setup() {
 
   installDatabase();
@@ -161,9 +294,13 @@ function setup() {
   installAdmin();
 
   Logger.log("=================================");
+
   Logger.log(APP_NAME);
+
   Logger.log("Database Installation Success");
+
   Logger.log("Version : " + VERSION);
+
   Logger.log("=================================");
 
 }

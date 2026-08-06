@@ -1,35 +1,155 @@
-const API_URL="https://script.google.com/macros/s/AKfycbz8oMX2172-skeQ9Gv9Cn3bugI__qybA_Vgqf_DCUtDhu870CvDG8fGH7ORvsqg8niB/exec";
+/**
+ * ==========================================
+ * SAF Speaking Online Test
+ * score.js
+ * Stable Foundation v1.0
+ * Frontend Score API
+ * ==========================================
+ *
+ * Flow
+ * Frontend
+ *      ↓
+ * api/login (Vercel)
+ *      ↓
+ * Google Apps Script
+ *      ↓
+ * Score.gs / Result.gs
+ *
+ * ==========================================
+ */
 
-export default async function handler(req, res) {
 
-    if (req.method !== "POST") {
-        return res.status(405).json({
-            success:false,
-            message:"Method Not Allowed"
-        });
-    }
+/* ==========================================
+   SAVE SCORE
+========================================== */
 
-    try{
+async function apiSaveScore(data) {
 
-        const response = await fetch(API_URL, {
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify(req.body)
-        });
+    return await apiRequest("saveScore", data);
 
-        const data = await response.json();
+}
 
-        res.status(200).json(data);
 
-    }catch(err){
+/* ==========================================
+   SAVE RESULT
+========================================== */
 
-        res.status(500).json({
-            success:false,
-            message:err.message
-        });
+async function apiSaveResult(data) {
 
-    }
+    return await apiRequest("saveResult", data);
+
+}
+
+
+/* ==========================================
+   GET RESULT
+========================================== */
+
+async function apiGetResult() {
+
+    return await apiRequest("getResult");
+
+}
+
+
+/* ==========================================
+   GET STUDENT RESULT
+========================================== */
+
+async function apiGetStudentResult(nis) {
+
+    return await apiRequest("getStudentResult", {
+
+        nis
+
+    });
+
+}
+
+
+/* ==========================================
+   UPDATE RESULT SCORE
+========================================== */
+
+async function apiUpdateResultScore(data) {
+
+    return await apiRequest("updateResultScore", data);
+
+}
+
+
+/* ==========================================
+   DELETE RESULT
+========================================== */
+
+async function apiDeleteResult(id) {
+
+    return await apiRequest("deleteResult", {
+
+        id
+
+    });
+
+}
+
+
+/* ==========================================
+   SCORE TO GRADE
+========================================== */
+
+function scoreToGrade(score) {
+
+    score = Number(score);
+
+    if (score >= 90) return "A";
+
+    if (score >= 80) return "B";
+
+    if (score >= 70) return "C";
+
+    if (score >= 60) return "D";
+
+    return "E";
+
+}
+
+
+/* ==========================================
+   FORMAT SCORE
+========================================== */
+
+function formatScore(score) {
+
+    return Number(score).toFixed(0);
+
+}
+
+
+/* ==========================================
+   PASSING STATUS
+========================================== */
+
+function isPassed(score) {
+
+    return Number(score) >= 75;
+
+}
+
+
+/* ==========================================
+   RESULT SUMMARY
+========================================== */
+
+function buildResultSummary(score) {
+
+    return {
+
+        score: Number(score),
+
+        grade: scoreToGrade(score),
+
+        passed: isPassed(score)
+
+    };
 
 }

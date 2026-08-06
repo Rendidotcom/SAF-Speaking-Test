@@ -2,12 +2,21 @@
  * ==========================================
  * Token.gs
  * SAF Speaking Online Test
- * Stable Foundation v3.0
+ * Stable Foundation v3.1
+ * ------------------------------------------
+ * Module :
+ * - Generate Exam Token
+ * - Get Token
+ * - Validate Token
+ * - Disable Token
+ * - Delete Token
  * ==========================================
  */
 
 /**
- * Generate random token
+ * ==========================================
+ * Generate Random Token
+ * ==========================================
  */
 function generateToken(length) {
 
@@ -31,12 +40,16 @@ function generateToken(length) {
 
 /**
  * ==========================================
- * CREATE TOKEN
+ * Create Exam Token
  * ==========================================
  */
 function createToken(data) {
 
   try {
+
+    if (!data) {
+      return failed("Data token tidak ditemukan.");
+    }
 
     const sh = sheet(CONFIG.SHEET.TOKEN);
 
@@ -46,28 +59,30 @@ function createToken(data) {
 
     const token = generateToken(6);
 
-    const now = timestamp();
+    const now = new Date();
 
     sh.appendRow([
       token,
       data.kelas || "",
       "ACTIVE",
       Number(data.expired || 30),
-      "Teacher",
+      data.createdBy || "Teacher",
       now,
       now,
-      ""
+      data.note || ""
     ]);
 
     return success({
 
-      message: "Token berhasil dibuat.",
+      message: "Exam token created.",
 
       token: token
 
     });
 
-  } catch (err) {
+  }
+
+  catch (err) {
 
     return failed(err.toString());
 
@@ -77,7 +92,7 @@ function createToken(data) {
 
 /**
  * ==========================================
- * GET TOKEN
+ * Get All Token
  * ==========================================
  */
 function getToken() {
@@ -86,11 +101,21 @@ function getToken() {
 
     const rows = getRows(CONFIG.SHEET.TOKEN);
 
-    const result = [];
+    if (rows.length <= 1) {
+
+      return success({
+
+        data: []
+
+      });
+
+    }
+
+    const data = [];
 
     for (let i = 1; i < rows.length; i++) {
 
-      result.push({
+      data.push({
 
         token: rows[i][0],
 
@@ -114,11 +139,13 @@ function getToken() {
 
     return success({
 
-      data: result
+      data: data
 
     });
 
-  } catch (err) {
+  }
+
+  catch (err) {
 
     return failed(err.toString());
 
@@ -128,12 +155,18 @@ function getToken() {
 
 /**
  * ==========================================
- * VALIDATE TOKEN
+ * Validate Token
  * ==========================================
  */
 function validateToken(data) {
 
   try {
+
+    if (!data || !data.token) {
+
+      return failed("Token tidak ditemukan.");
+
+    }
 
     const rows = getRows(CONFIG.SHEET.TOKEN);
 
@@ -163,9 +196,19 @@ function validateToken(data) {
 
     }
 
-    return failed("Token tidak valid.");
+    return {
 
-  } catch (err) {
+      success: false,
+
+      valid: false,
+
+      message: "Token tidak valid."
+
+    };
+
+  }
+
+  catch (err) {
 
     return failed(err.toString());
 
@@ -175,7 +218,7 @@ function validateToken(data) {
 
 /**
  * ==========================================
- * DISABLE TOKEN
+ * Disable Token
  * ==========================================
  */
 function disableToken(data) {
@@ -192,11 +235,11 @@ function disableToken(data) {
 
         sh.getRange(i + 1, 3).setValue("DISABLED");
 
-        sh.getRange(i + 1, 7).setValue(timestamp());
+        sh.getRange(i + 1, 7).setValue(new Date());
 
         return success({
 
-          message: "Token berhasil dinonaktifkan."
+          message: "Token disabled."
 
         });
 
@@ -206,7 +249,9 @@ function disableToken(data) {
 
     return failed("Token tidak ditemukan.");
 
-  } catch (err) {
+  }
+
+  catch (err) {
 
     return failed(err.toString());
 
@@ -216,7 +261,7 @@ function disableToken(data) {
 
 /**
  * ==========================================
- * DELETE TOKEN
+ * Delete Token
  * ==========================================
  */
 function deleteToken(data) {
@@ -235,7 +280,7 @@ function deleteToken(data) {
 
         return success({
 
-          message: "Token berhasil dihapus."
+          message: "Token deleted."
 
         });
 
@@ -245,7 +290,9 @@ function deleteToken(data) {
 
     return failed("Token tidak ditemukan.");
 
-  } catch (err) {
+  }
+
+  catch (err) {
 
     return failed(err.toString());
 

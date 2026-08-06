@@ -31,10 +31,10 @@ function insertQuestion(data){
 
   ]);
 
-  writeLog(
-    "QUESTION",
-    "Insert : " + data.title
-  );
+  // writeLog(
+//   "QUESTION",
+//   "Insert : " + data.title
+// );
 
   return success({
 

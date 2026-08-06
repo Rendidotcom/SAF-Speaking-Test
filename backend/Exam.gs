@@ -2,193 +2,340 @@
  * ==========================================
  * Exam.gs
  * SAF Speaking Online Test
- * Stable Foundation v1.0
+ * Stable Foundation v4.0
+ * ------------------------------------------
+ * Module :
+ * - Start Speaking Exam
+ * - Get Exam Session
+ * ------------------------------------------
+ * Token  : Token.gs
+ * Result : Result.gs
+ * Score  : Score.gs
  * ==========================================
  */
 
-function createExamToken(data) {
 
-  const sheet = SpreadsheetApp
-    .openById(CONFIG.SPREADSHEET_ID)
-    .getSheetByName(CONFIG.SHEET.TOKEN);
+/**
+ * ==========================================
+ * START EXAM
+ * ==========================================
+ */
+function startExam(data) {
 
-  if (!sheet) {
-    return failed("Sheet Token tidak ditemukan.");
-  }
+  try {
 
-  const token = Math.random()
-    .toString(36)
-    .substring(2, 8)
-    .toUpperCase();
+    if (!data) {
+      return failed("Data exam tidak ditemukan.");
+    }
 
-  sheet.appendRow([
-    token,
-    data.kelas || "",
-    "ACTIVE",
-    data.expired || "",
-    data.createdBy || "Teacher",
-    new Date(),
-    new Date(),
-    data.note || ""
-  ]);
+    if (!data.studentId) {
+      return failed("Student ID wajib diisi.");
+    }
 
-  return {
-    success: true,
-    token: token,
-    message: "Exam token created."
-  };
+    if (!data.token) {
+      return failed("Exam token wajib diisi.");
+    }
 
-}
+    if (!data.questionId) {
+      return failed("Question ID wajib diisi.");
+    }
 
 
-function getExamToken() {
+    /* =====================================
+       VALIDATE TOKEN
+    ===================================== */
 
-  const sheet = SpreadsheetApp
-    .openById(CONFIG.SPREADSHEET_ID)
-    .getSheetByName(CONFIG.SHEET.TOKEN);
+    const token = validateToken({
+      token: data.token
+    });
 
-  if (!sheet) {
-    return failed("Sheet Token tidak ditemukan.");
-  }
+    if (!token.success) {
+      return token;
+    }
 
-  const values = sheet.getDataRange().getValues();
 
-  if (values.length <= 1) {
-    return {
-      success: true,
-      data: []
-    };
-  }
+    /* =====================================
+       VALIDATE STUDENT
+    ===================================== */
 
-  const result = [];
+    const students = getRows(CONFIG.SHEET.STUDENT);
 
-  for (let i = 1; i < values.length; i++) {
+    let student = null;
 
-    result.push({
+    for (let i = 1; i < students.length; i++) {
 
-      token: values[i][0],
-      kelas: values[i][1],
-      status: values[i][2],
-      expired: values[i][3],
-      createdBy: values[i][4],
-      createdAt: values[i][5],
-      updatedAt: values[i][6],
-      note: values[i][7]
+      if (String(students[i][0]) === String(data.studentId)) {
+
+        student = {
+
+          nis: students[i][0],
+          nama: students[i][1],
+          kelas: students[i][2],
+          username: students[i][3]
+
+        };
+
+        break;
+
+      }
+
+    }
+
+    if (!student) {
+      return failed("Student tidak ditemukan.");
+    }
+
+
+    /* =====================================
+       VALIDATE QUESTION
+    ===================================== */
+
+    const questions = getRows(CONFIG.SHEET.QUESTION);
+
+    let question = null;
+
+    for (let i = 1; i < questions.length; i++) {
+
+      if (
+
+        String(questions[i][0]) === String(data.questionId) &&
+        String(questions[i][5]) === "Active"
+
+      ) {
+
+        question = {
+
+          id: questions[i][0],
+          title: questions[i][1],
+          answer: questions[i][2],
+          difficulty: questions[i][3],
+          duration: questions[i][4]
+
+        };
+
+        break;
+
+      }
+
+    }
+
+    if (!question) {
+      return failed("Question tidak ditemukan atau tidak aktif.");
+    }
+
+
+    /* =====================================
+       SUCCESS
+    ===================================== */
+
+    return success({
+
+      message: "Exam started.",
+
+      exam: {
+
+        studentId: student.nis,
+        studentName: student.nama,
+        kelas: student.kelas,
+
+        token: token.token,
+
+        questionId: question.id,
+        title: question.title,
+        difficulty: question.difficulty,
+        duration: question.duration,
+
+        status: "STARTED",
+
+        startedAt: timestamp()
+
+      }
 
     });
 
   }
 
-  return {
-    success: true,
-    data: result
-  };
+  catch (err) {
+
+    return failed(err.toString());
+
+  }
 
 }
 
 
-function updateExamToken(data) {
 
-  const sheet = SpreadsheetApp
-    .openById(CONFIG.SPREADSHEET_ID)
-    .getSheetByName(CONFIG.SHEET.TOKEN);
+/**
+ * ==========================================
+ * GET EXAM SESSION
+ * ==========================================
+ */
+function getExam(data) {
 
-  if (!sheet) {
-    return failed("Sheet Token tidak ditemukan.");
-  }
+  try {
 
-  const values = sheet.getDataRange().getValues();
+    if (!data) {
+      return failed("Data exam tidak ditemukan.");
+    }
 
-  for (let i = 1; i < values.length; i++) {
+    if (!data.questionId) {
+      return failed("Question ID wajib diisi.");
+    }
 
-    if (values[i][0] == data.token) {
+    const rows = getRows(CONFIG.SHEET.QUESTION);
 
-      sheet.getRange(i + 1, 2).setValue(data.kelas);
-      sheet.getRange(i + 1, 3).setValue(data.status);
-      sheet.getRange(i + 1, 4).setValue(data.expired);
-      sheet.getRange(i + 1, 7).setValue(new Date());
-      sheet.getRange(i + 1, 8).setValue(data.note);
+    for (let i = 1; i < rows.length; i++) {
 
-      return {
-        success: true,
-        message: "Exam token updated."
-      };
+      if (
+
+        String(rows[i][0]) === String(data.questionId) &&
+        String(rows[i][5]) === "Active"
+
+      ) {
+
+        return success({
+
+          exam: {
+
+            id: rows[i][0],
+            title: rows[i][1],
+            answer: rows[i][2],
+            difficulty: rows[i][3],
+            duration: rows[i][4],
+            status: rows[i][5]
+
+          }
+
+        });
+
+      }
 
     }
 
+    return failed("Question tidak ditemukan.");
+
   }
 
-  return failed("Token tidak ditemukan.");
+  catch (err) {
+
+    return failed(err.toString());
+
+  }
+
+}
+
+/**
+ * ==========================================
+ * FINISH EXAM
+ * ==========================================
+ */
+function finishExam(data) {
+
+  try {
+
+    if (!data) {
+      return failed("Data exam tidak ditemukan.");
+    }
+
+    if (!data.studentId) {
+      return failed("Student ID wajib diisi.");
+    }
+
+    if (!data.questionId) {
+      return failed("Question ID wajib diisi.");
+    }
+
+    if (!data.token) {
+      return failed("Exam token wajib diisi.");
+    }
+
+
+    /* =====================================
+       VALIDATE TOKEN
+    ===================================== */
+
+    const token = validateToken({
+      token: data.token
+    });
+
+    if (!token.success) {
+      return token;
+    }
+
+
+    /* =====================================
+       FINISH EXAM
+    ===================================== */
+
+    return success({
+
+      message: "Exam finished.",
+
+      exam: {
+
+        studentId: data.studentId,
+        questionId: data.questionId,
+        token: data.token,
+
+        status: "FINISHED",
+
+        finishedAt: timestamp()
+
+      }
+
+    });
+
+  }
+
+  catch (err) {
+
+    return failed(err.toString());
+
+  }
 
 }
 
 
-function deleteExamToken(data) {
 
-  const sheet = SpreadsheetApp
-    .openById(CONFIG.SPREADSHEET_ID)
-    .getSheetByName(CONFIG.SHEET.TOKEN);
+/**
+ * ==========================================
+ * CANCEL EXAM
+ * ==========================================
+ */
+function cancelExam(data) {
 
-  if (!sheet) {
-    return failed("Sheet Token tidak ditemukan.");
-  }
+  try {
 
-  const values = sheet.getDataRange().getValues();
-
-  for (let i = 1; i < values.length; i++) {
-
-    if (values[i][0] == data.token) {
-
-      sheet.deleteRow(i + 1);
-
-      return {
-        success: true,
-        message: "Exam token deleted."
-      };
-
+    if (!data) {
+      return failed("Data exam tidak ditemukan.");
     }
 
-  }
-
-  return failed("Token tidak ditemukan.");
-
-}
-
-
-function validateExamToken(data) {
-
-  const sheet = SpreadsheetApp
-    .openById(CONFIG.SPREADSHEET_ID)
-    .getSheetByName(CONFIG.SHEET.TOKEN);
-
-  if (!sheet) {
-    return failed("Sheet Token tidak ditemukan.");
-  }
-
-  const values = sheet.getDataRange().getValues();
-
-  for (let i = 1; i < values.length; i++) {
-
-    if (
-      values[i][0] == data.token &&
-      values[i][2] == "ACTIVE"
-    ) {
-
-      return {
-        success: true,
-        valid: true,
-        kelas: values[i][1],
-        expired: values[i][3]
-      };
-
+    if (!data.studentId) {
+      return failed("Student ID wajib diisi.");
     }
 
+    return success({
+
+      message: "Exam cancelled.",
+
+      exam: {
+
+        studentId: data.studentId,
+
+        status: "CANCELLED",
+
+        cancelledAt: timestamp()
+
+      }
+
+    });
+
   }
 
-  return {
-    success: false,
-    valid: false,
-    message: "Token tidak valid."
-  };
+  catch (err) {
+
+    return failed(err.toString());
+
+  }
 
 }

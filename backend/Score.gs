@@ -2,215 +2,182 @@
  * ==========================================
  * SAF Speaking Online Test
  * Score Module
- * Stable Foundation v1.0
+ * Stable Foundation v2.0
+ * ------------------------------------------
+ * Responsibility :
+ * - Calculate Speaking Score
+ * - Generate Grade
+ * - Generate Feedback
+ * - NO Database Access
  * ==========================================
  */
 
-/* =====================================================
-   SAVE SCORE
-===================================================== */
-
-function saveScore(data) {
-
-  const sheet =
-    SpreadsheetApp
-      .openById(CONFIG.SPREADSHEET_ID)
-      .getSheetByName(CONFIG.SHEET.RESULT);
-
-  if (!sheet) {
-
-    return failed("Sheet 'Result' not found.");
-
-  }
-
-  const id = Utilities.getUuid();
-
-  const score = Number(data.score);
-
-  let grade = "E";
-
-  if (score >= 90) {
-
-    grade = "A";
-
-  } else if (score >= 80) {
-
-    grade = "B";
-
-  } else if (score >= 70) {
-
-    grade = "C";
-
-  } else if (score >= 60) {
-
-    grade = "D";
-
-  }
-
-  sheet.appendRow([
-
-    id,
-
-    data.studentId || "",
-
-    data.studentName || "",
-
-    data.class || "",
-
-    data.questionId || "",
-
-    data.topic || "",
-
-    score,
-
-    grade,
-
-    data.audioUrl || "",
-
-    data.transcript || "",
-
-    data.feedback || "",
-
-    new Date()
-
-  ]);
-
-  return success({
-
-    id: id,
-
-    score: score,
-
-    grade: grade,
-
-    message: "Score saved successfully."
-
-  });
-
-}
 
 /* =====================================================
-   GET ALL SCORE
+   CALCULATE SCORE
 ===================================================== */
 
-function getScore() {
+function calculateScore(data) {
 
-  const sheet =
-    SpreadsheetApp
-      .openById(CONFIG.SPREADSHEET_ID)
-      .getSheetByName(CONFIG.SHEET.RESULT);
+  try {
 
-  if (!sheet) {
+    if (!data) {
+      return failed("Data score tidak ditemukan.");
+    }
 
-    return failed("Sheet 'Result' not found.");
+    const answer =
+      String(data.answer || "")
+        .trim()
+        .toLowerCase();
 
-  }
+    const transcript =
+      String(data.transcript || "")
+        .trim()
+        .toLowerCase();
 
-  const values = sheet.getDataRange().getValues();
+    if (!answer) {
+      return failed("Answer key kosong.");
+    }
 
-  if (values.length <= 1) {
+    if (!transcript) {
+      return failed("Transcript kosong.");
+    }
 
-    return success([]);
+    const accuracy =
+      calculateAccuracy(answer, transcript);
 
-  }
+    const pronunciation =
+      accuracy;
 
-  const result = [];
+    const fluency =
+      accuracy;
 
-  for (let i = 1; i < values.length; i++) {
+    const score =
+      Math.round(
 
-    result.push({
+        (accuracy * 0.5) +
 
-      id: values[i][0],
+        (pronunciation * 0.3) +
 
-      studentId: values[i][1],
+        (fluency * 0.2)
 
-      studentName: values[i][2],
+      );
 
-      class: values[i][3],
+    return success({
 
-      questionId: values[i][4],
+      score: score,
 
-      topic: values[i][5],
+      grade: calculateGrade(score),
 
-      score: values[i][6],
+      accuracy: accuracy,
 
-      grade: values[i][7],
+      pronunciation: pronunciation,
 
-      audioUrl: values[i][8],
+      fluency: fluency,
 
-      transcript: values[i][9],
-
-      feedback: values[i][10],
-
-      createdAt: values[i][11]
+      feedback: generateFeedback(score)
 
     });
 
   }
 
-  return success(result);
+  catch(err){
 
-}
-
-/* =====================================================
-   GET SCORE BY STUDENT
-===================================================== */
-
-function getStudentScore(studentId) {
-
-  const scores = getScore();
-
-  if (!scores.success) {
-
-    return scores;
+    return failed(err.toString());
 
   }
 
-  const result = scores.data.filter(function(item) {
-
-    return item.studentId == studentId;
-
-  });
-
-  return success(result);
-
 }
 
+
 /* =====================================================
-   DELETE SCORE
+   CALCULATE ACCURACY
 ===================================================== */
 
-function deleteScore(data) {
+function calculateAccuracy(answer, transcript){
 
-  const sheet =
-    SpreadsheetApp
-      .openById(CONFIG.SPREADSHEET_ID)
-      .getSheetByName(CONFIG.SHEET.RESULT);
+  if(answer === transcript){
 
-  if (!sheet) {
-
-    return failed("Sheet 'Result' not found.");
+    return 100;
 
   }
 
-  const values = sheet.getDataRange().getValues();
+  const answerWords =
+    answer.split(/\s+/);
 
-  for (let i = 1; i < values.length; i++) {
+  const transcriptWords =
+    transcript.split(/\s+/);
 
-    if (values[i][0] == data.id) {
+  let correct = 0;
 
-      sheet.deleteRow(i + 1);
+  answerWords.forEach(function(word){
 
-      return success({
+    if(transcriptWords.indexOf(word) !== -1){
 
-        message: "Score deleted successfully."
-
-      });
+      correct++;
 
     }
 
+  });
+
+  return Math.round(
+
+    (correct / answerWords.length) * 100
+
+  );
+
+}
+
+
+/* =====================================================
+   GRADE
+===================================================== */
+
+function calculateGrade(score){
+
+  if(score >= 90) return "A";
+
+  if(score >= 80) return "B";
+
+  if(score >= 70) return "C";
+
+  if(score >= 60) return "D";
+
+  return "E";
+
+}
+
+
+/* =====================================================
+   FEEDBACK
+===================================================== */
+
+function generateFeedback(score){
+
+  if(score >= 90){
+
+    return "Excellent pronunciation.";
+
   }
 
-  return failed("Score not found.");
+  if(score >= 80){
+
+    return "Very good pronunciation.";
+
+  }
+
+  if(score >= 70){
+
+    return "Good pronunciation.";
+
+  }
+
+  if(score >= 60){
+
+    return "Fair pronunciation.";
+
+  }
+
+  return "Needs more practice.";
 
 }

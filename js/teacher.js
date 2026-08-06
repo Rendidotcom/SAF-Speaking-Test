@@ -2,7 +2,14 @@
  * ==========================================
  * SAF Speaking Online Test
  * Teacher Dashboard
- * Stable Foundation v3.0
+ * Stable Foundation v6.0
+ * ==========================================
+ * Frontend Sync
+ * - Question.gs
+ * - Student.gs
+ * - Token.gs
+ * - Result.gs
+ * - Score.gs
  * ==========================================
  */
 
@@ -12,30 +19,113 @@ document.addEventListener("DOMContentLoaded", init);
    GLOBAL STATE
 ===================================================== */
 
-let editMode = false;
-let selectedQuestionId = "";
+const APP = {
+    question: [],
+    student: [],
+    token: [],
+    result: []
+};
+
+const STATE = {
+    questionEdit: false,
+    questionId: null,
+
+    studentEdit: false,
+    studentId: null,
+
+    resultId: null
+};
 
 /* =====================================================
    INITIALIZE
 ===================================================== */
 
-function init() {
+async function init() {
+
+    checkSession();
 
     bindMenu();
+
+    bindLogout();
+
+    await refreshDashboard();
 
     loadDashboard();
 
 }
 
 /* =====================================================
-   MENU
+   SESSION
+===================================================== */
+
+function checkSession() {
+
+    const session = sessionStorage.getItem(CONFIG.SESSION_KEY);
+
+    if (!session) {
+
+        window.location.href = "login.html?role=teacher";
+        return;
+
+    }
+
+    try {
+
+        const user = JSON.parse(session);
+
+        if (user.role !== "teacher") {
+
+            logout();
+
+        }
+
+    } catch (err) {
+
+        logout();
+
+    }
+
+}
+
+function logout() {
+
+    sessionStorage.removeItem(CONFIG.SESSION_KEY);
+
+    sessionStorage.removeItem(CONFIG.TOKEN_KEY);
+
+    window.location.href = "index.html";
+
+}
+
+function bindLogout() {
+
+    document.querySelectorAll("a").forEach(link => {
+
+        if (link.textContent.includes("Logout")) {
+
+            link.onclick = function (e) {
+
+                e.preventDefault();
+
+                logout();
+
+            };
+
+        }
+
+    });
+
+}
+
+/* =====================================================
+   SIDEBAR
 ===================================================== */
 
 function bindMenu() {
 
     document.querySelectorAll("[data-page]").forEach(menu => {
 
-        menu.addEventListener("click", function (e) {
+        menu.onclick = function (e) {
 
             e.preventDefault();
 
@@ -63,11 +153,15 @@ function bindMenu() {
 
             }
 
-        });
+        };
 
     });
 
 }
+
+/* =====================================================
+   CONTENT
+===================================================== */
 
 function setContent(html) {
 
@@ -79,15 +173,174 @@ function setContent(html) {
    DASHBOARD
 ===================================================== */
 
+async function refreshDashboard() {
+
+    try {
+
+        const q = await apiGetQuestion();
+
+        if (q.success) {
+
+            APP.question = q.data || [];
+
+        }
+
+        const s = await apiGetStudent();
+
+        if (s.success) {
+
+            APP.student = s.data || [];
+
+        }
+
+        const t = await apiGetToken();
+
+        if (t.success) {
+
+            APP.token = t.data || [];
+
+        }
+
+        const r = await apiGetResult();
+
+        if (r.success) {
+
+            APP.result = r.data || [];
+
+        }
+
+        updateDashboardCounter();
+
+    }
+
+    catch (err) {
+
+        console.error(err);
+
+    }
+
+}
+
+function updateDashboardCounter() {
+
+    setCounter("totalQuestion", APP.question.length);
+
+    setCounter("totalStudent", APP.student.length);
+
+    setCounter("totalToken", APP.token.length);
+
+    setCounter("totalResult", APP.result.length);
+
+}
+
+function setCounter(id, value) {
+
+    const el = document.getElementById(id);
+
+    if (el) {
+
+        el.textContent = value;
+
+    }
+
+}
+
 function loadDashboard() {
 
     setContent(`
 
         <h2>Dashboard</h2>
 
+        <br>
+
         <p>
 
-        Welcome to SAF Speaking Online Test.
+            Welcome to SAF Speaking Online Test Teacher Dashboard.
+
+        </p>
+
+        <br>
+
+        <table width="100%" cellpadding="8" border="1">
+
+            <tr>
+
+                <th>Total Questions</th>
+                <th>Total Students</th>
+                <th>Total Token</th>
+                <th>Total Results</th>
+
+            </tr>
+
+            <tr>
+
+                <td>${APP.question.length}</td>
+                <td>${APP.student.length}</td>
+                <td>${APP.token.length}</td>
+                <td>${APP.result.length}</td>
+
+            </tr>
+
+        </table>
+
+    `);
+
+}
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
+async function refreshDashboard() {
+
+    try {
+
+        const [q, s, t, r] = await Promise.all([
+            apiGetQuestion(),
+            apiGetStudent(),
+            apiGetToken(),
+            apiGetResult()
+        ]);
+
+        APP.question = q.success ? (q.data || []) : [];
+        APP.student = s.success ? (s.data || []) : [];
+        APP.token    = t.success ? (t.data || []) : [];
+        APP.result   = r.success ? (r.data || []) : [];
+
+        updateQuestionCounter(APP.question.length);
+        updateStudentCounter(APP.student.length);
+        updateTokenCounter(APP.token.length);
+        updateResultCounter(APP.result.length);
+
+    } catch (err) {
+
+        console.error(err);
+
+    }
+
+}
+
+function loadDashboard() {
+
+    refreshDashboard();
+
+    setContent(`
+
+        <h2>Dashboard</h2>
+
+        <br>
+
+        <p>
+
+            Welcome to SAF Speaking Online Test Teacher Dashboard.
+
+        </p>
+
+        <br>
+
+        <p>
+
+            Use the left menu to manage Questions,
+            Students, Exam Tokens and Results.
 
         </p>
 
@@ -109,44 +362,40 @@ function loadQuestionPage() {
 
 <form id="questionForm">
 
-<label>Topic</label>
+<label>Title</label>
 
 <input
-id="topic"
+id="title"
 type="text"
-placeholder="Greeting"
 required>
 
 <br><br>
 
-<label>Speaking Question</label>
+<label>Answer Key</label>
 
 <textarea
-id="question"
+id="answer"
 rows="5"
-placeholder="Introduce yourself..."
 required></textarea>
 
 <br><br>
 
-<label>Level</label>
+<label>Difficulty</label>
 
-<select id="level">
+<select id="difficulty">
 
 <option value="Easy">Easy</option>
-
 <option value="Medium">Medium</option>
-
 <option value="Hard">Hard</option>
 
 </select>
 
 <br><br>
 
-<label>Time Limit (seconds)</label>
+<label>Duration (Second)</label>
 
 <input
-id="timeLimit"
+id="duration"
 type="number"
 value="30"
 min="10"
@@ -163,6 +412,14 @@ Save Question
 
 </button>
 
+<button
+type="button"
+onclick="resetQuestionForm()">
+
+Cancel
+
+</button>
+
 </form>
 
 <br>
@@ -170,110 +427,30 @@ Save Question
 <input
 id="searchQuestion"
 type="text"
-placeholder="🔍 Search topic or question..."
+placeholder="Search question..."
 onkeyup="filterQuestion()">
 
 <br><br>
 
-<hr>
-
 <div id="questionTable">
 
-Loading database...
+Loading...
 
 </div>
 
 `);
 
-    bindQuestion();
-
-    function getLevelBadge(level) {
-
-    switch (level) {
-
-        case "Easy":
-            return '<span class="badge easy">Easy</span>';
-
-        case "Medium":
-            return '<span class="badge medium">Medium</span>';
-
-        case "Hard":
-            return '<span class="badge hard">Hard</span>';
-
-        default:
-            return level;
-
-    }
-
-}
-
-function getStatusBadge(status) {
-
-    return '<span class="badge active">' + status + '</span>';
-
-}
+    document
+        .getElementById("questionForm")
+        .addEventListener("submit", saveQuestion);
 
     loadQuestions();
 
 }
 
 /* =====================================================
-   OTHER PAGE
-===================================================== */
-
-function loadStudentPage() {
-
-    setContent("<h2>Students</h2>");
-
-}
-
-function loadTokenPage() {
-
-    if (typeof loadExamPage === "function") {
-
-        loadExamPage();
-
-        return;
-
-    }
-
-    setContent(`
-        <h2>Exam Token</h2>
-        <p style="color:red">
-            exam.js belum berhasil dimuat.
-        </p>
-    `);
-
-}
-
-function loadResultPage() {
-
-    setContent("<h2>Speaking Results</h2>");
-
-}
-
-/* =====================================================
    SAVE QUESTION
 ===================================================== */
-
-function bindQuestion() {
-
-    document
-        .getElementById("questionForm")
-        .addEventListener("submit", saveQuestion);
-
-}
-/* =====================================================
-   SAVE QUESTION
-===================================================== */
-
-function bindQuestion() {
-
-    document
-        .getElementById("questionForm")
-        .addEventListener("submit", saveQuestion);
-
-}
 
 async function saveQuestion(e) {
 
@@ -281,15 +458,19 @@ async function saveQuestion(e) {
 
     const data = {
 
-        topic: document.getElementById("topic").value.trim(),
+        title: document.getElementById("title").value.trim(),
 
-        question: document.getElementById("question").value.trim(),
+        answer: document.getElementById("answer").value.trim(),
 
-        level: document.getElementById("level").value,
+        difficulty: document.getElementById("difficulty").value,
 
-        timeLimit: Number(
-            document.getElementById("timeLimit").value
-        )
+        duration: Number(
+            document.getElementById("duration").value
+        ),
+
+        status: "Active",
+
+        createdBy: "Teacher"
 
     };
 
@@ -307,61 +488,193 @@ async function saveQuestion(e) {
 
     }
 
-    if (!res.success) {
+    alert(res.message);
 
-        alert(res.message);
+    if (!res.success) return;
 
-        return;
+    resetQuestionForm();
 
-    }
+    await loadQuestions();
 
-    document.getElementById("questionForm").reset();
+    await refreshDashboard();
 
-    document.getElementById("timeLimit").value = 30;
+}
+/* =====================================================
+   STUDENT PAGE
+===================================================== */
 
-    editMode = false;
+function loadStudentPage() {
 
-    selectedQuestionId = "";
+    setContent(`
 
-    document.getElementById("btnSaveQuestion").innerText =
-        "Save Question";
+<h2>Student Database</h2>
 
-    loadQuestions();
+<br>
+
+<form id="studentForm">
+
+<label>NIS</label>
+
+<input
+id="nis"
+required>
+
+<br><br>
+
+<label>Student Name</label>
+
+<input
+id="nama"
+required>
+
+<br><br>
+
+<label>Class</label>
+
+<input
+id="kelas"
+required>
+
+<br><br>
+
+<label>Username</label>
+
+<input
+id="username"
+required>
+
+<br><br>
+
+<label>Password</label>
+
+<input
+id="password"
+type="password"
+required>
+
+<br><br>
+
+<button
+id="btnSaveStudent"
+type="submit"
+class="btn teacher">
+
+Save Student
+
+</button>
+
+<button
+type="button"
+onclick="resetStudentForm()">
+
+Cancel
+
+</button>
+
+</form>
+
+<br>
+
+<input
+id="searchStudent"
+type="text"
+placeholder="Search Student..."
+onkeyup="filterStudent()">
+
+<br><br>
+
+<div id="studentTable">
+
+Loading...
+
+</div>
+
+`);
+
+    document
+        .getElementById("studentForm")
+        .addEventListener("submit", saveStudent);
+
+    loadStudents();
 
 }
 
 /* =====================================================
-   LOAD QUESTION
+   SAVE STUDENT
 ===================================================== */
 
-async function loadQuestions() {
+async function saveStudent(e) {
 
-    const res = await apiGetQuestion();
+    e.preventDefault();
 
-    const table =
-        document.getElementById("questionTable");
+    const data = {
+
+        nis: document.getElementById("nis").value.trim(),
+
+        nama: document.getElementById("nama").value.trim(),
+
+        kelas: document.getElementById("kelas").value.trim(),
+
+        username: document.getElementById("username").value.trim(),
+
+        password: document.getElementById("password").value.trim(),
+
+        status: "Active"
+
+    };
+
+    let res;
+
+    if (STATE.studentEdit) {
+
+        res = await apiUpdateStudent(data);
+
+    } else {
+
+        res = await apiInsertStudent(data);
+
+    }
+
+    alert(res.message);
+
+    if (!res.success) return;
+
+    resetStudentForm();
+
+    await loadStudents();
+
+    await refreshDashboard();
+
+}
+
+/* =====================================================
+   LOAD STUDENT
+===================================================== */
+
+async function loadStudents() {
+
+    const res = await apiGetStudent();
+
+    const table = document.getElementById("studentTable");
 
     if (!res.success) {
 
         table.innerHTML =
-
             "<p style='color:red'>" +
-
-            res.message +
-
+            escapeHTML(res.message) +
             "</p>";
 
         return;
 
     }
 
-    updateQuestionCounter(res.data.length);
+    APP.student = res.data || [];
 
-    if (res.data.length === 0) {
+    updateStudentCounter(APP.student.length);
 
-        table.innerHTML =
+    if (APP.student.length === 0) {
 
-            "<p>No speaking question.</p>";
+        table.innerHTML = "<p>No student found.</p>";
 
         return;
 
@@ -369,64 +682,67 @@ async function loadQuestions() {
 
     let html = `
 
-<table
-border="1"
-width="100%"
-cellpadding="8">
+<table border="1" width="100%" cellpadding="8">
+
+<thead>
 
 <tr>
 
-<th width="60">No</th>
+<th>No</th>
 
-<th>Topic</th>
+<th>NIS</th>
 
-<th>Question</th>
+<th>Name</th>
 
-<th width="90">Level</th>
+<th>Class</th>
 
-<th width="80">Time</th>
+<th>Username</th>
 
-<th width="80">Status</th>
+<th>Status</th>
 
-<th width="170">Action</th>
+<th>Action</th>
 
 </tr>
 
+</thead>
+
+<tbody>
+
 `;
 
-    res.data.forEach((item, index) => {
+    APP.student.forEach((s, i) => {
 
         html += `
 
 <tr>
 
-<td>${index + 1}</td>
+<td>${i + 1}</td>
 
-<td>${item.topic}</td>
+<td>${escapeHTML(s.nis)}</td>
 
-<td>${item.question}</td>
+<td>${escapeHTML(s.nama)}</td>
 
-<td>${getLevelBadge(item.level)}</td>
+<td>${escapeHTML(s.kelas)}</td>
 
-<td>${item.timeLimit}s</td>
+<td>${escapeHTML(s.username)}</td>
 
-<td>${getStatusBadge(item.status)}</td>
+<td>${escapeHTML(s.status)}</td>
 
 <td>
 
 <button
 class="btn edit"
-onclick="editQuestion('${item.id}')">
+onclick="editStudent('${s.nis}')">
 
-✏ Edit
+Edit
 
 </button>
 
 <button
 class="btn delete"
-onclick="deleteQuestion('${item.id}')">
+onclick="deleteStudent('${s.nis}')">
 
-🗑 Delete
+Delete
 
 </button>
 
@@ -438,131 +754,98 @@ onclick="deleteQuestion('${item.id}')">
 
     });
 
-    html += "</table>";
+    html += `
+
+</tbody>
+
+</table>
+
+`;
 
     table.innerHTML = html;
 
 }
 
 /* =====================================================
-   DASHBOARD COUNTER
+   EDIT STUDENT
 ===================================================== */
 
-function updateQuestionCounter(total) {
+function editStudent(nis) {
 
-    const card =
+    const s = APP.student.find(item => item.nis === nis);
 
-        document.getElementById("totalQuestion");
+    if (!s) {
 
-    if (card) {
-
-        card.textContent = total;
-
-    }
-
-}
-/* =====================================================
-   EDIT QUESTION
-===================================================== */
-
-async function editQuestion(id) {
-
-    const res = await apiGetQuestion();
-
-    if (!res.success) {
-
-        alert(res.message);
+        alert("Student not found.");
 
         return;
 
     }
 
-    const item = res.data.find(q => q.id === id);
+    STATE.studentEdit = true;
 
-    if (!item) {
+    STATE.studentId = nis;
 
-        alert("Question not found.");
+    document.getElementById("nis").value = s.nis;
 
-        return;
+    document.getElementById("nama").value = s.nama;
 
-    }
+    document.getElementById("kelas").value = s.kelas;
 
-    editMode = true;
+    document.getElementById("username").value = s.username;
 
-    selectedQuestionId = id;
+    document.getElementById("password").value = s.password || "";
 
-    document.getElementById("topic").value =
-        item.topic;
-
-    document.getElementById("question").value =
-        item.question;
-
-    document.getElementById("level").value =
-        item.level;
-
-    document.getElementById("timeLimit").value =
-        item.timeLimit;
-
-    document.getElementById("btnSaveQuestion").innerText =
-        "Update Question";
-
-    document
-        .getElementById("topic")
-        .scrollIntoView({
-
-            behavior: "smooth",
-            block: "center"
-
-        });
+    document.getElementById("btnSaveStudent")
+        .innerText = "Update Student";
 
 }
 
 /* =====================================================
-   DELETE QUESTION
+   DELETE STUDENT
 ===================================================== */
 
-async function deleteQuestion(id) {
+async function deleteStudent(nis) {
 
-    const confirmDelete = confirm(
-
-        "Delete this speaking question?"
-
-    );
-
-    if (!confirmDelete) {
+    if (!confirm("Delete this student?")) {
 
         return;
 
     }
 
-    const res = await apiDeleteQuestion({
+    const res = await apiDeleteStudent({
 
-        id: id
+        nis: nis
 
     });
 
     alert(res.message);
 
-    if (res.success) {
+    if (!res.success) return;
 
-        loadQuestions();
+    if (STATE.studentId === nis) {
+
+        resetStudentForm();
 
     }
+
+    await loadStudents();
+
+    await refreshDashboard();
 
 }
 
 /* =====================================================
-   CANCEL EDIT
+   RESET STUDENT FORM
 ===================================================== */
 
-function resetQuestionForm() {
+function resetStudentForm() {
 
-    editMode = false;
+    STATE.studentEdit = false;
 
-    selectedQuestionId = "";
+    STATE.studentId = null;
 
-    const form =
-        document.getElementById("questionForm");
+    const form = document.getElementById("studentForm");
 
     if (form) {
 
@@ -570,17 +853,649 @@ function resetQuestionForm() {
 
     }
 
-    const time =
-        document.getElementById("timeLimit");
+    const btn = document.getElementById("btnSaveStudent");
 
-    if (time) {
+    if (btn) {
 
-        time.value = 30;
+        btn.innerText = "Save Student";
 
     }
 
-    const btn =
-        document.getElementById("btnSaveQuestion");
+}
+
+/* =====================================================
+   SEARCH STUDENT
+===================================================== */
+
+function filterStudent() {
+
+    const keyword = document
+        .getElementById("searchStudent")
+        .value
+        .toLowerCase();
+
+    document
+        .querySelectorAll("#studentTable tbody tr")
+        .forEach(row => {
+
+            row.style.display =
+                row.innerText.toLowerCase().includes(keyword)
+                    ? ""
+                    : "none";
+
+        });
+
+}
+/* =====================================================
+   TOKEN PAGE
+===================================================== */
+
+function loadTokenPage() {
+
+    setContent(`
+
+<h2>Exam Token</h2>
+
+<br>
+
+<form id="tokenForm">
+
+<label>Class</label>
+
+<input
+id="tokenClass"
+required>
+
+<br><br>
+
+<label>Expired (Minutes)</label>
+
+<input
+id="expired"
+type="number"
+value="30"
+min="1"
+required>
+
+<br><br>
+
+<label>Note</label>
+
+<input
+id="note">
+
+<br><br>
+
+<button
+type="submit"
+class="btn teacher">
+
+Generate Token
+
+</button>
+
+</form>
+
+<br>
+
+<input
+id="searchToken"
+type="text"
+placeholder="Search Token..."
+onkeyup="filterToken()">
+
+<br><br>
+
+<div id="tokenTable">
+
+Loading...
+
+</div>
+
+`);
+
+    document
+        .getElementById("tokenForm")
+        .addEventListener("submit", generateExamToken);
+
+    loadTokens();
+
+}
+
+/* =====================================================
+   GENERATE TOKEN
+===================================================== */
+
+async function generateExamToken(e) {
+
+    e.preventDefault();
+
+    const data = {
+
+        kelas: document.getElementById("tokenClass").value.trim(),
+
+        expired: Number(
+            document.getElementById("expired").value
+        ),
+
+        note: document.getElementById("note").value.trim(),
+
+        createdBy: "Teacher"
+
+    };
+
+    const res = await apiCreateToken(data);
+
+    alert(res.message);
+
+    if (!res.success) return;
+
+    document.getElementById("tokenForm").reset();
+
+    document.getElementById("expired").value = 30;
+
+    await loadTokens();
+
+    await refreshDashboard();
+
+}
+
+/* =====================================================
+   LOAD TOKEN
+===================================================== */
+
+async function loadTokens() {
+
+    const res = await apiGetToken();
+
+    const table = document.getElementById("tokenTable");
+
+    if (!res.success) {
+
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(res.message) +
+            "</p>";
+
+        return;
+
+    }
+
+    APP.token = res.data || [];
+
+    updateTokenCounter(APP.token.length);
+
+    if (APP.token.length === 0) {
+
+        table.innerHTML = "<p>No token found.</p>";
+
+        return;
+
+    }
+
+    let html = `
+
+<table border="1" width="100%" cellpadding="8">
+
+<thead>
+
+<tr>
+
+<th>No</th>
+
+<th>Token</th>
+
+<th>Class</th>
+
+<th>Status</th>
+
+<th>Expired</th>
+
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+`;
+
+    APP.token.forEach((t, i) => {
+
+        html += `
+
+<tr>
+
+<td>${i + 1}</td>
+
+<td><b>${escapeHTML(t.token)}</b></td>
+
+<td>${escapeHTML(t.kelas)}</td>
+
+<td>${escapeHTML(t.status)}</td>
+
+<td>${escapeHTML(t.expired)}</td>
+
+<td>
+
+<button
+class="btn edit"
+onclick="disableExamToken('${t.token}')">
+
+Disable
+
+</button>
+
+<button
+class="btn delete"
+onclick="deleteExamToken('${t.token}')">
+
+Delete
+
+</button>
+
+</td>
+
+</tr>
+
+`;
+
+    });
+
+    html += `
+
+</tbody>
+
+</table>
+
+`;
+
+    table.innerHTML = html;
+
+}
+
+/* =====================================================
+   DISABLE TOKEN
+===================================================== */
+
+async function disableExamToken(token) {
+
+    if (!confirm("Disable this token?")) {
+
+        return;
+
+    }
+
+    const res = await apiDisableToken({
+
+        token: token
+
+    });
+
+    alert(res.message);
+
+    if (!res.success) return;
+
+    await loadTokens();
+
+    await refreshDashboard();
+
+}
+
+/* =====================================================
+   DELETE TOKEN
+===================================================== */
+
+async function deleteExamToken(token) {
+
+    if (!confirm("Delete this token?")) {
+
+        return;
+
+    }
+
+    const res = await apiDeleteToken({
+
+        token: token
+
+    });
+
+    alert(res.message);
+
+    if (!res.success) return;
+
+    await loadTokens();
+
+    await refreshDashboard();
+
+}
+
+/* =====================================================
+   SEARCH TOKEN
+===================================================== */
+
+function filterToken() {
+
+    const keyword = document
+        .getElementById("searchToken")
+        .value
+        .toLowerCase();
+
+    document
+        .querySelectorAll("#tokenTable tbody tr")
+        .forEach(row => {
+
+            row.style.display =
+                row.innerText.toLowerCase().includes(keyword)
+                    ? ""
+                    : "none";
+
+        });
+
+}
+/* =====================================================
+   RESULT PAGE
+===================================================== */
+
+function loadResultPage() {
+
+    setContent(`
+
+<h2>Speaking Results</h2>
+
+<br>
+
+<input
+id="searchResult"
+type="text"
+placeholder="Search Student..."
+onkeyup="filterResult()">
+
+<br><br>
+
+<div id="resultTable">
+
+Loading...
+
+</div>
+
+`);
+
+    loadResults();
+
+}
+
+/* =====================================================
+   LOAD RESULT
+===================================================== */
+
+async function loadResults() {
+
+    const res = await apiGetResult();
+
+    const table = document.getElementById("resultTable");
+
+    if (!res.success) {
+
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(res.message) +
+            "</p>";
+
+        return;
+
+    }
+
+    APP.result = res.data || [];
+
+    updateResultCounter(APP.result.length);
+
+    if (APP.result.length === 0) {
+
+        table.innerHTML = "<p>No result found.</p>";
+
+        return;
+
+    }
+
+    let html = `
+
+<table border="1" width="100%" cellpadding="8">
+
+<thead>
+
+<tr>
+
+<th>No</th>
+
+<th>NIS</th>
+
+<th>Name</th>
+
+<th>Question</th>
+
+<th>Score</th>
+
+<th>Feedback</th>
+
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+`;
+
+    APP.result.forEach((r, i) => {
+
+        html += `
+
+<tr>
+
+<td>${i + 1}</td>
+
+<td>${escapeHTML(r.nis)}</td>
+
+<td>${escapeHTML(r.nama)}</td>
+
+<td>${escapeHTML(r.question)}</td>
+
+<td><b>${escapeHTML(r.score)}</b></td>
+
+<td>${escapeHTML(r.feedback || "-")}</td>
+
+<td>
+
+<button
+class="btn delete"
+onclick="deleteResult('${r.id}')">
+
+Delete
+
+</button>
+
+</td>
+
+</tr>
+
+`;
+
+    });
+
+    html += `
+
+</tbody>
+
+</table>
+
+`;
+
+    table.innerHTML = html;
+
+}
+
+/* =====================================================
+   DELETE RESULT
+===================================================== */
+
+async function deleteResult(id) {
+
+    if (!confirm("Delete this result?")) {
+
+        return;
+
+    }
+
+    const res = await apiDeleteResult({
+
+        id: id
+
+    });
+
+    alert(res.message);
+
+    if (!res.success) return;
+
+    await loadResults();
+
+    await refreshDashboard();
+
+}
+
+/* =====================================================
+   SEARCH RESULT
+===================================================== */
+
+function filterResult() {
+
+    const keyword = document
+        .getElementById("searchResult")
+        .value
+        .toLowerCase();
+
+    document
+        .querySelectorAll("#resultTable tbody tr")
+        .forEach(row => {
+
+            row.style.display =
+                row.innerText.toLowerCase().includes(keyword)
+                    ? ""
+                    : "none";
+
+        });
+
+}
+
+/* =====================================================
+   COUNTERS
+===================================================== */
+
+function updateQuestionCounter(total) {
+
+    const el = document.getElementById("totalQuestion");
+
+    if (el) {
+
+        el.textContent = total;
+
+    }
+
+}
+
+function updateStudentCounter(total) {
+
+    const el = document.getElementById("totalStudent");
+
+    if (el) {
+
+        el.textContent = total;
+
+    }
+
+}
+
+function updateTokenCounter(total) {
+
+    const el = document.getElementById("totalToken");
+
+    if (el) {
+
+        el.textContent = total;
+
+    }
+
+}
+
+function updateResultCounter(total) {
+
+    const el = document.getElementById("totalResult");
+
+    if (el) {
+
+        el.textContent = total;
+
+    }
+
+}
+
+/* =====================================================
+   COMMON HELPERS
+===================================================== */
+
+function escapeHTML(text) {
+
+    return String(text || "")
+
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+function formatDate(value) {
+
+    if (!value) return "-";
+
+    const d = new Date(value);
+
+    if (isNaN(d)) return value;
+
+    return d.toLocaleString();
+
+}
+
+/* =====================================================
+   RESET QUESTION FORM
+===================================================== */
+
+function resetQuestionForm() {
+
+    editMode = false;
+
+    selectedQuestionId = null;
+
+    const form = document.getElementById("questionForm");
+
+    if (form) {
+
+        form.reset();
+
+    }
+
+    const duration = document.getElementById("duration");
+
+    if (duration) {
+
+        duration.value = 30;
+
+    }
+
+    const btn = document.getElementById("btnSaveQuestion");
 
     if (btn) {
 
@@ -590,35 +1505,27 @@ function resetQuestionForm() {
 
 }
 
-
 /* =====================================================
    SEARCH QUESTION
 ===================================================== */
 
 function filterQuestion() {
 
-    const keyword =
-        document
+    const keyword = document
         .getElementById("searchQuestion")
         .value
         .toLowerCase();
 
-    const rows =
-        document.querySelectorAll(
-            "#questionTable table tbody tr"
-        );
+    document
+        .querySelectorAll("#questionTable tbody tr")
+        .forEach(row => {
 
-    rows.forEach(row => {
+            row.style.display =
+                row.innerText.toLowerCase().includes(keyword)
+                    ? ""
+                    : "none";
 
-        const text =
-            row.innerText.toLowerCase();
-
-        row.style.display =
-            text.includes(keyword)
-            ? ""
-            : "none";
-
-    });
+        });
 
 }
 
