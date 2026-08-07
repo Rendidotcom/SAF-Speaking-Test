@@ -2,13 +2,13 @@
  * ==========================================
  * SAF Speaking Online Test
  * Vercel API Gateway
- * api/route.js
- * Stable Foundation v4.0
+ * api/index.js
+ * Stable Foundation v5.0
  * ==========================================
  * Frontend
  *      │
  *      ▼
- * /api
+ *      /api
  *      │
  *      ▼
  * Google Apps Script
@@ -19,13 +19,9 @@
  */
 
 const GAS_URL =
-    "https://script.google.com/macros/s/AKfycbz8oMX2172-skeQ9Gv9Cn3bugI__qybA_Vgqf_DCUtDhu870CvDG8fGH7ORvsqg8niB/exec";
+  "https://script.google.com/macros/s/AKfycbz8oMX2172-skeQ9Gv9Cn3bugI__qybA_Vgqf_DCUtDhu870CvDG8fGH7ORvsqg8niB/exec";
 
 export default async function handler(req, res) {
-
-    /* ======================================
-       METHOD CHECK
-    ====================================== */
 
     if (req.method !== "POST") {
 
@@ -41,9 +37,7 @@ export default async function handler(req, res) {
 
     try {
 
-        /* ======================================
-           FORWARD REQUEST
-        ====================================== */
+        const payload = req.body || {};
 
         const response = await fetch(GAS_URL, {
 
@@ -55,13 +49,9 @@ export default async function handler(req, res) {
 
             },
 
-            body: JSON.stringify(req.body)
+            body: JSON.stringify(payload)
 
         });
-
-        /* ======================================
-           READ RAW RESPONSE
-        ====================================== */
 
         const text = await response.text();
 
@@ -73,7 +63,7 @@ export default async function handler(req, res) {
 
         }
 
-        catch (err) {
+        catch {
 
             return res.status(500).json({
 
@@ -86,10 +76,6 @@ export default async function handler(req, res) {
             });
 
         }
-
-        /* ======================================
-           SUCCESS
-        ====================================== */
 
         return res.status(200).json(result);
 

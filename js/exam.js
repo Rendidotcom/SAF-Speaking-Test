@@ -2,187 +2,506 @@
  * ==========================================
  * SAF Speaking Online Test
  * Exam Token Module
- * Stable Foundation v2.0
+ * Stable Foundation v3.0
+ * ==========================================
+ *
  * Frontend : Vercel
+ * API      : /api
  * Backend  : Google Apps Script
+ *
+ * Sync:
+ * - api.js
+ * - route.js
+ * - Code.gs
+ * - Token.gs
+ *
+ * Functions:
+ * - Load Exam Token Page
+ * - Generate Token
+ * - Load Token
+ * - Render Current Token
+ * - Render Token History
+ * - Disable Token
+ * - Delete Token
+ *
  * ==========================================
  */
 
+
+/* =====================================================
+   GLOBAL STATE
+===================================================== */
+
 let tokenList = [];
 
-/* ==========================================
-LOAD PAGE
-========================================== */
-async function generateExamToken() {
-    console.log("STEP 1");
 
-const kelas = document.getElementById("examClass").value;
-const expired = document.getElementById("expiredMinute").value;
-
-console.log("STEP 2", kelas, expired);
-
-const result = await apiCreateToken({
-    kelas,
-    expired
-});
-
-console.log("STEP 3", result);
-}
+/* =====================================================
+   LOAD EXAM TOKEN PAGE
+===================================================== */
 
 async function loadExamPage() {
 
-    const content = document.getElementById("content");
+    const content =
+        document.getElementById("content");
+
+    if (!content) {
+
+        console.error(
+            "Exam page error: #content not found."
+        );
+
+        return;
+
+    }
+
+
+    /* =================================================
+       RENDER PAGE
+    ================================================= */
 
     content.innerHTML = `
-<h2>🔑 Exam Token Management</h2>
 
-<br>
+        <h2>🔑 Exam Token Management</h2>
 
-<div class="form-grid">
+        <br>
 
-<label>Class</label>
+        <div class="form-grid">
 
-<select id="examClass">
-<option>7A</option>
-<option>7B</option>
-<option>7C</option>
-<option>7D</option>
-</select>
+            <label for="examClass">
+                Class
+            </label>
 
-<label>Expired (Minutes)</label>
+            <select id="examClass">
 
-<select id="expiredMinute">
-<option value="30">30 Minutes</option>
-<option value="60">60 Minutes</option>
-<option value="90">90 Minutes</option>
-<option value="120">120 Minutes</option>
-</select>
+                <option value="7A">7A</option>
 
-<br><br>
+                <option value="7B">7B</option>
 
-<button
-id="btnGenerateToken"
-class="btn teacher"
-onclick="generateExamToken()">
+                <option value="7C">7C</option>
 
-Generate Token
+                <option value="7D">7D</option>
 
-</button>
+            </select>
 
-</div>
 
-<hr style="margin:30px 0;">
+            <label for="expiredMinute">
+                Expired (Minutes)
+            </label>
 
-<h3>Current Token</h3>
+            <select id="expiredMinute">
 
-<div id="currentToken">
+                <option value="30">
+                    30 Minutes
+                </option>
 
-No Active Token
+                <option value="60">
+                    60 Minutes
+                </option>
 
-</div>
+                <option value="90">
+                    90 Minutes
+                </option>
 
-<br>
+                <option value="120">
+                    120 Minutes
+                </option>
 
-<h3>History</h3>
+            </select>
 
-<table class="table">
+            <br><br>
 
-<thead>
+            <button
+                type="button"
+                id="btnGenerateToken"
+                class="btn teacher">
 
-<tr>
-<th>Token</th>
-<th>Class</th>
-<th>Status</th>
-<th>Expired</th>
-<th>Action</th>
-</tr>
+                Generate Token
 
-</thead>
+            </button>
 
-<tbody id="tokenTable">
+        </div>
 
-</tbody>
 
-</table>
-`;
+        <hr style="margin:30px 0;">
+
+
+        <h3>
+            Current Token
+        </h3>
+
+        <div id="currentToken">
+
+            Loading...
+
+        </div>
+
+
+        <br>
+
+
+        <h3>
+            Token History
+        </h3>
+
+        <br>
+
+
+        <div
+            id="tokenTableWrapper"
+            style="overflow-x:auto;">
+
+            <table
+                class="table"
+                width="100%">
+
+                <thead>
+
+                    <tr>
+
+                        <th>No</th>
+
+                        <th>Token</th>
+
+                        <th>Class</th>
+
+                        <th>Status</th>
+
+                        <th>Expired</th>
+
+                        <th>Created</th>
+
+                        <th>Action</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="tokenTable">
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            style="text-align:center;">
+
+                            Loading...
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    `;
+
+
+    /* =================================================
+       BIND GENERATE BUTTON
+    ================================================= */
+
+    const button =
+        document.getElementById(
+            "btnGenerateToken"
+        );
+
+
+    if (button) {
+
+        button.addEventListener(
+            "click",
+            generateExamToken
+        );
+
+    }
+
+
+    /* =================================================
+       LOAD TOKEN DATA
+    ================================================= */
 
     await loadToken();
 
 }
 
-/* ==========================================
-GENERATE TOKEN
-========================================== */
+
+/* =====================================================
+   GENERATE EXAM TOKEN
+===================================================== */
 
 async function generateExamToken() {
 
-    const kelas = document.getElementById("examClass").value;
-    const expired = document.getElementById("expiredMinute").value;
+    const classElement =
+        document.getElementById("examClass");
 
-    const btn = document.getElementById("btnGenerateToken");
+    const expiredElement =
+        document.getElementById("expiredMinute");
 
-    btn.disabled = true;
-    btn.innerHTML = "Generating...";
+    const button =
+        document.getElementById(
+            "btnGenerateToken"
+        );
+
+
+    if (!classElement) {
+
+        alert(
+            "Class field is not available."
+        );
+
+        return;
+
+    }
+
+
+    if (!expiredElement) {
+
+        alert(
+            "Expired field is not available."
+        );
+
+        return;
+
+    }
+
+
+    const kelas =
+        classElement.value.trim();
+
+    const expired =
+        Number(expiredElement.value);
+
+
+    /* =================================================
+       VALIDATION
+    ================================================= */
+
+    if (!kelas) {
+
+        alert(
+            "Please select a class."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !expired ||
+        expired <= 0
+    ) {
+
+        alert(
+            "Invalid expiration time."
+        );
+
+        return;
+
+    }
+
+
+    /* =================================================
+       BUTTON STATE
+    ================================================= */
+
+    if (button) {
+
+        button.disabled = true;
+
+        button.innerHTML =
+            "Generating...";
+
+    }
+
 
     try {
 
-        console.log("Create Token Request");
+        console.log(
+            "================================="
+        );
 
-        const result = await apiCreateToken({
+        console.log(
+            "CREATE TOKEN REQUEST"
+        );
 
-            kelas,
-            expired
+        console.log({
+
+            kelas: kelas,
+
+            expired: expired,
+
+            createdBy: "Teacher"
 
         });
 
+
+        /* =================================================
+           API REQUEST
+        ================================================= */
+
+        const result =
+            await apiCreateToken({
+
+                kelas: kelas,
+
+                expired: expired,
+
+                createdBy: "Teacher"
+
+            });
+
+
+        console.log(
+            "CREATE TOKEN RESPONSE"
+        );
+
         console.log(result);
 
-        if (!result.success) {
 
-            alert(result.message);
+        /* =================================================
+           RESPONSE VALIDATION
+        ================================================= */
+
+        if (
+            !result ||
+            result.success !== true
+        ) {
+
+            alert(
+
+                result &&
+                result.message
+
+                    ? result.message
+
+                    : "Failed to create exam token."
+
+            );
 
             return;
 
         }
 
-        alert("Token Created Successfully");
+
+        /* =================================================
+           SUCCESS
+        ================================================= */
+
+        const generatedToken =
+            result.token ||
+            (
+                result.data &&
+                result.data.token
+            );
+
+
+        if (generatedToken) {
+
+            alert(
+
+                "Token Created Successfully\n\n" +
+                "Token: " +
+                generatedToken
+
+            );
+
+        }
+
+        else {
+
+            alert(
+                "Token Created Successfully."
+            );
+
+        }
+
+
+        /* =================================================
+           RELOAD TOKEN DATA
+        ================================================= */
 
         await loadToken();
+
 
     }
 
     catch (err) {
 
-        console.error(err);
+        console.error(
+            "CREATE TOKEN ERROR:",
+            err
+        );
 
-        alert("Server Error");
+
+        alert(
+
+            "Unable to create exam token.\n\n" +
+            (
+                err.message ||
+                "Unknown error."
+            )
+
+        );
 
     }
 
+
     finally {
 
-        btn.disabled = false;
-        btn.innerHTML = "Generate Token";
+        if (button) {
+
+            button.disabled = false;
+
+            button.innerHTML =
+                "Generate Token";
+
+        }
 
     }
 
 }
 
-/* ==========================================
-LOAD TOKEN
-========================================== */
+
+/* =====================================================
+   LOAD TOKEN
+===================================================== */
 
 async function loadToken() {
 
     try {
 
-        const result = await apiGetToken();
+        console.log(
+            "================================="
+        );
 
-        console.log("Get Token");
+        console.log(
+            "GET TOKEN"
+        );
+
+
+        const result =
+            await apiGetToken();
+
+
+        console.log(
+            "GET TOKEN RESPONSE"
+        );
 
         console.log(result);
 
-        if (!result.success) {
+
+        /* =================================================
+           FAILED RESPONSE
+        ================================================= */
+
+        if (
+            !result ||
+            result.success !== true
+        ) {
 
             tokenList = [];
 
@@ -192,171 +511,640 @@ async function loadToken() {
 
         }
 
-        tokenList = result.data || [];
+
+        /* =================================================
+           NORMALIZE DATA
+        ================================================= */
+
+        if (Array.isArray(result.data)) {
+
+            tokenList =
+                result.data;
+
+        }
+
+        else {
+
+            tokenList = [];
+
+        }
+
+
+        /* =================================================
+           RENDER
+        ================================================= */
 
         renderToken();
+
 
     }
 
     catch (err) {
 
-        console.error(err);
+        console.error(
+            "LOAD TOKEN ERROR:",
+            err
+        );
+
+
+        tokenList = [];
+
+        renderToken();
 
     }
 
 }
 
-/* ==========================================
-RENDER TOKEN
-========================================== */
+
+/* =====================================================
+   RENDER TOKEN
+===================================================== */
 
 function renderToken() {
 
-    const tbody = document.getElementById("tokenTable");
-    const current = document.getElementById("currentToken");
+    const tbody =
+        document.getElementById(
+            "tokenTable"
+        );
 
-    if (!tbody) return;
+    const current =
+        document.getElementById(
+            "currentToken"
+        );
+
+
+    /* =================================================
+       DOM SAFETY
+    ================================================= */
+
+    if (!tbody) {
+
+        console.warn(
+            "renderToken: #tokenTable not found."
+        );
+
+        return;
+
+    }
+
+
+    /* =================================================
+       CLEAR TABLE
+    ================================================= */
 
     tbody.innerHTML = "";
 
-    let active = null;
 
-    tokenList.forEach(item => {
+    /* =================================================
+       FIND ACTIVE TOKEN
+    ================================================= */
 
-        if (item.status === "ACTIVE") {
+    let activeToken = null;
 
-            active = item;
+
+    tokenList.forEach(
+        item => {
+
+            if (
+                String(item.status || "")
+                    .toUpperCase()
+                === "ACTIVE"
+            ) {
+
+                activeToken = item;
+
+            }
+
+        }
+    );
+
+
+    /* =================================================
+       CURRENT TOKEN
+    ================================================= */
+
+    if (current) {
+
+        if (activeToken) {
+
+            current.innerHTML = `
+
+                <div class="card-box">
+
+                    <h2>
+                        ${escapeHTML(
+                            activeToken.token
+                        )}
+                    </h2>
+
+                    <p>
+
+                        <b>Class:</b>
+
+                        ${escapeHTML(
+                            activeToken.kelas
+                        )}
+
+                    </p>
+
+                    <p>
+
+                        <b>Expired:</b>
+
+                        ${escapeHTML(
+                            activeToken.expired
+                        )}
+                        minutes
+
+                    </p>
+
+                    <p>
+
+                        <b>Status:</b>
+
+                        ${escapeHTML(
+                            activeToken.status
+                        )}
+
+                    </p>
+
+                </div>
+
+            `;
 
         }
 
-        tbody.innerHTML += `
-<tr>
+        else {
 
-<td>${item.token}</td>
-
-<td>${item.kelas}</td>
-
-<td>${item.status}</td>
-
-<td>${item.expired}</td>
-
-<td>
-
-<button onclick="disableToken('${item.token}')">
-
-Disable
-
-</button>
-
-<button onclick="deleteToken('${item.token}')">
-
-Delete
-
-</button>
-
-</td>
-
-</tr>
-`;
-
-    });
-
-    if (active) {
-
-        current.innerHTML = `
-<div class="card-box">
-
-<h2>${active.token}</h2>
-
-<p><b>Class :</b> ${active.kelas}</p>
-
-<p><b>Expired :</b> ${active.expired}</p>
-
-<p><b>Status :</b> ${active.status}</p>
-
-</div>
-`;
-
-    }
-
-    else {
-
-        current.innerHTML = "No Active Token";
-
-    }
-
-}
-
-/* ==========================================
-DISABLE TOKEN
-========================================== */
-
-async function disableToken(token) {
-
-    if (!confirm("Disable this token?")) return;
-
-    const result = await apiDisableToken({
-
-        token
-
-    });
-
-    alert(result.message);
-
-    await loadToken();
-
-}
-
-/* ==========================================
-DELETE TOKEN
-========================================== */
-
-async function deleteToken(token) {
-
-    if (!confirm("Delete this token?")) return;
-
-    const result = await apiDeleteToken({
-
-        token
-
-    });
-
-    alert(result.message);
-
-    await loadToken();
-
-}
-
-/* ==========================================
-SIDEBAR
-========================================== */
-
-document.querySelectorAll("[data-page]").forEach(menu => {
-
-    menu.addEventListener("click", function (e) {
-
-        e.preventDefault();
-
-        switch (this.dataset.page) {
-
-            case "dashboard":
-                location.reload();
-                break;
-
-            case "question":
-                loadQuestionPage();
-                break;
-
-            case "student":
-                loadStudentPage();
-                break;
-
-            case "token":
-                loadExamPage();
-                break;
+            current.innerHTML =
+                "<p>No Active Token.</p>";
 
         }
 
-    });
+    }
 
-});
+
+    /* =================================================
+       EMPTY TOKEN
+    ================================================= */
+
+    if (
+        !Array.isArray(tokenList) ||
+        tokenList.length === 0
+    ) {
+
+        tbody.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="7"
+                    style="text-align:center;">
+
+                    No Token Found.
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    /* =================================================
+       TOKEN HISTORY
+    ================================================= */
+
+    tokenList.forEach(
+        (item, index) => {
+
+            const status =
+                String(
+                    item.status || ""
+                ).toUpperCase();
+
+
+            let statusHTML =
+                escapeHTML(status);
+
+
+            if (status === "ACTIVE") {
+
+                statusHTML = `
+
+                    <span
+                        class="badge active">
+
+                        ACTIVE
+
+                    </span>
+
+                `;
+
+            }
+
+            else if (
+                status === "DISABLED"
+            ) {
+
+                statusHTML = `
+
+                    <span
+                        class="badge">
+
+                        DISABLED
+
+                    </span>
+
+                `;
+
+            }
+
+
+            const disableButton =
+                status === "ACTIVE"
+
+                    ? `
+
+                        <button
+                            type="button"
+                            class="btn"
+                            onclick="disableExamToken('${escapeAttribute(item.token)}')">
+
+                            Disable
+
+                        </button>
+
+                      `
+
+                    : "";
+
+
+            tbody.innerHTML += `
+
+                <tr>
+
+                    <td>
+                        ${index + 1}
+                    </td>
+
+                    <td>
+                        <b>
+                            ${escapeHTML(
+                                item.token
+                            )}
+                        </b>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.kelas
+                        )}
+                    </td>
+
+                    <td>
+                        ${statusHTML}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.expired
+                        )}
+                        minutes
+                    </td>
+
+                    <td>
+                        ${formatDate(
+                            item.createdAt
+                        )}
+                    </td>
+
+                    <td>
+
+                        ${disableButton}
+
+                        <button
+                            type="button"
+                            class="btn delete"
+                            onclick="deleteExamToken('${escapeAttribute(item.token)}')">
+
+                            Delete
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   DISABLE TOKEN
+===================================================== */
+
+async function disableExamToken(token) {
+
+    if (!token) {
+
+        alert(
+            "Token is required."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            "Disable this token?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const result =
+            await apiDisableToken({
+
+                token: token
+
+            });
+
+
+        console.log(
+            "DISABLE TOKEN RESPONSE:",
+            result
+        );
+
+
+        alert(
+
+            result &&
+            result.message
+
+                ? result.message
+
+                : "Token disabled."
+
+        );
+
+
+        if (
+            result &&
+            result.success === true
+        ) {
+
+            await loadToken();
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DISABLE TOKEN ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to disable token."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   DELETE TOKEN
+===================================================== */
+
+async function deleteExamToken(token) {
+
+    if (!token) {
+
+        alert(
+            "Token is required."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            "Delete this token?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const result =
+            await apiDeleteToken({
+
+                token: token
+
+            });
+
+
+        console.log(
+            "DELETE TOKEN RESPONSE:",
+            result
+        );
+
+
+        alert(
+
+            result &&
+            result.message
+
+                ? result.message
+
+                : "Token deleted."
+
+        );
+
+
+        if (
+            result &&
+            result.success === true
+        ) {
+
+            await loadToken();
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE TOKEN ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete token."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(value) {
+
+    return String(
+        value === null ||
+        typeof value === "undefined"
+
+            ? ""
+
+            : value
+    )
+
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+
+    .replace(
+        /</g,
+        "&lt;"
+    )
+
+    .replace(
+        />/g,
+        "&gt;"
+    )
+
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+
+    .replace(
+        /'/g,
+        "&#039;"
+    );
+
+}
+
+
+/* =====================================================
+   ESCAPE ATTRIBUTE
+===================================================== */
+
+function escapeAttribute(value) {
+
+    return String(
+        value === null ||
+        typeof value === "undefined"
+
+            ? ""
+
+            : value
+    )
+
+    .replace(
+        /\\/g,
+        "\\\\"
+    )
+
+    .replace(
+        /'/g,
+        "\\'"
+    )
+
+    .replace(
+        /"/g,
+        "&quot;"
+    );
+
+}
+
+
+/* =====================================================
+   FORMAT DATE
+===================================================== */
+
+function formatDate(value) {
+
+    if (!value) {
+
+        return "-";
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return escapeHTML(value);
+
+    }
+
+
+    return escapeHTML(
+
+        date.toLocaleString(
+            "en-US",
+            {
+
+                year: "numeric",
+
+                month: "short",
+
+                day: "numeric",
+
+                hour: "2-digit",
+
+                minute: "2-digit"
+
+            }
+        )
+
+    );
+
+}
+
+
+/* =====================================================
+   END OF FILE
+===================================================== */
