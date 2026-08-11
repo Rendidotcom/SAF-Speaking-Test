@@ -3,21 +3,41 @@
  * SAF Speaking Online Test
  * Vercel API Gateway
  * api/index.js
- * Stable Foundation
+ * Stable Foundation v5.0
+ * ==========================================
+ *
+ * Frontend
+ *    │
+ *    ▼
+ *   /api
+ *    │
+ *    ▼
+ * Google Apps Script
+ *    │
+ *    ▼
+ * Google Spreadsheet
+ *
  * ==========================================
  */
+
+// ==========================================
+// GOOGLE APPS SCRIPT URL
+// DEPLOYMENT TERBARU / AKTIF
+// ==========================================
 
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbz9SwwEx1tTWFVwDZYZwRpTiRt97x20EnK5yO7WUl3XebrFoHPQKQzT7hQOM8bD03rq/exec";
 
 
+// ==========================================
+// VERCEL SERVERLESS FUNCTION
+// ==========================================
+
 export default async function handler(req, res) {
 
-  /**
-   * ========================================
-   * METHOD VALIDATION
-   * ========================================
-   */
+  // ========================================
+  // METHOD VALIDATION
+  // ========================================
 
   if (req.method !== "POST") {
 
@@ -34,89 +54,57 @@ export default async function handler(req, res) {
 
   try {
 
-    /**
-     * ======================================
-     * REQUEST BODY
-     * ======================================
-     */
+    // ======================================
+    // REQUEST BODY
+    // ======================================
 
     const payload = req.body || {};
 
 
-    console.log(
-      "Vercel → GAS REQUEST:",
-      JSON.stringify(payload)
-    );
+    // ======================================
+    // SEND REQUEST TO GOOGLE APPS SCRIPT
+    // ======================================
+
+    const response = await fetch(GAS_URL, {
+
+      method: "POST",
+
+      headers: {
+
+        "Content-Type": "application/json"
+
+      },
+
+      body: JSON.stringify(payload)
+
+    });
 
 
-    /**
-     * ======================================
-     * SEND TO GAS
-     * ======================================
-     */
+    // ======================================
+    // READ RESPONSE
+    // ======================================
 
-    const response = await fetch(
-
-      GAS_URL,
-
-      {
-
-        method: "POST",
-
-        headers: {
-
-          "Content-Type":
-            "application/json"
-
-        },
-
-        body:
-          JSON.stringify(payload)
-
-      }
-
-    );
+    const text = await response.text();
 
 
-    /**
-     * ======================================
-     * READ RESPONSE
-     * ======================================
-     */
-
-    const text =
-      await response.text();
-
-
-    console.log(
-      "GAS STATUS:",
-      response.status
-    );
-
-
-    console.log(
-      "GAS RESPONSE:",
-      text
-    );
-
-
-    /**
-     * ======================================
-     * PARSE JSON
-     * ======================================
-     */
+    // ======================================
+    // PARSE JSON
+    // ======================================
 
     let result;
 
-
     try {
 
-      result =
-        JSON.parse(text);
+      result = JSON.parse(text);
 
     }
 
     catch (parseError) {
+
+      console.error(
+        "GAS INVALID JSON:",
+        text
+      );
 
       return res.status(500).json({
 
@@ -125,34 +113,26 @@ export default async function handler(req, res) {
         message:
           "Google Apps Script returned invalid JSON.",
 
-        gasStatus:
-          response.status,
-
-        raw:
-          text
+        raw: text
 
       });
 
     }
 
 
-    /**
-     * ======================================
-     * RETURN TO FRONTEND
-     * ======================================
-     */
+    // ======================================
+    // RETURN GAS RESPONSE TO FRONTEND
+    // ======================================
 
-    return res.status(200).json(
-      result
-    );
-
+    return res.status(200).json(result);
 
   }
+
 
   catch (err) {
 
     console.error(
-      "Vercel API ERROR:",
+      "VERCEL API ERROR:",
       err
     );
 
