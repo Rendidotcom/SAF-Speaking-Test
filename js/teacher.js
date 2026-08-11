@@ -2,39 +2,71 @@
  * ==========================================
  * SAF Speaking Online Test
  * Teacher Dashboard
- * Stable Foundation v6.0
- * ==========================================
- * Frontend Sync
+ *
+ * File:
+ * js/teacher.js
+ *
+ * Stable Foundation v7.0
+ *
+ * Frontend Sync:
  * - Question.gs
  * - Student.gs
  * - Token.gs
  * - Result.gs
  * - Score.gs
+ *
+ * IMPORTANT:
+ * - Teacher dashboard business logic
+ * - No dependency on exam.js
+ * - Question state uses STATE object
+ * - Token state uses APP.token
  * ==========================================
  */
 
-document.addEventListener("DOMContentLoaded", init);
+
+/* =====================================================
+   INITIALIZE
+===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    init
+);
+
 
 /* =====================================================
    GLOBAL STATE
 ===================================================== */
 
 const APP = {
+
     question: [],
+
     student: [],
+
     token: [],
+
     result: []
+
 };
+
 
 const STATE = {
+
     questionEdit: false,
+
     questionId: null,
 
+
     studentEdit: false,
+
     studentId: null,
 
+
     resultId: null
+
 };
+
 
 /* =====================================================
    INITIALIZE
@@ -54,32 +86,52 @@ async function init() {
 
 }
 
+
 /* =====================================================
    SESSION
 ===================================================== */
 
 function checkSession() {
 
-    const session = sessionStorage.getItem(CONFIG.SESSION_KEY);
+    const session =
+        sessionStorage.getItem(
+            CONFIG.SESSION_KEY
+        );
+
 
     if (!session) {
 
-        window.location.href = "login.html?role=teacher";
+        window.location.href =
+            "login.html?role=teacher";
+
         return;
 
     }
 
+
     try {
 
-        const user = JSON.parse(session);
+        const user =
+            JSON.parse(session);
 
-        if (user.role !== "teacher") {
+
+        if (
+            !user ||
+            user.role !== "teacher"
+        ) {
 
             logout();
 
         }
 
-    } catch (err) {
+    }
+
+    catch (err) {
+
+        console.error(
+            "SESSION ERROR:",
+            err
+        );
 
         logout();
 
@@ -87,77 +139,118 @@ function checkSession() {
 
 }
 
+
 function logout() {
 
-    sessionStorage.removeItem(CONFIG.SESSION_KEY);
+    sessionStorage.removeItem(
+        CONFIG.SESSION_KEY
+    );
 
-    sessionStorage.removeItem(CONFIG.TOKEN_KEY);
+    sessionStorage.removeItem(
+        CONFIG.TOKEN_KEY
+    );
 
-    window.location.href = "index.html";
+    window.location.href =
+        "index.html";
 
 }
+
+
+/* =====================================================
+   LOGOUT BINDING
+===================================================== */
 
 function bindLogout() {
 
-    document.querySelectorAll("a").forEach(link => {
+    document
+        .querySelectorAll("a")
+        .forEach(link => {
 
-        if (link.textContent.includes("Logout")) {
+            if (
+                link.textContent
+                    .trim()
+                    .includes("Logout")
+            ) {
 
-            link.onclick = function (e) {
+                link.onclick =
+                    function (e) {
 
-                e.preventDefault();
+                        e.preventDefault();
 
-                logout();
+                        logout();
 
-            };
+                    };
 
-        }
+            }
 
-    });
+        });
 
 }
 
+
 /* =====================================================
-   SIDEBAR
+   SIDEBAR MENU
 ===================================================== */
 
 function bindMenu() {
 
-    document.querySelectorAll("[data-page]").forEach(menu => {
+    document
+        .querySelectorAll("[data-page]")
+        .forEach(menu => {
 
-        menu.onclick = function (e) {
+            menu.onclick =
+                function (e) {
 
-            e.preventDefault();
+                    e.preventDefault();
 
-            switch (this.dataset.page) {
+                    const page =
+                        this.dataset.page;
 
-                case "dashboard":
-                    loadDashboard();
-                    break;
 
-                case "question":
-                    loadQuestionPage();
-                    break;
+                    switch (page) {
 
-                case "student":
-                    loadStudentPage();
-                    break;
+                        case "dashboard":
 
-                case "token":
-                    loadTokenPage();
-                    break;
+                            loadDashboard();
 
-                case "result":
-                    loadResultPage();
-                    break;
+                            break;
 
-            }
 
-        };
+                        case "question":
 
-    });
+                            loadQuestionPage();
+
+                            break;
+
+
+                        case "student":
+
+                            loadStudentPage();
+
+                            break;
+
+
+                        case "token":
+
+                            loadTokenPage();
+
+                            break;
+
+
+                        case "result":
+
+                            loadResultPage();
+
+                            break;
+
+                    }
+
+                };
+
+        });
 
 }
+
 
 /* =====================================================
    CONTENT
@@ -165,85 +258,123 @@ function bindMenu() {
 
 function setContent(html) {
 
-    document.getElementById("content").innerHTML = html;
+    const content =
+        document.getElementById(
+            "content"
+        );
+
+
+    if (!content) {
+
+        console.error(
+            "Teacher dashboard: #content not found."
+        );
+
+        return;
+
+    }
+
+
+    content.innerHTML = html;
 
 }
 
+
 /* =====================================================
-   DASHBOARD
+   DASHBOARD DATA
 ===================================================== */
 
 async function refreshDashboard() {
 
     try {
 
-        const q = await apiGetQuestion();
+        const [
+            questionResult,
+            studentResult,
+            tokenResult,
+            resultResult
+        ] = await Promise.all([
 
-        if (q.success) {
+            apiGetQuestion(),
 
-            APP.question = q.data || [];
+            apiGetStudent(),
 
-        }
+            apiGetToken(),
 
-        const s = await apiGetStudent();
+            apiGetResult()
 
-        if (s.success) {
+        ]);
 
-            APP.student = s.data || [];
 
-        }
+        APP.question =
+            questionResult &&
+            questionResult.success
+                ? (
+                    questionResult.data || []
+                )
+                : [];
 
-        const t = await apiGetToken();
 
-        if (t.success) {
+        APP.student =
+            studentResult &&
+            studentResult.success
+                ? (
+                    studentResult.data || []
+                )
+                : [];
 
-            APP.token = t.data || [];
 
-        }
+        APP.token =
+            tokenResult &&
+            tokenResult.success
+                ? (
+                    tokenResult.data || []
+                )
+                : [];
 
-        const r = await apiGetResult();
 
-        if (r.success) {
+        APP.result =
+            resultResult &&
+            resultResult.success
+                ? (
+                    resultResult.data || []
+                )
+                : [];
 
-            APP.result = r.data || [];
 
-        }
+        updateQuestionCounter(
+            APP.question.length
+        );
 
-        updateDashboardCounter();
+        updateStudentCounter(
+            APP.student.length
+        );
+
+        updateTokenCounter(
+            APP.token.length
+        );
+
+        updateResultCounter(
+            APP.result.length
+        );
 
     }
 
     catch (err) {
 
-        console.error(err);
+        console.error(
+            "REFRESH DASHBOARD ERROR:",
+            err
+        );
 
     }
 
 }
 
-function updateDashboardCounter() {
 
-    setCounter("totalQuestion", APP.question.length);
-
-    setCounter("totalStudent", APP.student.length);
-
-    setCounter("totalToken", APP.token.length);
-
-    setCounter("totalResult", APP.result.length);
-
-}
-
-function setCounter(id, value) {
-
-    const el = document.getElementById(id);
-
-    if (el) {
-
-        el.textContent = value;
-
-    }
-
-}
+/* =====================================================
+   DASHBOARD PAGE
+===================================================== */
 
 function loadDashboard() {
 
@@ -254,30 +385,62 @@ function loadDashboard() {
         <br>
 
         <p>
-
-            Welcome to SAF Speaking Online Test Teacher Dashboard.
-
+            Welcome to SAF Speaking Online Test
+            Teacher Dashboard.
         </p>
 
         <br>
 
-        <table width="100%" cellpadding="8" border="1">
+        <p>
+            Use the left menu to manage
+            Questions, Students, Exam Tokens
+            and Results.
+        </p>
+
+        <br>
+
+        <table
+            width="100%"
+            cellpadding="8"
+            border="1">
 
             <tr>
 
-                <th>Total Questions</th>
-                <th>Total Students</th>
-                <th>Total Token</th>
-                <th>Total Results</th>
+                <th>
+                    Total Questions
+                </th>
+
+                <th>
+                    Total Students
+                </th>
+
+                <th>
+                    Total Token
+                </th>
+
+                <th>
+                    Total Results
+                </th>
 
             </tr>
 
             <tr>
 
-                <td>${APP.question.length}</td>
-                <td>${APP.student.length}</td>
-                <td>${APP.token.length}</td>
-                <td>${APP.result.length}</td>
+                <td id="dashboardQuestionCount">
+                    ${APP.question.length}
+                </td>
+
+                <td id="dashboardStudentCount">
+                    ${APP.student.length}
+                </td>
+
+                <td id="dashboardTokenCount">
+                    ${APP.token.length}
+                </td>
+
+                <td id="dashboardResultCount">
+                    ${APP.result.length}
+                </td>
 
             </tr>
 
@@ -286,67 +449,7 @@ function loadDashboard() {
     `);
 
 }
-/* =====================================================
-   DASHBOARD
-===================================================== */
 
-async function refreshDashboard() {
-
-    try {
-
-        const [q, s, t, r] = await Promise.all([
-            apiGetQuestion(),
-            apiGetStudent(),
-            apiGetToken(),
-            apiGetResult()
-        ]);
-
-        APP.question = q.success ? (q.data || []) : [];
-        APP.student = s.success ? (s.data || []) : [];
-        APP.token    = t.success ? (t.data || []) : [];
-        APP.result   = r.success ? (r.data || []) : [];
-
-        updateQuestionCounter(APP.question.length);
-        updateStudentCounter(APP.student.length);
-        updateTokenCounter(APP.token.length);
-        updateResultCounter(APP.result.length);
-
-    } catch (err) {
-
-        console.error(err);
-
-    }
-
-}
-
-function loadDashboard() {
-
-    refreshDashboard();
-
-    setContent(`
-
-        <h2>Dashboard</h2>
-
-        <br>
-
-        <p>
-
-            Welcome to SAF Speaking Online Test Teacher Dashboard.
-
-        </p>
-
-        <br>
-
-        <p>
-
-            Use the left menu to manage Questions,
-            Students, Exam Tokens and Results.
-
-        </p>
-
-    `);
-
-}
 
 /* =====================================================
    QUESTION PAGE
@@ -354,99 +457,401 @@ function loadDashboard() {
 
 function loadQuestionPage() {
 
+    STATE.questionEdit = false;
+
+    STATE.questionId = null;
+
+
     setContent(`
 
-<h2>Speaking Question Database</h2>
+        <h2>
+            Speaking Question Database
+        </h2>
 
-<br>
+        <br>
 
-<form id="questionForm">
+        <form id="questionForm">
 
-<label>Title</label>
+            <label>
+                Title
+            </label>
 
-<input
-id="title"
-type="text"
-required>
+            <input
+                id="title"
+                type="text"
+                required
+            >
 
-<br><br>
+            <br><br>
 
-<label>Answer Key</label>
+            <label>
+                Answer Key
+            </label>
 
-<textarea
-id="answer"
-rows="5"
-required></textarea>
+            <textarea
+                id="answer"
+                rows="5"
+                required
+            ></textarea>
 
-<br><br>
+            <br><br>
 
-<label>Difficulty</label>
+            <label>
+                Difficulty
+            </label>
 
-<select id="difficulty">
+            <select id="difficulty">
 
-<option value="Easy">Easy</option>
-<option value="Medium">Medium</option>
-<option value="Hard">Hard</option>
+                <option value="Easy">
+                    Easy
+                </option>
 
-</select>
+                <option value="Medium">
+                    Medium
+                </option>
 
-<br><br>
+                <option value="Hard">
+                    Hard
+                </option>
 
-<label>Duration (Second)</label>
+            </select>
 
-<input
-id="duration"
-type="number"
-value="30"
-min="10"
-required>
+            <br><br>
 
-<br><br>
+            <label>
+                Duration (Second)
+            </label>
 
-<button
-id="btnSaveQuestion"
-type="submit"
-class="btn teacher">
+            <input
+                id="duration"
+                type="number"
+                value="30"
+                min="10"
+                required
+            >
 
-Save Question
+            <br><br>
 
-</button>
+            <button
+                id="btnSaveQuestion"
+                type="submit"
+                class="btn teacher">
 
-<button
-type="button"
-onclick="resetQuestionForm()">
+                Save Question
 
-Cancel
+            </button>
 
-</button>
+            <button
+                type="button"
+                onclick="resetQuestionForm()">
 
-</form>
+                Cancel
 
-<br>
+            </button>
 
-<input
-id="searchQuestion"
-type="text"
-placeholder="Search question..."
-onkeyup="filterQuestion()">
+        </form>
 
-<br><br>
+        <br>
 
-<div id="questionTable">
+        <input
+            id="searchQuestion"
+            type="text"
+            placeholder="Search question..."
+            onkeyup="filterQuestion()"
+        >
 
-Loading...
+        <br><br>
 
-</div>
+        <div id="questionTable">
 
-`);
+            Loading...
 
-    document
-        .getElementById("questionForm")
-        .addEventListener("submit", saveQuestion);
+        </div>
+
+    `);
+
+
+    const form =
+        document.getElementById(
+            "questionForm"
+        );
+
+
+    if (form) {
+
+        form.addEventListener(
+            "submit",
+            saveQuestion
+        );
+
+    }
+
 
     loadQuestions();
 
 }
+
+
+/* =====================================================
+   LOAD QUESTIONS
+===================================================== */
+
+async function loadQuestions() {
+
+    const table =
+        document.getElementById(
+            "questionTable"
+        );
+
+
+    if (!table) {
+
+        console.warn(
+            "loadQuestions: #questionTable not found."
+        );
+
+        return;
+
+    }
+
+
+    table.innerHTML =
+        "<p>Loading questions...</p>";
+
+
+    try {
+
+        const res =
+            await apiGetQuestion();
+
+
+        console.log(
+            "GET QUESTION RESPONSE:",
+            res
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            APP.question = [];
+
+
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load questions."
+                ) +
+                "</p>";
+
+
+            updateQuestionCounter(0);
+
+            return;
+
+        }
+
+
+        APP.question =
+            Array.isArray(res.data)
+                ? res.data
+                : [];
+
+
+        updateQuestionCounter(
+            APP.question.length
+        );
+
+
+        if (
+            APP.question.length === 0
+        ) {
+
+            table.innerHTML =
+                "<p>No question found.</p>";
+
+            return;
+
+        }
+
+
+        renderQuestions();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "LOAD QUESTIONS ERROR:",
+            err
+        );
+
+
+        APP.question = [];
+
+
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load questions."
+            ) +
+            "</p>";
+
+
+        updateQuestionCounter(0);
+
+    }
+
+}
+
+
+/* =====================================================
+   RENDER QUESTIONS
+===================================================== */
+
+function renderQuestions() {
+
+    const table =
+        document.getElementById(
+            "questionTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
+    if (
+        !Array.isArray(APP.question) ||
+        APP.question.length === 0
+    ) {
+
+        table.innerHTML =
+            "<p>No question found.</p>";
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <table
+            border="1"
+            width="100%"
+            cellpadding="8">
+
+            <thead>
+
+                <tr>
+
+                    <th>No</th>
+
+                    <th>Title</th>
+
+                    <th>Answer Key</th>
+
+                    <th>Difficulty</th>
+
+                    <th>Duration</th>
+
+                    <th>Status</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+    `;
+
+
+    APP.question.forEach(
+        (q, index) => {
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${index + 1}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(q.title)}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(q.answer)}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(q.difficulty)}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(q.duration)}
+                        seconds
+                    </td>
+
+                    <td>
+                        ${escapeHTML(q.status)}
+                    </td>
+
+                    <td>
+
+                        <button
+                            type="button"
+                            class="btn edit"
+                            onclick="editQuestion('${escapeAttribute(q.id)}')">
+
+                            Edit
+
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn delete"
+                            onclick="deleteQuestion('${escapeAttribute(q.id)}')">
+
+                            Delete
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+    html += `
+
+            </tbody>
+
+        </table>
+
+    `;
+
+
+    table.innerHTML = html;
+
+}
+
 
 /* =====================================================
    SAVE QUESTION
@@ -456,148 +861,653 @@ async function saveQuestion(e) {
 
     e.preventDefault();
 
-    const data = {
 
-        title: document.getElementById("title").value.trim(),
+    const titleElement =
+        document.getElementById(
+            "title"
+        );
 
-        answer: document.getElementById("answer").value.trim(),
 
-        difficulty: document.getElementById("difficulty").value,
+    const answerElement =
+        document.getElementById(
+            "answer"
+        );
 
-        duration: Number(
-            document.getElementById("duration").value
-        ),
 
-        status: "Active",
+    const difficultyElement =
+        document.getElementById(
+            "difficulty"
+        );
 
-        createdBy: "Teacher"
 
-    };
+    const durationElement =
+        document.getElementById(
+            "duration"
+        );
 
-    let res;
 
-    if (editMode) {
+    if (
+        !titleElement ||
+        !answerElement ||
+        !difficultyElement ||
+        !durationElement
+    ) {
 
-        data.id = selectedQuestionId;
+        alert(
+            "Question form is not available."
+        );
 
-        res = await apiUpdateQuestion(data);
-
-    } else {
-
-        res = await apiInsertQuestion(data);
+        return;
 
     }
 
-    alert(res.message);
 
-    if (!res.success) return;
+    const data = {
 
-    resetQuestionForm();
+        title:
+            titleElement.value.trim(),
 
-    await loadQuestions();
+        answer:
+            answerElement.value.trim(),
 
-    await refreshDashboard();
+        difficulty:
+            difficultyElement.value,
+
+        duration:
+            Number(
+                durationElement.value
+            ),
+
+        status:
+            "ACTIVE",
+
+        createdBy:
+            "Teacher"
+
+    };
+
+
+    if (!data.title) {
+
+        alert(
+            "Title wajib diisi."
+        );
+
+        return;
+
+    }
+
+
+    if (!data.answer) {
+
+        alert(
+            "Answer Key wajib diisi."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !data.duration ||
+        data.duration <= 0
+    ) {
+
+        alert(
+            "Duration tidak valid."
+        );
+
+        return;
+
+    }
+
+
+    let res;
+
+
+    try {
+
+        if (
+            STATE.questionEdit === true &&
+            STATE.questionId
+        ) {
+
+            data.id =
+                STATE.questionId;
+
+
+            res =
+                await apiUpdateQuestion(
+                    data
+                );
+
+        }
+
+        else {
+
+            res =
+                await apiInsertQuestion(
+                    data
+                );
+
+        }
+
+
+        console.log(
+            "QUESTION SAVE RESPONSE:",
+            res
+        );
+
+
+        if (!res) {
+
+            alert(
+                "No response from API."
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            res.message ||
+            (
+                STATE.questionEdit
+                    ? "Question updated."
+                    : "Question created."
+            )
+        );
+
+
+        if (
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        resetQuestionForm();
+
+
+        await loadQuestions();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "SAVE QUESTION ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to save question."
+        );
+
+    }
 
 }
+
+
+/* =====================================================
+   EDIT QUESTION
+===================================================== */
+
+function editQuestion(id) {
+
+    const question =
+        APP.question.find(
+            item =>
+                String(item.id) ===
+                String(id)
+        );
+
+
+    if (!question) {
+
+        alert(
+            "Question not found."
+        );
+
+        return;
+
+    }
+
+
+    STATE.questionEdit =
+        true;
+
+
+    STATE.questionId =
+        question.id;
+
+
+    const title =
+        document.getElementById(
+            "title"
+        );
+
+
+    const answer =
+        document.getElementById(
+            "answer"
+        );
+
+
+    const difficulty =
+        document.getElementById(
+            "difficulty"
+        );
+
+
+    const duration =
+        document.getElementById(
+            "duration"
+        );
+
+
+    if (title) {
+
+        title.value =
+            question.title || "";
+
+    }
+
+
+    if (answer) {
+
+        answer.value =
+            question.answer || "";
+
+    }
+
+
+    if (difficulty) {
+
+        difficulty.value =
+            question.difficulty ||
+            "Easy";
+
+    }
+
+
+    if (duration) {
+
+        duration.value =
+            question.duration || 30;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "btnSaveQuestion"
+        );
+
+
+    if (button) {
+
+        button.innerText =
+            "Update Question";
+
+    }
+
+
+    window.scrollTo({
+
+        top: 0,
+
+        behavior: "smooth"
+
+    });
+
+}
+
+
+/* =====================================================
+   DELETE QUESTION
+===================================================== */
+
+async function deleteQuestion(id) {
+
+    if (!id) {
+
+        alert(
+            "Question ID is required."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            "Delete this question?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const res =
+            await apiDeleteQuestion({
+
+                id: id
+
+            });
+
+
+        console.log(
+            "DELETE QUESTION RESPONSE:",
+            res
+        );
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Question deleted."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            String(
+                STATE.questionId
+            ) === String(id)
+        ) {
+
+            resetQuestionForm();
+
+        }
+
+
+        await loadQuestions();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE QUESTION ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete question."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   RESET QUESTION FORM
+===================================================== */
+
+function resetQuestionForm() {
+
+    STATE.questionEdit =
+        false;
+
+
+    STATE.questionId =
+        null;
+
+
+    const form =
+        document.getElementById(
+            "questionForm"
+        );
+
+
+    if (form) {
+
+        form.reset();
+
+    }
+
+
+    const duration =
+        document.getElementById(
+            "duration"
+        );
+
+
+    if (duration) {
+
+        duration.value = 30;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "btnSaveQuestion"
+        );
+
+
+    if (button) {
+
+        button.innerText =
+            "Save Question";
+
+    }
+
+}
+
+
+/* =====================================================
+   SEARCH QUESTION
+===================================================== */
+
+function filterQuestion() {
+
+    const input =
+        document.getElementById(
+            "searchQuestion"
+        );
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    const keyword =
+        input.value
+            .toLowerCase()
+            .trim();
+
+
+    document
+        .querySelectorAll(
+            "#questionTable tbody tr"
+        )
+        .forEach(row => {
+
+            row.style.display =
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
+
+        });
+
+}
+
+
 /* =====================================================
    STUDENT PAGE
 ===================================================== */
 
 function loadStudentPage() {
 
+    STATE.studentEdit =
+        false;
+
+    STATE.studentId =
+        null;
+
+
     setContent(`
 
-<h2>Student Database</h2>
+        <h2>
+            Student Database
+        </h2>
 
-<br>
+        <br>
 
-<form id="studentForm">
+        <form id="studentForm">
 
-<label>NIS</label>
+            <label>
+                NIS
+            </label>
 
-<input
-id="nis"
-required>
+            <input
+                id="nis"
+                required
+            >
 
-<br><br>
+            <br><br>
 
-<label>Student Name</label>
+            <label>
+                Student Name
+            </label>
 
-<input
-id="nama"
-required>
+            <input
+                id="nama"
+                required
+            >
 
-<br><br>
+            <br><br>
 
-<label>Class</label>
+            <label>
+                Class
+            </label>
 
-<input
-id="kelas"
-required>
+            <input
+                id="kelas"
+                required
+            >
 
-<br><br>
+            <br><br>
 
-<label>Username</label>
+            <label>
+                Username
+            </label>
 
-<input
-id="username"
-required>
+            <input
+                id="username"
+                required
+            >
 
-<br><br>
+            <br><br>
 
-<label>Password</label>
+            <label>
+                Password
+            </label>
 
-<input
-id="password"
-type="password"
-required>
+            <input
+                id="password"
+                type="password"
+                required
+            >
 
-<br><br>
+            <br><br>
 
-<button
-id="btnSaveStudent"
-type="submit"
-class="btn teacher">
+            <button
+                id="btnSaveStudent"
+                type="submit"
+                class="btn teacher">
 
-Save Student
+                Save Student
 
-</button>
+            </button>
 
-<button
-type="button"
-onclick="resetStudentForm()">
+            <button
+                type="button"
+                onclick="resetStudentForm()">
 
-Cancel
+                Cancel
 
-</button>
+            </button>
 
-</form>
+        </form>
 
-<br>
+        <br>
 
-<input
-id="searchStudent"
-type="text"
-placeholder="Search Student..."
-onkeyup="filterStudent()">
+        <input
+            id="searchStudent"
+            type="text"
+            placeholder="Search Student..."
+            onkeyup="filterStudent()"
+        >
 
-<br><br>
+        <br><br>
 
-<div id="studentTable">
+        <div id="studentTable">
 
-Loading...
+            Loading...
 
-</div>
+        </div>
 
-`);
+    `);
 
-    document
-        .getElementById("studentForm")
-        .addEventListener("submit", saveStudent);
+
+    const form =
+        document.getElementById(
+            "studentForm"
+        );
+
+
+    if (form) {
+
+        form.addEventListener(
+            "submit",
+            saveStudent
+        );
+
+    }
+
 
     loadStudents();
 
 }
+
 
 /* =====================================================
    SAVE STUDENT
@@ -607,164 +1517,325 @@ async function saveStudent(e) {
 
     e.preventDefault();
 
+
     const data = {
 
-        nis: document.getElementById("nis").value.trim(),
+        nis:
+            document
+                .getElementById("nis")
+                .value
+                .trim(),
 
-        nama: document.getElementById("nama").value.trim(),
+        nama:
+            document
+                .getElementById("nama")
+                .value
+                .trim(),
 
-        kelas: document.getElementById("kelas").value.trim(),
+        kelas:
+            document
+                .getElementById("kelas")
+                .value
+                .trim(),
 
-        username: document.getElementById("username").value.trim(),
+        username:
+            document
+                .getElementById("username")
+                .value
+                .trim(),
 
-        password: document.getElementById("password").value.trim(),
+        password:
+            document
+                .getElementById("password")
+                .value
+                .trim(),
 
-        status: "Active"
+        status:
+            "Active"
 
     };
 
-    let res;
 
-    if (STATE.studentEdit) {
+    if (
+        STATE.studentEdit &&
+        STATE.studentId
+    ) {
 
-        res = await apiUpdateStudent(data);
-
-    } else {
-
-        res = await apiInsertStudent(data);
+        data.id =
+            STATE.studentId;
 
     }
 
-    alert(res.message);
 
-    if (!res.success) return;
+    let res;
 
-    resetStudentForm();
 
-    await loadStudents();
+    try {
 
-    await refreshDashboard();
+        if (
+            STATE.studentEdit
+        ) {
+
+            res =
+                await apiUpdateStudent(
+                    data
+                );
+
+        }
+
+        else {
+
+            res =
+                await apiInsertStudent(
+                    data
+                );
+
+        }
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Student saved."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        resetStudentForm();
+
+
+        await loadStudents();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "SAVE STUDENT ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to save student."
+        );
+
+    }
 
 }
 
+
 /* =====================================================
-   LOAD STUDENT
+   LOAD STUDENTS
 ===================================================== */
 
 async function loadStudents() {
 
-    const res = await apiGetStudent();
+    const table =
+        document.getElementById(
+            "studentTable"
+        );
 
-    const table = document.getElementById("studentTable");
 
-    if (!res.success) {
-
-        table.innerHTML =
-            "<p style='color:red'>" +
-            escapeHTML(res.message) +
-            "</p>";
+    if (!table) {
 
         return;
 
     }
 
-    APP.student = res.data || [];
 
-    updateStudentCounter(APP.student.length);
+    try {
 
-    if (APP.student.length === 0) {
+        const res =
+            await apiGetStudent();
 
-        table.innerHTML = "<p>No student found.</p>";
 
-        return;
+        if (
+            !res ||
+            res.success !== true
+        ) {
 
-    }
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load students."
+                ) +
+                "</p>";
 
-    let html = `
+            return;
 
-<table border="1" width="100%" cellpadding="8">
+        }
 
-<thead>
 
-<tr>
+        APP.student =
+            Array.isArray(res.data)
+                ? res.data
+                : [];
 
-<th>No</th>
 
-<th>NIS</th>
+        updateStudentCounter(
+            APP.student.length
+        );
 
-<th>Name</th>
 
-<th>Class</th>
+        if (
+            APP.student.length === 0
+        ) {
 
-<th>Username</th>
+            table.innerHTML =
+                "<p>No student found.</p>";
 
-<th>Status</th>
+            return;
 
-<th>Action</th>
+        }
 
-</tr>
 
-</thead>
+        let html = `
 
-<tbody>
+            <table
+                border="1"
+                width="100%"
+                cellpadding="8">
 
-`;
+                <thead>
 
-    APP.student.forEach((s, i) => {
+                    <tr>
+
+                        <th>No</th>
+
+                        <th>NIS</th>
+
+                        <th>Name</th>
+
+                        <th>Class</th>
+
+                        <th>Username</th>
+
+                        <th>Status</th>
+
+                        <th>Action</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        APP.student.forEach(
+            (s, i) => {
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${i + 1}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.nis)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.nama)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.kelas)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.username)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.status)}
+                        </td>
+
+                        <td>
+
+                            <button
+                                type="button"
+                                class="btn edit"
+                                onclick="editStudent('${escapeAttribute(s.nis)}')">
+
+                                Edit
+
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn delete"
+                                onclick="deleteStudent('${escapeAttribute(s.nis)}')">
+
+                                Delete
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
 
         html += `
 
-<tr>
+                </tbody>
 
-<td>${i + 1}</td>
+            </table>
 
-<td>${escapeHTML(s.nis)}</td>
+        `;
 
-<td>${escapeHTML(s.nama)}</td>
 
-<td>${escapeHTML(s.kelas)}</td>
+        table.innerHTML =
+            html;
 
-<td>${escapeHTML(s.username)}</td>
+    }
 
-<td>${escapeHTML(s.status)}</td>
+    catch (err) {
 
-<td>
+        console.error(
+            "LOAD STUDENTS ERROR:",
+            err
+        );
 
-<button
-class="btn edit"
-onclick="editStudent('${s.nis}')">
 
-Edit
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load students."
+            ) +
+            "</p>";
 
-</button>
-
-<button
-class="btn delete"
-onclick="deleteStudent('${s.nis}')">
-
-Delete
-
-</button>
-
-</td>
-
-</tr>
-
-`;
-
-    });
-
-    html += `
-
-</tbody>
-
-</table>
-
-`;
-
-    table.innerHTML = html;
+    }
 
 }
+
 
 /* =====================================================
    EDIT STUDENT
@@ -772,34 +1843,118 @@ Delete
 
 function editStudent(nis) {
 
-    const s = APP.student.find(item => item.nis === nis);
+    const student =
+        APP.student.find(
+            item =>
+                String(item.nis) ===
+                String(nis)
+        );
 
-    if (!s) {
 
-        alert("Student not found.");
+    if (!student) {
+
+        alert(
+            "Student not found."
+        );
 
         return;
 
     }
 
-    STATE.studentEdit = true;
 
-    STATE.studentId = nis;
+    STATE.studentEdit =
+        true;
 
-    document.getElementById("nis").value = s.nis;
 
-    document.getElementById("nama").value = s.nama;
+    STATE.studentId =
+        student.nis;
 
-    document.getElementById("kelas").value = s.kelas;
 
-    document.getElementById("username").value = s.username;
+    const nisElement =
+        document.getElementById(
+            "nis"
+        );
 
-    document.getElementById("password").value = s.password || "";
 
-    document.getElementById("btnSaveStudent")
-        .innerText = "Update Student";
+    const namaElement =
+        document.getElementById(
+            "nama"
+        );
+
+
+    const kelasElement =
+        document.getElementById(
+            "kelas"
+        );
+
+
+    const usernameElement =
+        document.getElementById(
+            "username"
+        );
+
+
+    const passwordElement =
+        document.getElementById(
+            "password"
+        );
+
+
+    if (nisElement) {
+
+        nisElement.value =
+            student.nis || "";
+
+    }
+
+
+    if (namaElement) {
+
+        namaElement.value =
+            student.nama || "";
+
+    }
+
+
+    if (kelasElement) {
+
+        kelasElement.value =
+            student.kelas || "";
+
+    }
+
+
+    if (usernameElement) {
+
+        usernameElement.value =
+            student.username || "";
+
+    }
+
+
+    if (passwordElement) {
+
+        passwordElement.value =
+            student.password || "";
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "btnSaveStudent"
+        );
+
+
+    if (button) {
+
+        button.innerText =
+            "Update Student";
+
+    }
 
 }
+
 
 /* =====================================================
    DELETE STUDENT
@@ -807,33 +1962,91 @@ function editStudent(nis) {
 
 async function deleteStudent(nis) {
 
-    if (!confirm("Delete this student?")) {
+    if (!nis) {
+
+        alert(
+            "Student NIS is required."
+        );
 
         return;
 
     }
 
-    const res = await apiDeleteStudent({
 
-        nis: nis
+    if (
+        !confirm(
+            "Delete this student?"
+        )
+    ) {
 
-    });
-
-    alert(res.message);
-
-    if (!res.success) return;
-
-    if (STATE.studentId === nis) {
-
-        resetStudentForm();
+        return;
 
     }
 
-    await loadStudents();
 
-    await refreshDashboard();
+    try {
+
+        const res =
+            await apiDeleteStudent({
+
+                nis: nis
+
+            });
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Student deleted."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            String(
+                STATE.studentId
+            ) === String(nis)
+        ) {
+
+            resetStudentForm();
+
+        }
+
+
+        await loadStudents();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE STUDENT ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete student."
+        );
+
+    }
 
 }
+
 
 /* =====================================================
    RESET STUDENT FORM
@@ -841,11 +2054,19 @@ async function deleteStudent(nis) {
 
 function resetStudentForm() {
 
-    STATE.studentEdit = false;
+    STATE.studentEdit =
+        false;
 
-    STATE.studentId = null;
 
-    const form = document.getElementById("studentForm");
+    STATE.studentId =
+        null;
+
+
+    const form =
+        document.getElementById(
+            "studentForm"
+        );
+
 
     if (form) {
 
@@ -853,15 +2074,22 @@ function resetStudentForm() {
 
     }
 
-    const btn = document.getElementById("btnSaveStudent");
 
-    if (btn) {
+    const button =
+        document.getElementById(
+            "btnSaveStudent"
+        );
 
-        btn.innerText = "Save Student";
+
+    if (button) {
+
+        button.innerText =
+            "Save Student";
 
     }
 
 }
+
 
 /* =====================================================
    SEARCH STUDENT
@@ -869,23 +2097,43 @@ function resetStudentForm() {
 
 function filterStudent() {
 
-    const keyword = document
-        .getElementById("searchStudent")
-        .value
-        .toLowerCase();
+    const input =
+        document.getElementById(
+            "searchStudent"
+        );
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    const keyword =
+        input.value
+            .toLowerCase()
+            .trim();
+
 
     document
-        .querySelectorAll("#studentTable tbody tr")
+        .querySelectorAll(
+            "#studentTable tbody tr"
+        )
         .forEach(row => {
 
             row.style.display =
-                row.innerText.toLowerCase().includes(keyword)
-                    ? ""
-                    : "none";
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
 
         });
 
 }
+
+
 /* =====================================================
    TOKEN PAGE
 ===================================================== */
@@ -894,73 +2142,99 @@ function loadTokenPage() {
 
     setContent(`
 
-<h2>Exam Token</h2>
+        <h2>
+            Exam Token
+        </h2>
 
-<br>
+        <br>
 
-<form id="tokenForm">
+        <form id="tokenForm">
 
-<label>Class</label>
+            <label>
+                Class
+            </label>
 
-<input
-id="tokenClass"
-required>
+            <input
+                id="tokenClass"
+                required
+            >
 
-<br><br>
+            <br><br>
 
-<label>Expired (Minutes)</label>
+            <label>
+                Expired (Minutes)
+            </label>
 
-<input
-id="expired"
-type="number"
-value="30"
-min="1"
-required>
+            <input
+                id="expired"
+                type="number"
+                value="30"
+                min="1"
+                required
+            >
 
-<br><br>
+            <br><br>
 
-<label>Note</label>
+            <label>
+                Note
+            </label>
 
-<input
-id="note">
+            <input
+                id="note"
+            >
 
-<br><br>
+            <br><br>
 
-<button
-type="submit"
-class="btn teacher">
+            <button
+                type="submit"
+                class="btn teacher">
 
-Generate Token
+                Generate Token
 
-</button>
+            </button>
 
-</form>
+        </form>
 
-<br>
+        <br>
 
-<input
-id="searchToken"
-type="text"
-placeholder="Search Token..."
-onkeyup="filterToken()">
+        <input
+            id="searchToken"
+            type="text"
+            placeholder="Search Token..."
+            onkeyup="filterToken()"
+        >
 
-<br><br>
+        <br><br>
 
-<div id="tokenTable">
+        <div id="tokenTable">
 
-Loading...
+            Loading...
 
-</div>
+        </div>
 
-`);
+    `);
 
-    document
-        .getElementById("tokenForm")
-        .addEventListener("submit", generateExamToken);
+
+    const form =
+        document.getElementById(
+            "tokenForm"
+        );
+
+
+    if (form) {
+
+        form.addEventListener(
+            "submit",
+            generateExamToken
+        );
+
+    }
+
 
     loadTokens();
 
 }
+
 
 /* =====================================================
    GENERATE TOKEN
@@ -970,35 +2244,172 @@ async function generateExamToken(e) {
 
     e.preventDefault();
 
+
+    const classElement =
+        document.getElementById(
+            "tokenClass"
+        );
+
+
+    const expiredElement =
+        document.getElementById(
+            "expired"
+        );
+
+
+    const noteElement =
+        document.getElementById(
+            "note"
+        );
+
+
+    if (
+        !classElement ||
+        !expiredElement ||
+        !noteElement
+    ) {
+
+        alert(
+            "Exam token form is not available."
+        );
+
+        return;
+
+    }
+
+
     const data = {
 
-        kelas: document.getElementById("tokenClass").value.trim(),
+        kelas:
+            classElement.value.trim(),
 
-        expired: Number(
-            document.getElementById("expired").value
-        ),
+        expired:
+            Number(
+                expiredElement.value
+            ),
 
-        note: document.getElementById("note").value.trim(),
+        note:
+            noteElement.value.trim(),
 
-        createdBy: "Teacher"
+        createdBy:
+            "Teacher"
 
     };
 
-    const res = await apiCreateToken(data);
 
-    alert(res.message);
+    if (!data.kelas) {
 
-    if (!res.success) return;
+        alert(
+            "Class wajib diisi."
+        );
 
-    document.getElementById("tokenForm").reset();
+        return;
 
-    document.getElementById("expired").value = 30;
+    }
 
-    await loadTokens();
 
-    await refreshDashboard();
+    if (
+        !data.expired ||
+        data.expired <= 0
+    ) {
+
+        alert(
+            "Expired minutes tidak valid."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        console.log(
+            "CREATE TOKEN REQUEST:",
+            data
+        );
+
+
+        const res =
+            await apiCreateToken(
+                data
+            );
+
+
+        console.log(
+            "CREATE TOKEN RESPONSE:",
+            res
+        );
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Token created."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        const form =
+            document.getElementById(
+                "tokenForm"
+            );
+
+
+        if (form) {
+
+            form.reset();
+
+        }
+
+
+        const expired =
+            document.getElementById(
+                "expired"
+            );
+
+
+        if (expired) {
+
+            expired.value = 30;
+
+        }
+
+
+        await loadTokens();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "CREATE TOKEN ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to create exam token."
+        );
+
+    }
 
 }
+
 
 /* =====================================================
    LOAD TOKEN
@@ -1006,114 +2417,227 @@ async function generateExamToken(e) {
 
 async function loadTokens() {
 
-    const res = await apiGetToken();
+    const table =
+        document.getElementById(
+            "tokenTable"
+        );
 
-    const table = document.getElementById("tokenTable");
 
-    if (!res.success) {
-
-        table.innerHTML =
-            "<p style='color:red'>" +
-            escapeHTML(res.message) +
-            "</p>";
+    if (!table) {
 
         return;
 
     }
 
-    APP.token = res.data || [];
 
-    updateTokenCounter(APP.token.length);
+    try {
 
-    if (APP.token.length === 0) {
+        const res =
+            await apiGetToken();
 
-        table.innerHTML = "<p>No token found.</p>";
 
-        return;
+        console.log(
+            "GET TOKEN RESPONSE:",
+            res
+        );
 
-    }
 
-    let html = `
+        if (
+            !res ||
+            res.success !== true
+        ) {
 
-<table border="1" width="100%" cellpadding="8">
+            APP.token = [];
 
-<thead>
 
-<tr>
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load tokens."
+                ) +
+                "</p>";
 
-<th>No</th>
 
-<th>Token</th>
+            updateTokenCounter(0);
 
-<th>Class</th>
+            return;
 
-<th>Status</th>
+        }
 
-<th>Expired</th>
 
-<th>Action</th>
+        APP.token =
+            Array.isArray(res.data)
+                ? res.data
+                : [];
 
-</tr>
 
-</thead>
+        updateTokenCounter(
+            APP.token.length
+        );
 
-<tbody>
 
-`;
+        if (
+            APP.token.length === 0
+        ) {
 
-    APP.token.forEach((t, i) => {
+            table.innerHTML =
+                "<p>No token found.</p>";
+
+            return;
+
+        }
+
+
+        let html = `
+
+            <table
+                border="1"
+                width="100%"
+                cellpadding="8">
+
+                <thead>
+
+                    <tr>
+
+                        <th>No</th>
+
+                        <th>Token</th>
+
+                        <th>Class</th>
+
+                        <th>Status</th>
+
+                        <th>Expired</th>
+
+                        <th>Action</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        APP.token.forEach(
+            (t, i) => {
+
+                const status =
+                    String(
+                        t.status || ""
+                    ).toUpperCase();
+
+
+                const disableButton =
+                    status === "ACTIVE"
+
+                        ? `
+
+                            <button
+                                type="button"
+                                class="btn edit"
+                                onclick="disableExamToken('${escapeAttribute(t.token)}')">
+
+                                Disable
+
+                            </button>
+
+                          `
+
+                        : "";
+
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${i + 1}
+                        </td>
+
+                        <td>
+                            <b>
+                                ${escapeHTML(t.token)}
+                            </b>
+                        </td>
+
+                        <td>
+                            ${escapeHTML(t.kelas)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(t.status)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(t.expired)}
+                            minutes
+                        </td>
+
+                        <td>
+
+                            ${disableButton}
+
+                            <button
+                                type="button"
+                                class="btn delete"
+                                onclick="deleteExamToken('${escapeAttribute(t.token)}')">
+
+                                Delete
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
 
         html += `
 
-<tr>
+                </tbody>
 
-<td>${i + 1}</td>
+            </table>
 
-<td><b>${escapeHTML(t.token)}</b></td>
+        `;
 
-<td>${escapeHTML(t.kelas)}</td>
 
-<td>${escapeHTML(t.status)}</td>
+        table.innerHTML =
+            html;
 
-<td>${escapeHTML(t.expired)}</td>
+    }
 
-<td>
+    catch (err) {
 
-<button
-class="btn edit"
-onclick="disableExamToken('${t.token}')">
+        console.error(
+            "LOAD TOKEN ERROR:",
+            err
+        );
 
-Disable
 
-</button>
+        APP.token = [];
 
-<button
-class="btn delete"
-onclick="deleteExamToken('${t.token}')">
 
-Delete
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load tokens."
+            ) +
+            "</p>";
 
-</button>
-
-</td>
-
-</tr>
-
-`;
-
-    });
-
-    html += `
-
-</tbody>
-
-</table>
-
-`;
-
-    table.innerHTML = html;
+    }
 
 }
+
 
 /* =====================================================
    DISABLE TOKEN
@@ -1121,27 +2645,86 @@ Delete
 
 async function disableExamToken(token) {
 
-    if (!confirm("Disable this token?")) {
+    if (!token) {
+
+        alert(
+            "Token is required."
+        );
 
         return;
 
     }
 
-    const res = await apiDisableToken({
 
-        token: token
+    if (
+        !confirm(
+            "Disable this token?"
+        )
+    ) {
 
-    });
+        return;
 
-    alert(res.message);
+    }
 
-    if (!res.success) return;
 
-    await loadTokens();
+    try {
 
-    await refreshDashboard();
+        const res =
+            await apiDisableToken({
+
+                token: token
+
+            });
+
+
+        console.log(
+            "DISABLE TOKEN RESPONSE:",
+            res
+        );
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Token disabled."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        await loadTokens();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DISABLE TOKEN ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to disable token."
+        );
+
+    }
 
 }
+
 
 /* =====================================================
    DELETE TOKEN
@@ -1149,27 +2732,86 @@ async function disableExamToken(token) {
 
 async function deleteExamToken(token) {
 
-    if (!confirm("Delete this token?")) {
+    if (!token) {
+
+        alert(
+            "Token is required."
+        );
 
         return;
 
     }
 
-    const res = await apiDeleteToken({
 
-        token: token
+    if (
+        !confirm(
+            "Delete this token?"
+        )
+    ) {
 
-    });
+        return;
 
-    alert(res.message);
+    }
 
-    if (!res.success) return;
 
-    await loadTokens();
+    try {
 
-    await refreshDashboard();
+        const res =
+            await apiDeleteToken({
+
+                token: token
+
+            });
+
+
+        console.log(
+            "DELETE TOKEN RESPONSE:",
+            res
+        );
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Token deleted."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        await loadTokens();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE TOKEN ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete token."
+        );
+
+    }
 
 }
+
 
 /* =====================================================
    SEARCH TOKEN
@@ -1177,23 +2819,43 @@ async function deleteExamToken(token) {
 
 function filterToken() {
 
-    const keyword = document
-        .getElementById("searchToken")
-        .value
-        .toLowerCase();
+    const input =
+        document.getElementById(
+            "searchToken"
+        );
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    const keyword =
+        input.value
+            .toLowerCase()
+            .trim();
+
 
     document
-        .querySelectorAll("#tokenTable tbody tr")
+        .querySelectorAll(
+            "#tokenTable tbody tr"
+        )
         .forEach(row => {
 
             row.style.display =
-                row.innerText.toLowerCase().includes(keyword)
-                    ? ""
-                    : "none";
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
 
         });
 
 }
+
+
 /* =====================================================
    RESULT PAGE
 ===================================================== */
@@ -1202,140 +2864,227 @@ function loadResultPage() {
 
     setContent(`
 
-<h2>Speaking Results</h2>
+        <h2>
+            Speaking Results
+        </h2>
 
-<br>
+        <br>
 
-<input
-id="searchResult"
-type="text"
-placeholder="Search Student..."
-onkeyup="filterResult()">
+        <input
+            id="searchResult"
+            type="text"
+            placeholder="Search Student..."
+            onkeyup="filterResult()"
+        >
 
-<br><br>
+        <br><br>
 
-<div id="resultTable">
+        <div id="resultTable">
 
-Loading...
+            Loading...
 
-</div>
+        </div>
 
-`);
+    `);
+
 
     loadResults();
 
 }
 
+
 /* =====================================================
-   LOAD RESULT
+   LOAD RESULTS
 ===================================================== */
 
 async function loadResults() {
 
-    const res = await apiGetResult();
+    const table =
+        document.getElementById(
+            "resultTable"
+        );
 
-    const table = document.getElementById("resultTable");
 
-    if (!res.success) {
-
-        table.innerHTML =
-            "<p style='color:red'>" +
-            escapeHTML(res.message) +
-            "</p>";
+    if (!table) {
 
         return;
 
     }
 
-    APP.result = res.data || [];
 
-    updateResultCounter(APP.result.length);
+    try {
 
-    if (APP.result.length === 0) {
+        const res =
+            await apiGetResult();
 
-        table.innerHTML = "<p>No result found.</p>";
 
-        return;
+        if (
+            !res ||
+            res.success !== true
+        ) {
 
-    }
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load results."
+                ) +
+                "</p>";
 
-    let html = `
+            return;
 
-<table border="1" width="100%" cellpadding="8">
+        }
 
-<thead>
 
-<tr>
+        APP.result =
+            Array.isArray(res.data)
+                ? res.data
+                : [];
 
-<th>No</th>
 
-<th>NIS</th>
+        updateResultCounter(
+            APP.result.length
+        );
 
-<th>Name</th>
 
-<th>Question</th>
+        if (
+            APP.result.length === 0
+        ) {
 
-<th>Score</th>
+            table.innerHTML =
+                "<p>No result found.</p>";
 
-<th>Feedback</th>
+            return;
 
-<th>Action</th>
+        }
 
-</tr>
 
-</thead>
+        let html = `
 
-<tbody>
+            <table
+                border="1"
+                width="100%"
+                cellpadding="8">
 
-`;
+                <thead>
 
-    APP.result.forEach((r, i) => {
+                    <tr>
+
+                        <th>No</th>
+
+                        <th>NIS</th>
+
+                        <th>Name</th>
+
+                        <th>Question</th>
+
+                        <th>Score</th>
+
+                        <th>Feedback</th>
+
+                        <th>Action</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        APP.result.forEach(
+            (r, i) => {
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${i + 1}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(r.nis)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(r.nama)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(r.question)}
+                        </td>
+
+                        <td>
+                            <b>
+                                ${escapeHTML(r.score)}
+                            </b>
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                r.feedback || "-"
+                            )}
+                        </td>
+
+                        <td>
+
+                            <button
+                                type="button"
+                                class="btn delete"
+                                onclick="deleteResult('${escapeAttribute(r.id)}')">
+
+                                Delete
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
 
         html += `
 
-<tr>
+                </tbody>
 
-<td>${i + 1}</td>
+            </table>
 
-<td>${escapeHTML(r.nis)}</td>
+        `;
 
-<td>${escapeHTML(r.nama)}</td>
 
-<td>${escapeHTML(r.question)}</td>
+        table.innerHTML =
+            html;
 
-<td><b>${escapeHTML(r.score)}</b></td>
+    }
 
-<td>${escapeHTML(r.feedback || "-")}</td>
+    catch (err) {
 
-<td>
+        console.error(
+            "LOAD RESULTS ERROR:",
+            err
+        );
 
-<button
-class="btn delete"
-onclick="deleteResult('${r.id}')">
 
-Delete
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load results."
+            ) +
+            "</p>";
 
-</button>
-
-</td>
-
-</tr>
-
-`;
-
-    });
-
-    html += `
-
-</tbody>
-
-</table>
-
-`;
-
-    table.innerHTML = html;
+    }
 
 }
+
 
 /* =====================================================
    DELETE RESULT
@@ -1343,27 +3092,80 @@ Delete
 
 async function deleteResult(id) {
 
-    if (!confirm("Delete this result?")) {
+    if (!id) {
+
+        alert(
+            "Result ID is required."
+        );
 
         return;
 
     }
 
-    const res = await apiDeleteResult({
 
-        id: id
+    if (
+        !confirm(
+            "Delete this result?"
+        )
+    ) {
 
-    });
+        return;
 
-    alert(res.message);
+    }
 
-    if (!res.success) return;
 
-    await loadResults();
+    try {
 
-    await refreshDashboard();
+        const res =
+            await apiDeleteResult({
+
+                id: id
+
+            });
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Result deleted."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        await loadResults();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE RESULT ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete result."
+        );
+
+    }
 
 }
+
 
 /* =====================================================
    SEARCH RESULT
@@ -1371,23 +3173,42 @@ async function deleteResult(id) {
 
 function filterResult() {
 
-    const keyword = document
-        .getElementById("searchResult")
-        .value
-        .toLowerCase();
+    const input =
+        document.getElementById(
+            "searchResult"
+        );
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    const keyword =
+        input.value
+            .toLowerCase()
+            .trim();
+
 
     document
-        .querySelectorAll("#resultTable tbody tr")
+        .querySelectorAll(
+            "#resultTable tbody tr"
+        )
         .forEach(row => {
 
             row.style.display =
-                row.innerText.toLowerCase().includes(keyword)
-                    ? ""
-                    : "none";
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
 
         });
 
 }
+
 
 /* =====================================================
    COUNTERS
@@ -1395,139 +3216,240 @@ function filterResult() {
 
 function updateQuestionCounter(total) {
 
-    const el = document.getElementById("totalQuestion");
+    const elements = [
 
-    if (el) {
+        "totalQuestion",
 
-        el.textContent = total;
+        "dashboardQuestionCount"
 
-    }
+    ];
+
+
+    elements.forEach(id => {
+
+        const el =
+            document.getElementById(id);
+
+
+        if (el) {
+
+            el.textContent =
+                total;
+
+        }
+
+    });
 
 }
+
 
 function updateStudentCounter(total) {
 
-    const el = document.getElementById("totalStudent");
+    const elements = [
 
-    if (el) {
+        "totalStudent",
 
-        el.textContent = total;
+        "dashboardStudentCount"
 
-    }
+    ];
+
+
+    elements.forEach(id => {
+
+        const el =
+            document.getElementById(id);
+
+
+        if (el) {
+
+            el.textContent =
+                total;
+
+        }
+
+    });
 
 }
+
 
 function updateTokenCounter(total) {
 
-    const el = document.getElementById("totalToken");
+    const elements = [
 
-    if (el) {
+        "totalToken",
 
-        el.textContent = total;
+        "dashboardTokenCount"
 
-    }
+    ];
+
+
+    elements.forEach(id => {
+
+        const el =
+            document.getElementById(id);
+
+
+        if (el) {
+
+            el.textContent =
+                total;
+
+        }
+
+    });
 
 }
+
 
 function updateResultCounter(total) {
 
-    const el = document.getElementById("totalResult");
+    const elements = [
 
-    if (el) {
+        "totalResult",
 
-        el.textContent = total;
+        "dashboardResultCount"
+
+    ];
+
+
+    elements.forEach(id => {
+
+        const el =
+            document.getElementById(id);
+
+
+        if (el) {
+
+            el.textContent =
+                total;
+
+        }
+
+    });
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(value) {
+
+    if (
+        value === null ||
+        typeof value === "undefined"
+    ) {
+
+        return "";
 
     }
 
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
 }
+
 
 /* =====================================================
-   COMMON HELPERS
+   ESCAPE ATTRIBUTE
 ===================================================== */
 
-function escapeHTML(text) {
+function escapeAttribute(value) {
 
-    return String(text || "")
+    if (
+        value === null ||
+        typeof value === "undefined"
+    ) {
 
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        return "";
+
+    }
+
+
+    return String(value)
+
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+
+        .replace(
+            /'/g,
+            "\\'"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        );
 
 }
+
+
+/* =====================================================
+   FORMAT DATE
+===================================================== */
 
 function formatDate(value) {
 
-    if (!value) return "-";
+    if (!value) {
 
-    const d = new Date(value);
-
-    if (isNaN(d)) return value;
-
-    return d.toLocaleString();
-
-}
-
-/* =====================================================
-   RESET QUESTION FORM
-===================================================== */
-
-function resetQuestionForm() {
-
-    editMode = false;
-
-    selectedQuestionId = null;
-
-    const form = document.getElementById("questionForm");
-
-    if (form) {
-
-        form.reset();
+        return "-";
 
     }
 
-    const duration = document.getElementById("duration");
 
-    if (duration) {
+    const date =
+        new Date(value);
 
-        duration.value = 30;
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return escapeHTML(
+            value
+        );
 
     }
 
-    const btn = document.getElementById("btnSaveQuestion");
 
-    if (btn) {
+    return escapeHTML(
 
-        btn.innerText = "Save Question";
+        date.toLocaleString()
 
-    }
-
-}
-
-/* =====================================================
-   SEARCH QUESTION
-===================================================== */
-
-function filterQuestion() {
-
-    const keyword = document
-        .getElementById("searchQuestion")
-        .value
-        .toLowerCase();
-
-    document
-        .querySelectorAll("#questionTable tbody tr")
-        .forEach(row => {
-
-            row.style.display =
-                row.innerText.toLowerCase().includes(keyword)
-                    ? ""
-                    : "none";
-
-        });
+    );
 
 }
+
 
 /* =====================================================
    END OF FILE
