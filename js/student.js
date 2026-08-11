@@ -25,7 +25,6 @@
  * - Tidak mengubah teacher.js
  * - Tidak menggunakan exam.js
  * - Tidak mengubah architecture
- * - Student hanya membaca result miliknya
  * ==========================================
  */
 
@@ -41,36 +40,13 @@ document.addEventListener(
 
 
 /* =====================================================
-GLOBAL STUDENT STATE
-===================================================== */
-
-const STUDENT_APP = {
-
-    session: null,
-
-    results: [],
-
-    initialized: false
-
-};
-
-
-/* =====================================================
 INITIALIZE STUDENT
 ===================================================== */
 
 async function initStudent() {
 
     console.log(
-        "================================="
-    );
-
-    console.log(
         "SAF Student Dashboard initializing..."
-    );
-
-    console.log(
-        "================================="
     );
 
 
@@ -85,14 +61,6 @@ async function initStudent() {
     }
 
 
-    STUDENT_APP.session =
-        session;
-
-
-    STUDENT_APP.initialized =
-        true;
-
-
     setStudentIdentity(
         session
     );
@@ -104,26 +72,8 @@ async function initStudent() {
     bindStudentMenu();
 
 
-    /*
-     * Load current token
-     * if available in session.
-     */
-
-    setCurrentToken(
-        session
-    );
-
-
-    /*
-     * Load result student.
-     */
-
     await loadStudentResults();
 
-
-    /*
-     * Final dashboard update.
-     */
 
     updateDashboardFromResults();
 
@@ -183,19 +133,8 @@ function getStudentSession() {
 
 
         console.log(
-            "================================="
-        );
-
-        console.log(
-            "STUDENT SESSION:"
-        );
-
-        console.log(
+            "STUDENT SESSION:",
             session
-        );
-
-        console.log(
-            "================================="
         );
 
 
@@ -284,120 +223,6 @@ function setTodayDate() {
 
 
 /* =====================================================
-CURRENT TOKEN
-===================================================== */
-
-function setCurrentToken(session) {
-
-    const tokenElement =
-        document.getElementById(
-            "examToken"
-        );
-
-
-    if (!tokenElement) {
-
-        return;
-
-    }
-
-
-    let token = "";
-
-
-    /*
-     * Try session token fields.
-     */
-
-    if (session.token) {
-
-        token =
-            session.token;
-
-    }
-
-
-    /*
-     * Try sessionStorage token.
-     */
-
-    if (!token) {
-
-        try {
-
-            const rawToken =
-                sessionStorage.getItem(
-                    CONFIG.TOKEN_KEY
-                );
-
-
-            if (rawToken) {
-
-                try {
-
-                    const parsedToken =
-                        JSON.parse(
-                            rawToken
-                        );
-
-
-                    if (
-                        typeof parsedToken ===
-                        "string"
-                    ) {
-
-                        token =
-                            parsedToken;
-
-                    }
-
-                    else if (
-                        parsedToken &&
-                        parsedToken.token
-                    ) {
-
-                        token =
-                            parsedToken.token;
-
-                    }
-
-                }
-
-                catch (err) {
-
-                    /*
-                     * TOKEN_KEY may contain
-                     * plain string.
-                     */
-
-                    token =
-                        rawToken;
-
-                }
-
-            }
-
-        }
-
-        catch (err) {
-
-            console.warn(
-                "TOKEN READ ERROR:",
-                err
-            );
-
-        }
-
-    }
-
-
-    tokenElement.textContent =
-        token || "-";
-
-}
-
-
-/* =====================================================
 MENU
 ===================================================== */
 
@@ -418,26 +243,6 @@ function bindStudentMenu() {
             if (
                 text.includes("logout")
             ) {
-
-                /*
-                 * Avoid duplicate listener.
-                 */
-
-                if (
-                    link.dataset
-                        .studentLogoutBound ===
-                    "true"
-                ) {
-
-                    return;
-
-                }
-
-
-                link.dataset
-                    .studentLogoutBound =
-                    "true";
-
 
                 link.addEventListener(
                     "click",
@@ -485,40 +290,7 @@ LOAD STUDENT RESULTS
 
 async function loadStudentResults() {
 
-    const resultContainer =
-        document.getElementById(
-            "studentResults"
-        );
-
-
-    if (!resultContainer) {
-
-        console.error(
-            "Student dashboard error: " +
-            "#studentResults not found."
-        );
-
-        return;
-
-    }
-
-
-    resultContainer.innerHTML = `
-
-        <p>
-            Loading your speaking results...
-        </p>
-
-    `;
-
-
-    /*
-     * Use the session already loaded
-     * during initialization.
-     */
-
     const session =
-        STUDENT_APP.session ||
         getStudentSession();
 
 
@@ -529,188 +301,172 @@ async function loadStudentResults() {
     }
 
 
-    /*
-     * NIS is the primary student identifier.
-     */
-
-    const nis =
-        session.nis !== undefined &&
-        session.nis !== null
-            ? String(session.nis).trim()
-            : "";
-
-
-    if (!nis) {
-
-        console.error(
-            "Student NIS is missing from session:",
-            session
+    const resultContainer =
+        document.getElementById(
+            "studentResults"
         );
 
 
-        resultContainer.innerHTML = `
+    if (!resultContainer) {
 
-            <p style="color:red;">
-                Student NIS tidak ditemukan
-                pada session.
-            </p>
-
-        `;
+        console.warn(
+            "#studentResults not found."
+        );
 
         return;
 
     }
 
 
-    /*
-     * Store session again.
-     */
-
-    STUDENT_APP.session =
-        session;
+    resultContainer.innerHTML =
+        "<p>Loading your speaking results...</p>";
 
 
-    const requestData = {
-
-        nis: nis
-
-    };
+    const nis =
+        session.nis;
 
 
-    console.log(
-        "================================="
-    );
+    if (!nis) {
 
-    console.log(
-        "GET STUDENT RESULT REQUEST"
-    );
+        resultContainer.innerHTML =
+            "<p style='color:red'>" +
+            "Student NIS tidak ditemukan pada session." +
+            "</p>";
+
+        return;
+
+    }
+
 
     console.log(
-        requestData
-    );
-
-    console.log(
-        "================================="
+        "GET STUDENT RESULT REQUEST:",
+        {
+            nis: nis
+        }
     );
 
 
     try {
 
-        /*
-         * IMPORTANT:
-         * Student uses getStudentResult,
-         * NOT getResult.
-         */
-
         const res =
-            await apiGetStudentResult(
-                requestData
-            );
+            await apiGetStudentResult({
+
+                nis: nis
+
+            });
 
 
         console.log(
-            "================================="
-        );
-
-        console.log(
-            "GET STUDENT RESULT RESPONSE"
-        );
-
-        console.log(
+            "GET STUDENT RESULT RESPONSE:",
             res
         );
 
-        console.log(
-            "================================="
-        );
-
-
-        if (!res) {
-
-            resultContainer.innerHTML = `
-
-                <p style="color:red;">
-                    No response from server.
-                </p>
-
-            `;
-
-            return;
-
-        }
-
 
         if (
+            !res ||
             res.success !== true
         ) {
 
-            console.error(
-                "GET STUDENT RESULT FAILED:",
-                res
-            );
-
-
-            resultContainer.innerHTML = `
-
-                <p style="color:red;">
-
-                    ${escapeStudentHTML(
-                        res.message ||
-                        "Unable to load speaking results."
-                    )}
-
-                </p>
-
-            `;
+            resultContainer.innerHTML =
+                "<p>" +
+                escapeStudentHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Unable to load speaking results."
+                ) +
+                "</p>";
 
             return;
 
         }
 
 
-        /*
-         * Normalize API response.
-         *
-         * Primary:
-         * res.data = [...]
-         *
-         * Also supports:
-         * res.data.results
-         * res.results
-         * res.items
-         */
+        /* =================================================
+        IMPORTANT RESPONSE NORMALIZATION
 
-        const results =
-            normalizeStudentResults(
-                res
-            );
+        Support:
+
+        FORMAT A:
+        {
+            success: true,
+            data: [...]
+        }
+
+        FORMAT B:
+        {
+            0: {...},
+            1: {...},
+            2: {...},
+            success: true,
+            message: "Success"
+        }
+
+        Current backend terbukti menggunakan FORMAT B.
+        ================================================= */
+
+        let results = [];
+
+
+        /* FORMAT A */
+
+        if (
+            Array.isArray(res.data)
+        ) {
+
+            results =
+                res.data;
+
+        }
+
+
+        /* FORMAT B */
+
+        else {
+
+            results =
+                Object.keys(res)
+
+                    .filter(
+                        key =>
+                            /^\d+$/.test(key)
+                    )
+
+                    .sort(
+                        (a, b) =>
+                            Number(a) - Number(b)
+                    )
+
+                    .map(
+                        key =>
+                            res[key]
+                    )
+
+                    .filter(
+                        item =>
+                            item &&
+                            typeof item === "object"
+                    );
+
+        }
 
 
         console.log(
-            "NORMALIZED STUDENT RESULTS:"
-        );
-
-        console.log(
+            "NORMALIZED STUDENT RESULTS:",
             results
         );
 
 
-        STUDENT_APP.results =
-            results;
+        console.log(
+            "STUDENT RESULT COUNT:",
+            results.length
+        );
 
-
-        /*
-         * Render result table.
-         */
 
         renderStudentResults(
             results
         );
 
-
-        /*
-         * Update dashboard cards.
-         */
 
         updateStudentStatistics(
             results
@@ -721,139 +477,20 @@ async function loadStudentResults() {
     catch (err) {
 
         console.error(
-            "================================="
-        );
-
-        console.error(
-            "LOAD STUDENT RESULTS ERROR"
-        );
-
-        console.error(
+            "LOAD STUDENT RESULTS ERROR:",
             err
         );
 
-        console.error(
-            "================================="
-        );
 
-
-        resultContainer.innerHTML = `
-
-            <p style="color:red;">
-
-                ${escapeStudentHTML(
-                    err &&
-                    err.message
-                        ? err.message
-                        : "Unable to load speaking results."
-                )}
-
-            </p>
-
-        `;
+        resultContainer.innerHTML =
+            "<p style='color:red'>" +
+            escapeStudentHTML(
+                err.message ||
+                "Unable to load speaking results."
+            ) +
+            "</p>";
 
     }
-
-}
-
-
-/* =====================================================
-NORMALIZE STUDENT RESULTS
-===================================================== */
-
-function normalizeStudentResults(res) {
-
-    if (!res) {
-
-        return [];
-
-    }
-
-
-    /*
-     * Standard response:
-     *
-     * {
-     *   success: true,
-     *   data: [...]
-     * }
-     */
-
-    if (
-        Array.isArray(
-            res.data
-        )
-    ) {
-
-        return res.data;
-
-    }
-
-
-    /*
-     * Alternative:
-     *
-     * {
-     *   success: true,
-     *   data: {
-     *      results: [...]
-     *   }
-     * }
-     */
-
-    if (
-        res.data &&
-        Array.isArray(
-            res.data.results
-        )
-    ) {
-
-        return res.data.results;
-
-    }
-
-
-    /*
-     * Alternative:
-     *
-     * {
-     *   success: true,
-     *   results: [...]
-     * }
-     */
-
-    if (
-        Array.isArray(
-            res.results
-        )
-    ) {
-
-        return res.results;
-
-    }
-
-
-    /*
-     * Alternative:
-     *
-     * {
-     *   success: true,
-     *   items: [...]
-     * }
-     */
-
-    if (
-        Array.isArray(
-            res.items
-        )
-    ) {
-
-        return res.items;
-
-    }
-
-
-    return [];
 
 }
 
@@ -895,75 +532,6 @@ function renderStudentResults(results) {
     }
 
 
-    /*
-     * Copy array so original API data
-     * is not modified.
-     */
-
-    const sortedResults =
-        [...results];
-
-
-    /*
-     * Latest result first when
-     * createdAt exists.
-     */
-
-    sortedResults.sort(
-        function(a, b) {
-
-            const dateA =
-                getStudentDateValue(
-                    a.createdAt ||
-                    a.updatedAt
-                );
-
-
-            const dateB =
-                getStudentDateValue(
-                    b.createdAt ||
-                    b.updatedAt
-                );
-
-
-            if (
-                dateA === 0 &&
-                dateB === 0
-            ) {
-
-                return 0;
-
-            }
-
-
-            if (dateA === 0) {
-
-                return 1;
-
-            }
-
-
-            if (dateB === 0) {
-
-                return -1;
-
-            }
-
-
-            return dateB - dateA;
-
-        }
-    );
-
-
-    /*
-     * Save sorted version.
-     */
-
-    STUDENT_APP.results =
-        sortedResults;
-
-
     let html = `
 
         <div
@@ -974,34 +542,87 @@ function renderStudentResults(results) {
         >
 
             <table
-                border="1"
                 width="100%"
                 cellpadding="10"
                 cellspacing="0"
                 style="
                     border-collapse:collapse;
                     background:white;
-                    width:100%;
+                    min-width:850px;
                 "
             >
 
                 <thead>
 
-                    <tr>
+                    <tr
+                        style="
+                            background:#0B72B9;
+                            color:white;
+                        "
+                    >
 
-                        <th>No</th>
+                        <th
+                            style="
+                                border:1px solid #ddd;
+                                padding:12px;
+                            "
+                        >
+                            No
+                        </th>
 
-                        <th>Question</th>
+                        <th
+                            style="
+                                border:1px solid #ddd;
+                                padding:12px;
+                            "
+                        >
+                            Question
+                        </th>
 
-                        <th>Transcript</th>
+                        <th
+                            style="
+                                border:1px solid #ddd;
+                                padding:12px;
+                            "
+                        >
+                            Transcript
+                        </th>
 
-                        <th>Score</th>
+                        <th
+                            style="
+                                border:1px solid #ddd;
+                                padding:12px;
+                            "
+                        >
+                            Score
+                        </th>
 
-                        <th>Feedback</th>
+                        <th
+                            style="
+                                border:1px solid #ddd;
+                                padding:12px;
+                            "
+                        >
+                            Feedback
+                        </th>
 
-                        <th>Token</th>
+                        <th
+                            style="
+                                border:1px solid #ddd;
+                                padding:12px;
+                            "
+                        >
+                            Token
+                        </th>
 
-                        <th>Date</th>
+                        <th
+                            style="
+                                border:1px solid #ddd;
+                                padding:12px;
+                            "
+                        >
+                            Date
+                        </th>
 
                     </tr>
 
@@ -1012,11 +633,10 @@ function renderStudentResults(results) {
     `;
 
 
-    sortedResults.forEach(
-        function(result, index) {
+    results.forEach(
+        (result, index) => {
 
             const score =
-                result &&
                 result.score !== undefined &&
                 result.score !== null &&
                 result.score !== ""
@@ -1024,72 +644,93 @@ function renderStudentResults(results) {
                     : "-";
 
 
-            const scoreNumber =
-                Number(score);
-
-
-            const scoreDisplay =
-                Number.isNaN(
-                    scoreNumber
-                )
-                    ? escapeStudentHTML(
-                        score
-                    )
-                    : escapeStudentHTML(
-                        scoreNumber
-                    );
-
-
             html += `
 
                 <tr>
 
-                    <td>
+                    <td
+                        style="
+                            border:1px solid #ddd;
+                            padding:12px;
+                            text-align:center;
+                        "
+                    >
                         ${index + 1}
                     </td>
 
-                    <td>
+                    <td
+                        style="
+                            border:1px solid #ddd;
+                            padding:12px;
+                        "
+                    >
                         ${escapeStudentHTML(
-                            result.question ||
-                            "-"
+                            result.question || "-"
                         )}
                     </td>
 
-                    <td>
+                    <td
+                        style="
+                            border:1px solid #ddd;
+                            padding:12px;
+                        "
+                    >
                         ${escapeStudentHTML(
-                            result.transcript ||
-                            "-"
+                            result.transcript || "-"
                         )}
                     </td>
 
-                    <td>
+                    <td
+                        style="
+                            border:1px solid #ddd;
+                            padding:12px;
+                            text-align:center;
+                        "
+                    >
 
-                        <strong>
-
-                            ${scoreDisplay}
-
+                        <strong
+                            style="
+                                font-size:20px;
+                                color:#0B72B9;
+                            "
+                        >
+                            ${escapeStudentHTML(
+                                score
+                            )}
                         </strong>
 
                     </td>
 
-                    <td>
+                    <td
+                        style="
+                            border:1px solid #ddd;
+                            padding:12px;
+                        "
+                    >
                         ${escapeStudentHTML(
-                            result.feedback ||
-                            "-"
+                            result.feedback || "-"
                         )}
                     </td>
 
-                    <td>
+                    <td
+                        style="
+                            border:1px solid #ddd;
+                            padding:12px;
+                        "
+                    >
                         ${escapeStudentHTML(
-                            result.token ||
-                            "-"
+                            result.token || "-"
                         )}
                     </td>
 
-                    <td>
+                    <td
+                        style="
+                            border:1px solid #ddd;
+                            padding:12px;
+                        "
+                    >
                         ${formatStudentDate(
-                            result.createdAt ||
-                            result.updatedAt
+                            result.createdAt
                         )}
                     </td>
 
@@ -1119,7 +760,7 @@ function renderStudentResults(results) {
 
 
 /* =====================================================
-UPDATE STUDENT STATISTICS
+UPDATE STATISTICS
 ===================================================== */
 
 function updateStudentStatistics(results) {
@@ -1134,17 +775,12 @@ function updateStudentStatistics(results) {
         0;
 
 
-    /*
-     * Results are already sorted
-     * latest first.
-     */
-
-    if (
-        total > 0
-    ) {
+    if (total > 0) {
 
         const latest =
-            results[0];
+            results[
+                results.length - 1
+            ];
 
 
         if (
@@ -1154,27 +790,19 @@ function updateStudentStatistics(results) {
             latest.score !== ""
         ) {
 
-            const numericScore =
+            latestScore =
                 Number(
                     latest.score
                 );
 
 
             if (
-                !Number.isNaN(
-                    numericScore
+                Number.isNaN(
+                    latestScore
                 )
             ) {
 
-                latestScore =
-                    numericScore;
-
-            }
-
-            else {
-
-                latestScore =
-                    latest.score;
+                latestScore = 0;
 
             }
 
@@ -1182,10 +810,6 @@ function updateStudentStatistics(results) {
 
     }
 
-
-    /*
-     * Latest Score
-     */
 
     const scoreElement =
         document.getElementById(
@@ -1201,10 +825,6 @@ function updateStudentStatistics(results) {
     }
 
 
-    /*
-     * Attempts
-     */
-
     const attemptElement =
         document.getElementById(
             "attemptCount"
@@ -1218,10 +838,6 @@ function updateStudentStatistics(results) {
 
     }
 
-
-    /*
-     * Exam Status
-     */
 
     const statusElement =
         document.getElementById(
@@ -1238,6 +854,32 @@ function updateStudentStatistics(results) {
 
     }
 
+
+    const tokenElement =
+        document.getElementById(
+            "examToken"
+        );
+
+
+    if (
+        tokenElement &&
+        total > 0
+    ) {
+
+        const latest =
+            results[
+                results.length - 1
+            ];
+
+
+        tokenElement.textContent =
+            latest &&
+            latest.token
+                ? latest.token
+                : "-";
+
+    }
+
 }
 
 
@@ -1248,51 +890,12 @@ DASHBOARD STATISTICS
 function updateDashboardFromResults() {
 
     /*
-     * Statistics are already updated
-     * by updateStudentStatistics().
+     * Statistik sudah diperbarui
+     * oleh updateStudentStatistics().
      *
-     * This function remains as the
-     * dashboard entry point.
+     * Fungsi ini disediakan sebagai
+     * entry point dashboard.
      */
-
-    updateStudentStatistics(
-        STUDENT_APP.results
-    );
-
-}
-
-
-/* =====================================================
-GET DATE VALUE
-===================================================== */
-
-function getStudentDateValue(value) {
-
-    if (!value) {
-
-        return 0;
-
-    }
-
-
-    const date =
-        new Date(value);
-
-
-    const time =
-        date.getTime();
-
-
-    if (
-        Number.isNaN(time)
-    ) {
-
-        return 0;
-
-    }
-
-
-    return time;
 
 }
 
@@ -1376,14 +979,7 @@ function formatStudentDate(value) {
     return escapeStudentHTML(
 
         date.toLocaleString(
-            "en-US",
-            {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-            }
+            "en-US"
         )
 
     );
