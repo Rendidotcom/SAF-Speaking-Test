@@ -6,14 +6,17 @@
  * File:
  * js/speaking.js
  *
- * ROLE:
+ * VERSION:
+ * Anti-Duplicate Speech Recognition Fix
+ *
+ * RESPONSIBILITY:
  * - Student session
  * - Exam token
  * - Token validation
- * - Token → Question mapping
- * - Load ACTIVE question from Questions Sheet
+ * - Load ACTIVE question
  * - Speech Recognition
- * - Transcript
+ * - Transcript reconstruction
+ * - Anti-duplicate recognition
  * - Submit answer
  *
  * LOCKED ARCHITECTURE
@@ -33,10 +36,9 @@
  * Google Spreadsheet
  *
  * IMPORTANT:
- * - Browser NEVER calls GAS directly.
- * - Browser communicates only through /api.
- * - Token determines the Question ID.
- * - System MUST NOT fallback to first ACTIVE question.
+ * Browser NEVER calls GAS directly.
+ * Browser communicates only through /api.
+ *
  * =========================================================
  */
 
@@ -55,8 +57,6 @@
 
     let currentQuestion = null;
 
-    let currentQuestionId = "";
-
     let recognition = null;
 
     let finalTranscript = "";
@@ -68,6 +68,19 @@
     let tokenVerified = false;
 
     let isSubmitting = false;
+
+
+    /*
+     * IMPORTANT:
+     *
+     * SpeechRecognition may send multiple result events.
+     *
+     * We DO NOT append every event blindly.
+     *
+     * Each recognition result is stored by its index.
+     */
+
+    let recognitionSegments = [];
 
 
     /* =====================================================
@@ -90,11 +103,8 @@
         const element = $(id);
 
         if (!element) {
-
             return;
-
         }
-
 
         if (
             value === undefined ||
@@ -108,9 +118,7 @@
 
         }
 
-
-        element.textContent =
-            String(value);
+        element.textContent = String(value);
 
     }
 
@@ -121,15 +129,11 @@
 
     function showExamArea() {
 
-        const area =
-            $("examArea");
-
+        const area = $("examArea");
 
         if (area) {
 
-            area.classList.remove(
-                "hidden"
-            );
+            area.classList.remove("hidden");
 
         }
 
@@ -142,15 +146,11 @@
 
     function hideExamArea() {
 
-        const area =
-            $("examArea");
-
+        const area = $("examArea");
 
         if (area) {
 
-            area.classList.add(
-                "hidden"
-            );
+            area.classList.add("hidden");
 
         }
 
@@ -187,7 +187,6 @@
 
     /* =====================================================
        CONFIG TOKEN KEY
-       Safe fallback
     ===================================================== */
 
     function getTokenKey() {
@@ -202,7 +201,6 @@
 
         }
 
-
         return "SAF_TOKEN";
 
     }
@@ -210,7 +208,6 @@
 
     /* =====================================================
        SESSION KEY
-       Safe fallback
     ===================================================== */
 
     function getSessionKey() {
@@ -225,7 +222,6 @@
 
         }
 
-
         return "SAF_SESSION";
 
     }
@@ -236,10 +232,7 @@
        Browser → Vercel /api
     ===================================================== */
 
-    async function apiRequest(
-        action,
-        data
-    ) {
+    async function apiRequest(action, data) {
 
         const response =
             await fetch(
@@ -287,7 +280,6 @@
                 "INVALID API JSON:",
                 text
             );
-
 
             throw new Error(
                 "API returned invalid JSON."
@@ -437,7 +429,6 @@
                 error
             );
 
-
             return "";
 
         }
@@ -496,367 +487,9 @@
         }
 
 
-        currentToken =
-            "";
+        currentToken = "";
 
-        currentQuestion =
-            null;
-
-        currentQuestionId =
-            "";
-
-        tokenVerified =
-            false;
-
-    }
-
-
-    /* =====================================================
-       FIND QUESTION BY ID
-       
-       IMPORTANT:
-       - Does NOT select first ACTIVE question.
-       - Uses the questionId stored in Token.
-       - Keeps existing getQuestion API contract.
-    ===================================================== */
-
-    function findQuestionById(
-        questions,
-        questionId
-    ) {
-
-        if (
-            !Array.isArray(questions)
-        ) {
-
-            return null;
-
-        }
-
-
-        const targetId =
-            String(
-                questionId || ""
-            )
-            .trim();
-
-
-        if (!targetId) {
-
-            return null;
-
-        }
-
-
-        for (
-            let i = 0;
-            i < questions.length;
-            i++
-        ) {
-
-            const question =
-                questions[i];
-
-
-            if (!question) {
-
-                continue;
-
-            }
-
-
-            const id =
-                String(
-                    question.id || ""
-                )
-                .trim();
-
-
-            if (
-                id === targetId
-            ) {
-
-                return question;
-
-            }
-
-        }
-
-
-        return null;
-
-    }
-
-
-    /* =====================================================
-       LOAD QUESTION
-       
-       Main.gs → Question.gs → Questions Sheet
-       
-       QUESTION SELECTION RULE:
-       
-       Token
-          ↓
-       questionId
-          ↓
-       getQuestion()
-          ↓
-       find exact question ID
-       
-       NEVER:
-       questionId missing → first ACTIVE question
-    ===================================================== */
-
-    async function loadQuestion(
-        questionId
-    ) {
-
-        currentQuestion =
-            null;
-
-
-        currentQuestionId =
-            String(
-                questionId || ""
-            )
-            .trim();
-
-
-        setText(
-            "question",
-            "Loading question..."
-        );
-
-
-        /*
-         * Question ID is mandatory.
-         */
-
-        if (!currentQuestionId) {
-
-            const message =
-                "Token valid tetapi belum memiliki Question ID.";
-
-
-            setText(
-                "question",
-                message
-            );
-
-
-            console.error(
-                "LOAD QUESTION BLOCKED:",
-                message
-            );
-
-
-            return false;
-
-        }
-
-
-        try {
-
-            console.log(
-                "GET QUESTION REQUEST"
-            );
-
-
-            const result =
-                await apiRequest(
-                    "getQuestion",
-                    {}
-                );
-
-
-            console.log(
-                "GET QUESTION RESPONSE:",
-                result
-            );
-
-
-            if (
-                !result ||
-                result.success !== true
-            ) {
-
-                throw new Error(
-                    result &&
-                    result.message
-                        ? result.message
-                        : "Failed to load question."
-                );
-
-            }
-
-
-            /*
-             * Backend response:
-             *
-             * {
-             *     success: true,
-             *     data: [...]
-             * }
-             */
-
-            const questions =
-                Array.isArray(
-                    result.data
-                )
-                    ? result.data
-                    : [];
-
-
-            /*
-             * Find exact question ID.
-             *
-             * This is the critical fix.
-             */
-
-            const question =
-                findQuestionById(
-                    questions,
-                    currentQuestionId
-                );
-
-
-            if (!question) {
-
-                throw new Error(
-                    "Question ID " +
-                    currentQuestionId +
-                    " tidak ditemukan."
-                );
-
-            }
-
-
-            /*
-             * Question must be ACTIVE.
-             */
-
-            const status =
-                String(
-                    question.status || ""
-                )
-                .trim()
-                .toUpperCase();
-
-
-            if (
-                status !== "ACTIVE"
-            ) {
-
-                throw new Error(
-                    "Question yang terhubung dengan token tidak aktif."
-                );
-
-            }
-
-
-            /*
-             * Store exact question.
-             */
-
-            currentQuestion =
-                question;
-
-
-            /*
-             * Keep exact ID.
-             */
-
-            currentQuestionId =
-                String(
-                    question.id || ""
-                )
-                .trim();
-
-
-            /*
-             * Display question title
-             * exactly from Questions Sheet.
-             */
-
-            setText(
-                "question",
-                currentQuestion.title
-            );
-
-
-            /*
-             * Optional difficulty.
-             */
-
-            if (
-                $("questionDifficulty")
-            ) {
-
-                setText(
-                    "questionDifficulty",
-                    currentQuestion.difficulty
-                );
-
-            }
-
-
-            /*
-             * Optional duration.
-             */
-
-            if (
-                $("questionDuration")
-            ) {
-
-                setText(
-                    "questionDuration",
-                    currentQuestion.duration
-                );
-
-            }
-
-
-            console.log(
-                "CURRENT TOKEN QUESTION:",
-                {
-                    token:
-                        currentToken,
-
-                    questionId:
-                        currentQuestionId,
-
-                    question:
-                        currentQuestion
-                }
-            );
-
-
-            return true;
-
-        }
-
-        catch (error) {
-
-            console.error(
-                "LOAD QUESTION ERROR:",
-                error
-            );
-
-
-            currentQuestion =
-                null;
-
-
-            setText(
-                "question",
-                error.message ||
-                "Question could not be loaded."
-            );
-
-
-            return false;
-
-        }
+        tokenVerified = false;
 
     }
 
@@ -865,21 +498,11 @@
        VALIDATE TOKEN
     ===================================================== */
 
-    async function validateToken(
-        tokenFromRestore
-    ) {
+    async function validateToken(tokenFromRestore) {
 
         const input =
             $("token");
 
-
-        /*
-         * If called from HTML button:
-         * read token from input.
-         *
-         * If called during restore:
-         * use tokenFromRestore.
-         */
 
         let token;
 
@@ -887,11 +510,9 @@
         if (tokenFromRestore) {
 
             token =
-                String(
-                    tokenFromRestore
-                )
-                .trim()
-                .toUpperCase();
+                String(tokenFromRestore)
+                    .trim()
+                    .toUpperCase();
 
         }
 
@@ -903,8 +524,7 @@
                     "Token input not found."
                 );
 
-
-                return false;
+                return;
 
             }
 
@@ -923,17 +543,9 @@
 
         if (!token) {
 
-            tokenVerified =
-                false;
+            tokenVerified = false;
 
-            currentToken =
-                "";
-
-            currentQuestion =
-                null;
-
-            currentQuestionId =
-                "";
+            currentToken = "";
 
 
             setExamStatus(
@@ -958,10 +570,6 @@
         }
 
 
-        /*
-         * Keep normalized token in input.
-         */
-
         if (input) {
 
             input.value =
@@ -970,21 +578,9 @@
         }
 
 
-        /*
-         * Never assume token is valid.
-         */
+        tokenVerified = false;
 
-        tokenVerified =
-            false;
-
-        currentToken =
-            "";
-
-        currentQuestion =
-            null;
-
-        currentQuestionId =
-            "";
+        currentToken = "";
 
 
         setExamStatus(
@@ -1022,35 +618,16 @@
             );
 
 
-            /*
-             * Backend must explicitly confirm:
-             *
-             * success === true
-             * valid === true
-             */
-
             if (
                 !result ||
                 result.success !== true ||
                 result.valid !== true
             ) {
 
-                tokenVerified =
-                    false;
+                tokenVerified = false;
 
-                currentToken =
-                    "";
+                currentToken = "";
 
-                currentQuestion =
-                    null;
-
-                currentQuestionId =
-                    "";
-
-
-                /*
-                 * Invalid token should not remain stored.
-                 */
 
                 clearToken();
 
@@ -1084,100 +661,8 @@
 
 
             /* =================================================
-               TOKEN IS VALID
+               TOKEN VALID
             ================================================= */
-
-            const questionId =
-                String(
-                    result.questionId || ""
-                )
-                .trim();
-
-
-            /*
-             * CRITICAL:
-             *
-             * Token without questionId is NOT usable
-             * for the speaking exam.
-             *
-             * We deliberately DO NOT fallback to
-             * the first ACTIVE question.
-             */
-
-            if (!questionId) {
-
-                tokenVerified =
-                    false;
-
-                currentToken =
-                    "";
-
-                currentQuestion =
-                    null;
-
-                currentQuestionId =
-                    "";
-
-
-                setExamStatus(
-                    "Token valid tetapi belum memiliki Question ID."
-                );
-
-
-                hideExamArea();
-
-
-                console.error(
-                    "TOKEN QUESTION MAPPING MISSING:",
-                    {
-                        token:
-                            token,
-
-                        response:
-                            result
-                    }
-                );
-
-
-                if (!tokenFromRestore) {
-
-                    alert(
-                        "Token valid tetapi belum memiliki Question ID. Silakan gunakan token baru yang dibuat untuk sebuah question."
-                    );
-
-                }
-
-
-                /*
-                 * Remove unusable token from local storage.
-                 */
-
-                try {
-
-                    sessionStorage.removeItem(
-                        getTokenKey()
-                    );
-
-                }
-
-                catch (storageError) {
-
-                    console.warn(
-                        "Could not remove invalid mapped token:",
-                        storageError
-                    );
-
-                }
-
-
-                return false;
-
-            }
-
-
-            /*
-             * Store verified token.
-             */
 
             currentToken =
                 token;
@@ -1187,23 +672,10 @@
                 true;
 
 
-            currentQuestionId =
-                questionId;
-
-
-            /*
-             * Save only after backend confirms
-             * token validity and question mapping.
-             */
-
             saveToken(
                 currentToken
             );
 
-
-            /*
-             * Keep input synchronized.
-             */
 
             if (input) {
 
@@ -1220,37 +692,19 @@
 
             console.log(
                 "TOKEN VERIFIED:",
-                {
-                    token:
-                        currentToken,
-
-                    questionId:
-                        currentQuestionId
-                }
+                currentToken
             );
 
 
-            /*
-             * Load the EXACT question assigned
-             * to this token.
-             */
-
             const questionLoaded =
-                await loadQuestion(
-                    currentQuestionId
-                );
+                await loadQuestion();
 
 
             if (!questionLoaded) {
 
-                tokenVerified =
-                    false;
+                tokenVerified = false;
 
-                currentQuestion =
-                    null;
-
-                currentQuestionId =
-                    "";
+                currentQuestion = null;
 
 
                 setExamStatus(
@@ -1265,10 +719,6 @@
 
             }
 
-
-            /*
-             * Everything is ready.
-             */
 
             showExamArea();
 
@@ -1295,17 +745,9 @@
             );
 
 
-            tokenVerified =
-                false;
+            tokenVerified = false;
 
-            currentToken =
-                "";
-
-            currentQuestion =
-                null;
-
-            currentQuestionId =
-                "";
+            currentToken = "";
 
 
             setExamStatus(
@@ -1318,7 +760,7 @@
 
 
             /*
-             * Do not remove stored token during
+             * Keep stored token during
              * temporary network/API errors.
              */
 
@@ -1340,13 +782,687 @@
 
 
     /* =====================================================
+       LOAD QUESTION
+    ===================================================== */
+
+    async function loadQuestion() {
+
+        currentQuestion = null;
+
+
+        setText(
+            "question",
+            "Loading question..."
+        );
+
+
+        try {
+
+            console.log(
+                "GET QUESTION REQUEST"
+            );
+
+
+            const result =
+                await apiRequest(
+                    "getQuestion",
+                    {}
+                );
+
+
+            console.log(
+                "GET QUESTION RESPONSE:",
+                result
+            );
+
+
+            if (
+                !result ||
+                result.success !== true
+            ) {
+
+                throw new Error(
+                    result &&
+                    result.message
+                        ? result.message
+                        : "Failed to load question."
+                );
+
+            }
+
+
+            const questions =
+                Array.isArray(result.data)
+                    ? result.data
+                    : [];
+
+
+            const activeQuestions =
+                questions.filter(
+                    function (question) {
+
+                        return (
+                            question &&
+                            String(
+                                question.status || ""
+                            )
+                                .trim()
+                                .toUpperCase()
+                            === "ACTIVE"
+                        );
+
+                    }
+                );
+
+
+            if (
+                activeQuestions.length === 0
+            ) {
+
+                throw new Error(
+                    "No active speaking question is available."
+                );
+
+            }
+
+
+            /*
+             * Stable foundation:
+             * first ACTIVE question.
+             */
+
+            currentQuestion =
+                activeQuestions[0];
+
+
+            setText(
+                "question",
+                currentQuestion.title
+            );
+
+
+            if (
+                $("questionDifficulty")
+            ) {
+
+                setText(
+                    "questionDifficulty",
+                    currentQuestion.difficulty
+                );
+
+            }
+
+
+            if (
+                $("questionDuration")
+            ) {
+
+                setText(
+                    "questionDuration",
+                    currentQuestion.duration
+                );
+
+            }
+
+
+            console.log(
+                "CURRENT ACTIVE QUESTION:",
+                currentQuestion
+            );
+
+
+            return true;
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "LOAD QUESTION ERROR:",
+                error
+            );
+
+
+            currentQuestion = null;
+
+
+            setText(
+                "question",
+                error.message ||
+                "Question could not be loaded."
+            );
+
+
+            return false;
+
+        }
+
+    }
+
+
+    /* =====================================================
+       NORMALIZE TRANSCRIPT WORDS
+    ===================================================== */
+
+    function normalizeTranscriptWords(text) {
+
+        return String(
+            text || ""
+        )
+            .toLowerCase()
+            .replace(
+                /[.,!?;:()[\]{}"“”‘’]/g,
+                " "
+            )
+            .replace(
+                /[-–—]/g,
+                " "
+            )
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+
+    }
+
+
+    /* =====================================================
+       NORMALIZE TRANSCRIPT DISPLAY
+    ===================================================== */
+
+    function normalizeTranscriptDisplay(text) {
+
+        return String(
+            text || ""
+        )
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim();
+
+    }
+
+
+    /* =====================================================
+       WORDS EQUAL
+    ===================================================== */
+
+    function transcriptWordsEqual(a, b) {
+
+        return (
+            String(a || "")
+                .toLowerCase()
+                .replace(/[.,!?;:()[\]{}"“”‘’]/g, "") ===
+            String(b || "")
+                .toLowerCase()
+                .replace(/[.,!?;:()[\]{}"“”‘’]/g, "")
+        );
+
+    }
+
+
+    /* =====================================================
+       MERGE TRANSCRIPT SEGMENTS
+       
+       Purpose:
+       Prevent recognition overlap such as:
+       
+       "there"
+       +
+       "there are"
+       
+       becoming:
+       
+       "there there are"
+       
+       Instead:
+       
+       "there are"
+       ===================================================== */
+
+    function mergeTranscriptSegments(segments) {
+
+        let words = [];
+
+
+        segments.forEach(
+            function (segment) {
+
+                const segmentWords =
+                    normalizeTranscriptWords(
+                        segment
+                    );
+
+
+                if (
+                    segmentWords.length === 0
+                ) {
+
+                    return;
+
+                }
+
+
+                /*
+                 * First segment.
+                 */
+
+                if (
+                    words.length === 0
+                ) {
+
+                    words =
+                        segmentWords.slice();
+
+                    return;
+
+                }
+
+
+                /*
+                 * Find maximum overlap:
+                 *
+                 * end of existing transcript
+                 * ==
+                 * beginning of new segment
+                 */
+
+                let maxOverlap = 0;
+
+
+                const maximum =
+                    Math.min(
+                        words.length,
+                        segmentWords.length
+                    );
+
+
+                for (
+                    let overlap = maximum;
+                    overlap >= 1;
+                    overlap--
+                ) {
+
+                    let same = true;
+
+
+                    for (
+                        let i = 0;
+                        i < overlap;
+                        i++
+                    ) {
+
+                        const existingWord =
+                            words[
+                                words.length -
+                                overlap +
+                                i
+                            ];
+
+
+                        const incomingWord =
+                            segmentWords[i];
+
+
+                        if (
+                            !transcriptWordsEqual(
+                                existingWord,
+                                incomingWord
+                            )
+                        ) {
+
+                            same = false;
+
+                            break;
+
+                        }
+
+                    }
+
+
+                    if (same) {
+
+                        maxOverlap =
+                            overlap;
+
+                        break;
+
+                    }
+
+                }
+
+
+                /*
+                 * Append only the part that
+                 * is not already present.
+                 */
+
+                words =
+                    words.concat(
+                        segmentWords.slice(
+                            maxOverlap
+                        )
+                    );
+
+            }
+        );
+
+
+        return words.join(" ");
+
+    }
+
+
+    /* =====================================================
+       REMOVE OBVIOUS DUPLICATE PHRASES
+       
+       Conservative:
+       only removes immediately repeated
+       identical phrases.
+       
+       Example:
+       
+       there are there are
+       
+       →
+       
+       there are
+       ===================================================== */
+
+    function removeRepeatedPhrases(text) {
+
+        let words =
+            normalizeTranscriptWords(
+                text
+            );
+
+
+        if (
+            words.length < 2
+        ) {
+
+            return words.join(" ");
+
+        }
+
+
+        /*
+         * Repeat detection from 1 to 4 words.
+         *
+         * We intentionally keep this conservative.
+         */
+
+        let changed = true;
+
+
+        while (changed) {
+
+            changed = false;
+
+
+            for (
+                let phraseLength = 4;
+                phraseLength >= 1;
+                phraseLength--
+            ) {
+
+                if (
+                    words.length <
+                    phraseLength * 2
+                ) {
+
+                    continue;
+
+                }
+
+
+                for (
+                    let i = 0;
+                    i <=
+                    words.length -
+                    phraseLength * 2;
+                    i++
+                ) {
+
+                    let same =
+                        true;
+
+
+                    for (
+                        let j = 0;
+                        j < phraseLength;
+                        j++
+                    ) {
+
+                        if (
+                            !transcriptWordsEqual(
+                                words[
+                                    i + j
+                                ],
+                                words[
+                                    i +
+                                    phraseLength +
+                                    j
+                                ]
+                            )
+                        ) {
+
+                            same =
+                                false;
+
+                            break;
+
+                        }
+
+                    }
+
+
+                    if (same) {
+
+                        words =
+                            words.slice(
+                                0,
+                                i +
+                                phraseLength
+                            ).concat(
+                                words.slice(
+                                    i +
+                                    phraseLength * 2
+                                )
+                            );
+
+
+                        changed =
+                            true;
+
+
+                        break;
+
+                    }
+
+                }
+
+
+                if (changed) {
+
+                    break;
+
+                }
+
+            }
+
+        }
+
+
+        return words.join(" ");
+
+    }
+
+
+    /* =====================================================
+       REBUILD TRANSCRIPT
+    ===================================================== */
+
+    function rebuildTranscript() {
+
+        const segments = [];
+
+
+        for (
+            let i = 0;
+            i < recognitionSegments.length;
+            i++
+        ) {
+
+            const segment =
+                recognitionSegments[i];
+
+
+            if (
+                !segment ||
+                !segment.text
+            ) {
+
+                continue;
+
+            }
+
+
+            segments.push(
+                segment.text
+            );
+
+        }
+
+
+        /*
+         * First merge recognition segments
+         * using overlap detection.
+         */
+
+        let merged =
+            mergeTranscriptSegments(
+                segments
+            );
+
+
+        /*
+         * Then remove only obvious
+         * immediately repeated phrases.
+         */
+
+        merged =
+            removeRepeatedPhrases(
+                merged
+            );
+
+
+        return normalizeTranscriptDisplay(
+            merged
+        );
+
+    }
+
+
+    /* =====================================================
+       UPDATE TRANSCRIPT DISPLAY
+    ===================================================== */
+
+    function updateTranscriptDisplay() {
+
+        const finalText =
+            rebuildTranscript();
+
+
+        const interimParts = [];
+
+
+        for (
+            let i = 0;
+            i < recognitionSegments.length;
+            i++
+        ) {
+
+            const segment =
+                recognitionSegments[i];
+
+
+            if (
+                segment &&
+                segment.final !== true &&
+                segment.text
+            ) {
+
+                interimParts.push(
+                    segment.text
+                );
+
+            }
+
+        }
+
+
+        /*
+         * Interim is only visual.
+         *
+         * It must NOT become part of
+         * finalTranscript until recognition
+         * confirms it.
+         */
+
+        interimTranscript =
+            normalizeTranscriptDisplay(
+                interimParts.join(" ")
+            );
+
+
+        if (finalText) {
+
+            finalTranscript =
+                finalText;
+
+        }
+
+
+        const display =
+            normalizeTranscriptDisplay(
+                finalText +
+                (
+                    interimTranscript
+                        ? " " +
+                          interimTranscript
+                        : ""
+                )
+            );
+
+
+        setText(
+            "transcript",
+            display ||
+            "Listening..."
+        );
+
+
+        console.log(
+            "CLEAN TRANSCRIPT:",
+            display
+        );
+
+    }
+
+
+    /* =====================================================
        START RECORDING
     ===================================================== */
 
     function startRecording() {
 
         /*
-         * Check INTERNAL state.
+         * Check internal state.
          */
 
         if (
@@ -1381,10 +1497,6 @@
         }
 
 
-        /*
-         * Browser compatibility.
-         */
-
         const SpeechRecognition =
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
@@ -1407,10 +1519,6 @@
         }
 
 
-        /*
-         * Prevent duplicate recording.
-         */
-
         if (isRecording) {
 
             return;
@@ -1419,11 +1527,15 @@
 
 
         /*
-         * Create fresh recognition object.
+         * Fresh recognition instance.
          */
 
-        recognition =
+        const recognitionInstance =
             new SpeechRecognition();
+
+
+        recognition =
+            recognitionInstance;
 
 
         recognition.lang =
@@ -1443,14 +1555,14 @@
 
 
         /*
-         * Reset transcript.
+         * RESET TRANSCRIPT STATE
          */
 
-        finalTranscript =
-            "";
+        finalTranscript = "";
 
-        interimTranscript =
-            "";
+        interimTranscript = "";
+
+        recognitionSegments = [];
 
 
         setText(
@@ -1468,8 +1580,18 @@
            ON START
         ================================================= */
 
-        recognition.onstart =
+        recognitionInstance.onstart =
             function () {
+
+                if (
+                    recognition !==
+                    recognitionInstance
+                ) {
+
+                    return;
+
+                }
+
 
                 isRecording =
                     true;
@@ -1491,90 +1613,93 @@
            ON RESULT
         ================================================= */
 
-        recognition.onresult =
+        recognitionInstance.onresult =
             function (event) {
 
-                let newFinalText =
-                    "";
+                if (
+                    recognition !==
+                    recognitionInstance
+                ) {
 
-                let newInterimText =
-                    "";
+                    return;
 
+                }
+
+
+                console.log(
+                    "RAW SPEECH RESULT:",
+                    event
+                );
+
+
+                /*
+                 * IMPORTANT:
+                 *
+                 * Do not append event text.
+                 *
+                 * Update the result at its
+                 * actual SpeechRecognition index.
+                 */
 
                 for (
                     let i =
                         event.resultIndex;
-
                     i <
                         event.results.length;
-
                     i++
                 ) {
 
-                    const transcript =
-                        event.results[i][0]
-                            .transcript;
+                    const result =
+                        event.results[i];
 
 
-                    if (
-                        event.results[i]
-                            .isFinal
-                    ) {
+                    if (!result) {
 
-                        newFinalText +=
-                            transcript +
-                            " ";
+                        continue;
 
                     }
 
-                    else {
 
-                        newInterimText +=
-                            transcript +
-                            " ";
+                    const alternative =
+                        result[0];
+
+
+                    if (!alternative) {
+
+                        continue;
 
                     }
+
+
+                    const text =
+                        normalizeTranscriptDisplay(
+                            alternative.transcript
+                        );
+
+
+                    /*
+                     * Store / replace the segment.
+                     */
+
+                    recognitionSegments[i] = {
+
+                        text:
+                            text,
+
+                        final:
+                            result.isFinal === true
+
+                    };
 
                 }
 
 
                 /*
-                 * Add newly finalized text.
+                 * Reconstruct the entire transcript
+                 * from stored result indexes.
                  */
 
-                if (
-                    newFinalText
-                ) {
-
-                    finalTranscript +=
-                        newFinalText;
-
-                }
-
-
-                interimTranscript =
-                    newInterimText;
-
-
-                const displayText =
-                    (
-                        finalTranscript +
-                        interimTranscript
-                    )
-                    .trim();
-
-
-                setText(
-                    "transcript",
-                    displayText ||
-                    "Listening..."
-                );
-
-
-                console.log(
-                    "TRANSCRIPT:",
-                    displayText
-                );
+                updateTranscriptDisplay();
 
             };
 
@@ -1583,8 +1708,18 @@
            ON ERROR
         ================================================= */
 
-        recognition.onerror =
+        recognitionInstance.onerror =
             function (event) {
+
+                if (
+                    recognition !==
+                    recognitionInstance
+                ) {
+
+                    return;
+
+                }
+
 
                 console.error(
                     "SPEECH RECOGNITION ERROR:",
@@ -1666,31 +1801,44 @@
            ON END
         ================================================= */
 
-        recognition.onend =
+        recognitionInstance.onend =
             function () {
+
+                if (
+                    recognition !==
+                    recognitionInstance
+                ) {
+
+                    return;
+
+                }
+
 
                 isRecording =
                     false;
 
 
                 /*
-                 * Clear interim because recording
-                 * has ended.
+                 * Final reconstruction.
                  */
+
+                const cleanText =
+                    rebuildTranscript();
+
+
+                finalTranscript =
+                    cleanText;
+
 
                 interimTranscript =
                     "";
 
 
-                const finalText =
-                    finalTranscript.trim();
-
-
-                if (finalText) {
+                if (cleanText) {
 
                     setText(
                         "transcript",
-                        finalText
+                        cleanText
                     );
 
 
@@ -1710,6 +1858,12 @@
 
 
                 console.log(
+                    "FINAL CLEAN TRANSCRIPT:",
+                    cleanText
+                );
+
+
+                console.log(
                     "SPEECH RECOGNITION ENDED"
                 );
 
@@ -1722,7 +1876,7 @@
 
         try {
 
-            recognition.start();
+            recognitionInstance.start();
 
         }
 
@@ -1786,12 +1940,20 @@
 
 
         /*
-         * If recognition does not fire onend,
-         * still show current final transcript.
+         * Reconstruct current transcript
+         * immediately as a safe fallback.
          */
 
         const text =
-            finalTranscript.trim();
+            rebuildTranscript();
+
+
+        finalTranscript =
+            text;
+
+
+        interimTranscript =
+            "";
 
 
         if (text) {
@@ -1826,11 +1988,32 @@
     function getTranscript() {
 
         /*
-         * Prefer internal final transcript.
+         * Always reconstruct from recognition
+         * segments first.
+         */
+
+        const reconstructed =
+            rebuildTranscript();
+
+
+        if (reconstructed) {
+
+            finalTranscript =
+                reconstructed;
+
+
+            return reconstructed;
+
+        }
+
+
+        /*
+         * Fallback to internal transcript.
          */
 
         const internal =
-            finalTranscript.trim();
+            finalTranscript
+                .trim();
 
 
         if (internal) {
@@ -1841,7 +2024,7 @@
 
 
         /*
-         * Fallback to DOM.
+         * Final fallback to DOM.
          */
 
         const element =
@@ -1856,7 +2039,8 @@
 
 
         const text =
-            element.textContent.trim();
+            element.textContent
+                .trim();
 
 
         if (
@@ -1880,7 +2064,9 @@
         }
 
 
-        return text;
+        return removeRepeatedPhrases(
+            text
+        );
 
     }
 
@@ -1969,8 +2155,8 @@
 
 
         /*
-         * Give browser recognition a moment
-         * to finalize the last result.
+         * Allow SpeechRecognition
+         * to finalize the last event.
          */
 
         await new Promise(
@@ -1978,7 +2164,7 @@
 
                 setTimeout(
                     resolve,
-                    150
+                    250
                 );
 
             }
@@ -2001,15 +2187,13 @@
         }
 
 
-        /*
-         * Build payload.
-         */
+        /* =================================================
+           BUILD PAYLOAD
+        ================================================= */
 
         const payload = {
 
-            /* =============================================
-               Student
-            ============================================= */
+            /* Student */
 
             nis:
                 student.nis || "",
@@ -2021,39 +2205,28 @@
                 student.kelas || "",
 
 
-            /* =============================================
-               Token
-            ============================================= */
+            /* Token */
 
             token:
                 currentToken,
 
 
-            /* =============================================
-               Question
-            ============================================= */
+            /* Question */
 
             questionId:
-                currentQuestionId ||
-                currentQuestion.id ||
-                "",
+                currentQuestion.id || "",
 
             question:
-                currentQuestion.title ||
-                "",
+                currentQuestion.title || "",
 
 
-            /* =============================================
-               Answer
-            ============================================= */
+            /* Answer */
 
             transcript:
                 transcript,
 
 
-            /* =============================================
-               Time
-            ============================================= */
+            /* Time */
 
             submittedAt:
                 new Date().toISOString()
@@ -2079,7 +2252,11 @@
         try {
 
             /*
-             * Browser → Vercel → Main.gs
+             * Browser
+             * ↓
+             * Vercel /api
+             * ↓
+             * Main.gs
              */
 
             const result =
@@ -2110,9 +2287,9 @@
             }
 
 
-            /*
-             * SUCCESS
-             */
+            /* =================================================
+               SUCCESS
+            ================================================= */
 
             setRecordStatus(
                 "Answer submitted successfully."
@@ -2125,17 +2302,14 @@
 
 
             /*
-             * Save latest result locally
-             * if backend returns one.
+             * Save latest result locally.
              */
 
             try {
 
                 sessionStorage.setItem(
                     "SAF_LAST_RESULT",
-                    JSON.stringify(
-                        result
-                    )
+                    JSON.stringify(result)
                 );
 
             }
@@ -2217,11 +2391,9 @@
 
 
         /*
-         * IMPORTANT:
+         * Stored token is NOT automatically verified.
          *
-         * Stored token is NOT automatically trusted.
-         *
-         * Backend validation is performed again.
+         * It must be revalidated by backend.
          */
 
         setExamStatus(
@@ -2260,9 +2432,6 @@
         currentQuestion =
             null;
 
-        currentQuestionId =
-            "";
-
         recognition =
             null;
 
@@ -2272,6 +2441,9 @@
         interimTranscript =
             "";
 
+        recognitionSegments =
+            [];
+
         isRecording =
             false;
 
@@ -2280,9 +2452,7 @@
 
 
         /*
-         * CONFIG normally loaded by:
-         *
-         * <script src="js/config.js"></script>
+         * CONFIG must exist.
          */
 
         if (
@@ -2306,7 +2476,7 @@
 
 
         /*
-         * Student must be logged in.
+         * Student login required.
          */
 
         const sessionOK =
@@ -2338,10 +2508,7 @@
 
 
         /*
-         * Restore token if it exists.
-         *
-         * It will be revalidated against
-         * backend before becoming verified.
+         * Restore saved token.
          */
 
         await restoreSavedToken();
@@ -2359,7 +2526,7 @@
     ===================================================== */
 
     /*
-     * speaking.html uses:
+     * speaking.html:
      *
      * onclick="validateToken()"
      * onclick="startRecording()"
@@ -2408,5 +2575,6 @@
         init();
 
     }
+
 
 })();
