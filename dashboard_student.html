@@ -5,16 +5,28 @@
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
 <title>Student Dashboard</title>
 
-<link rel="icon" href="images/logo.png">
+<link
+    rel="icon"
+    href="images/logo.png"
+>
 
-<link rel="stylesheet" href="css/style.css">
+<link
+    rel="stylesheet"
+    href="css/style.css"
+>
 
 <style>
+
+/* =====================================
+   RESET
+===================================== */
 
 *{
     margin:0;
@@ -22,19 +34,30 @@ content="width=device-width, initial-scale=1.0">
     box-sizing:border-box;
 }
 
+
+/* =====================================
+   BODY
+===================================== */
+
 body{
     background:#eef3f8;
     font-family:Arial,Helvetica,sans-serif;
     color:#333;
 }
 
+
+/* =====================================
+   DASHBOARD
+===================================== */
+
 .dashboard{
     display:flex;
     min-height:100vh;
 }
 
+
 /* =====================================
-SIDEBAR
+   SIDEBAR
 ===================================== */
 
 .sidebar{
@@ -65,6 +88,11 @@ SIDEBAR
     margin-bottom:35px;
 }
 
+
+/* =====================================
+   MENU
+===================================== */
+
 .menu{
     display:flex;
     flex-direction:column;
@@ -87,14 +115,20 @@ SIDEBAR
     transform:translateX(6px);
 }
 
+
 /* =====================================
-MAIN
+   MAIN
 ===================================== */
 
 .main{
     flex:1;
     padding:40px;
 }
+
+
+/* =====================================
+   HEADER
+===================================== */
 
 .header{
     display:flex;
@@ -114,13 +148,15 @@ MAIN
     line-height:1.6;
 }
 
+
 /* =====================================
-CARDS
+   CARDS
 ===================================== */
 
 .cards{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    grid-template-columns:
+        repeat(auto-fit,minmax(240px,1fr));
     gap:25px;
 }
 
@@ -149,8 +185,9 @@ CARDS
     color:#0B72B9;
 }
 
+
 /* =====================================
-CONTENT
+   CONTENT
 ===================================== */
 
 .content{
@@ -162,8 +199,62 @@ CONTENT
     box-shadow:0 8px 25px rgba(0,0,0,.08);
 }
 
+
 /* =====================================
-BUTTON
+   RESULT TABLE
+===================================== */
+
+.result-wrapper{
+    margin-top:25px;
+    overflow-x:auto;
+}
+
+.result-table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:650px;
+}
+
+.result-table th,
+.result-table td{
+    border:1px solid #ddd;
+    padding:12px;
+    text-align:left;
+}
+
+.result-table th{
+    background:#0B72B9;
+    color:white;
+}
+
+.result-table tr:nth-child(even){
+    background:#f7f9fb;
+}
+
+
+/* =====================================
+   SCORE
+===================================== */
+
+.score-badge{
+    font-weight:bold;
+    font-size:20px;
+    color:#0B72B9;
+}
+
+
+/* =====================================
+   STATUS
+===================================== */
+
+.status-text{
+    font-weight:bold;
+    color:#0B72B9;
+}
+
+
+/* =====================================
+   BUTTON
 ===================================== */
 
 .btn{
@@ -184,27 +275,64 @@ BUTTON
     background:#095c95;
 }
 
+
 /* =====================================
-RESPONSIVE
+   LOADING
+===================================== */
+
+.loading{
+    color:#666;
+    padding:15px 0;
+}
+
+
+/* =====================================
+   ERROR
+===================================== */
+
+.error{
+    color:#c62828;
+    background:#ffebee;
+    border-radius:8px;
+    padding:12px 15px;
+}
+
+
+/* =====================================
+   EMPTY
+===================================== */
+
+.empty{
+    color:#666;
+    padding:15px 0;
+}
+
+
+/* =====================================
+   RESPONSIVE
 ===================================== */
 
 @media(max-width:900px){
 
-.dashboard{
-    flex-direction:column;
-}
+    .dashboard{
+        flex-direction:column;
+    }
 
-.sidebar{
-    width:100%;
-}
+    .sidebar{
+        width:100%;
+    }
 
-.main{
-    padding:25px;
-}
+    .main{
+        padding:25px;
+    }
 
-.cards{
-    grid-template-columns:1fr;
-}
+    .cards{
+        grid-template-columns:1fr;
+    }
+
+    .header h1{
+        font-size:28px;
+    }
 
 }
 
@@ -212,268 +340,1088 @@ RESPONSIVE
 
 </head>
 
+
 <body>
+
 
 <div class="dashboard">
 
+
 <!-- =====================================
-SIDEBAR
+     SIDEBAR
 ===================================== -->
 
 <aside class="sidebar">
 
-<img
-src="images/logo.png"
-alt="Logo">
+    <img
+        src="images/logo.png"
+        alt="Logo"
+    >
 
-<h2>SAF Student Panel</h2>
+    <h2>
+        SAF Student Panel
+    </h2>
 
-<p>
-Speaking Online Test
-</p>
+    <p>
+        Speaking Online Test
+    </p>
 
-<nav class="menu">
 
-<a href="#">
-🏠 Dashboard
-</a>
+    <nav class="menu">
 
-<a href="speaking.html">
-🎤 Speaking Test
-</a>
+        <a href="#">
+            🏠 Dashboard
+        </a>
 
-<a href="#">
-📊 My Results
-</a>
+        <a href="speaking.html">
+            🎤 Speaking Test
+        </a>
 
-<a href="#">
-👤 My Profile
-</a>
+        <a href="#results">
+            📊 My Results
+        </a>
 
-<a href="index.html">
-🚪 Logout
-</a>
+        <a href="#">
+            👤 My Profile
+        </a>
 
-</nav>
+        <a
+            href="index.html"
+            id="logoutLink"
+        >
+            🚪 Logout
+        </a>
+
+    </nav>
 
 </aside>
 
+
 <!-- =====================================
-MAIN
+     MAIN
 ===================================== -->
 
 <main class="main">
 
-<div class="header">
-
-<div>
-
-<h1>
-
-Welcome,
-<span id="studentName">
-
-Student
-
-</span>
-
-👋
-
-</h1>
-
-<p>
-
-SAF Speaking Online Test
-
-<br>
-
-<span id="todayDate">
-
-Loading...
-
-</span>
-
-</p>
-
-</div>
-
-</div>
 
 <!-- =====================================
-CARDS
+     HEADER
+===================================== -->
+
+<div class="header">
+
+    <div>
+
+        <h1>
+
+            Welcome,
+            <span id="studentName">
+                Student
+            </span>
+
+            👋
+
+        </h1>
+
+        <p>
+
+            SAF Speaking Online Test
+
+            <br>
+
+            <span id="todayDate">
+                Loading...
+            </span>
+
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================
+     CARDS
 ===================================== -->
 
 <section class="cards">
 
-<div class="card-box">
 
-<h3>Exam Status</h3>
+    <div class="card-box">
 
-<div
-class="number"
-id="examStatus">
+        <h3>
+            Exam Status
+        </h3>
 
-READY
+        <div
+            class="number"
+            id="examStatus"
+        >
+            READY
+        </div>
 
-</div>
+    </div>
 
-</div>
 
-<div class="card-box">
+    <div class="card-box">
 
-<h3>Current Token</h3>
+        <h3>
+            Current Token
+        </h3>
 
-<div
-class="number"
-id="examToken">
+        <div
+            class="number"
+            id="examToken"
+        >
+            -
+        </div>
 
--
+    </div>
 
-</div>
 
-</div>
+    <div class="card-box">
 
-<div class="card-box">
+        <h3>
+            Latest Score
+        </h3>
 
-<h3>Latest Score</h3>
+        <div
+            class="number"
+            id="latestScore"
+        >
+            0
+        </div>
 
-<div
-class="number"
-id="latestScore">
+    </div>
 
-0
 
-</div>
+    <div class="card-box">
 
-</div>
+        <h3>
+            Attempts
+        </h3>
 
-<div class="card-box">
+        <div
+            class="number"
+            id="attemptCount"
+        >
+            0
+        </div>
 
-<h3>Attempts</h3>
+    </div>
 
-<div
-class="number"
-id="attemptCount">
-
-0
-
-</div>
-
-</div>
 
 </section>
 
+
 <!-- =====================================
-CONTENT
+     CONTENT
 ===================================== -->
 
 <section
-class="content">
+    class="content"
+    id="results"
+>
 
-<h2>
 
-Welcome Student
+    <h2>
+        Student Dashboard
+    </h2>
 
-</h2>
 
-<br>
+    <br>
 
-<p>
 
-Welcome to the SAF Speaking Online Test Student Dashboard.
+    <p>
+        Welcome to the SAF Speaking Online Test
+        Student Dashboard.
+    </p>
 
-</p>
 
-<br>
+    <br>
 
-<p>
 
-You can use this dashboard to:
+    <p>
+        You can use this dashboard to:
+    </p>
 
-</p>
 
-<br>
+    <br>
 
-<ul style="padding-left:25px;line-height:2;">
 
-<li>Join Speaking Test</li>
+    <ul
+        style="
+            padding-left:25px;
+            line-height:2;
+        "
+    >
 
-<li>Enter Exam Token</li>
+        <li>
+            Join Speaking Test
+        </li>
 
-<li>View Speaking Results</li>
+        <li>
+            Enter Exam Token
+        </li>
 
-<li>Monitor Your Progress</li>
+        <li>
+            View Speaking Results
+        </li>
 
-</ul>
+        <li>
+            Monitor Your Progress
+        </li>
 
-<br>
+    </ul>
 
-<hr>
 
-<br>
+    <br>
 
-<h3>
+    <hr>
 
-Quick Action
+    <br>
 
-</h3>
 
-<br>
+    <!-- =================================
+         RESULT SECTION
+    ================================== -->
 
-<button
-class="btn student"
-onclick="location.href='speaking.html'">
+    <h3>
+        My Speaking Results
+    </h3>
 
-🎤 Start Speaking Test
 
-</button>
+    <div
+        id="resultStatus"
+        class="loading"
+    >
+        Loading results...
+    </div>
+
+
+    <div
+        id="studentResultTable"
+        class="result-wrapper"
+    >
+    </div>
+
+
+    <br>
+
+
+    <!-- =================================
+         QUICK ACTION
+    ================================== -->
+
+    <h3>
+        Quick Action
+    </h3>
+
+
+    <br>
+
+
+    <button
+        class="btn student"
+        onclick="location.href='speaking.html'"
+    >
+
+        🎤 Start Speaking Test
+
+    </button>
+
 
 </section>
 
+
 </main>
+
 
 </div>
 
+
+<!-- =====================================
+     CORE JS
+===================================== -->
+
 <script src="js/config.js"></script>
+
 <script src="js/api.js"></script>
-<script src="js/student.js"></script>
+
 
 <script>
 
+/* =====================================================
+   STUDENT DASHBOARD
+   ===================================================== */
+
+
 /* ==========================================
-Dashboard Helper
+   GLOBAL STATE
 ========================================== */
 
-(function(){
+let STUDENT_SESSION = {};
 
-const session =
-JSON.parse(
-sessionStorage.getItem(CONFIG.SESSION_KEY) || "{}"
+let STUDENT_RESULTS = [];
+
+
+/* ==========================================
+   INITIALIZE
+========================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    initStudentDashboard
 );
 
-if(session.nama){
 
-document.getElementById("studentName").textContent =
-session.nama;
+/* ==========================================
+   INIT
+========================================== */
+
+async function initStudentDashboard(){
+
+    try{
+
+        loadStudentSession();
+
+        setupDate();
+
+        setupLogout();
+
+        await loadStudentResults();
+
+    }
+
+    catch(err){
+
+        console.error(
+            "STUDENT DASHBOARD ERROR:",
+            err
+        );
+
+        showResultError(
+            err.message ||
+            "Unable to load student dashboard."
+        );
+
+    }
 
 }
 
-const today = new Date();
 
-document.getElementById("todayDate").textContent =
-today.toLocaleDateString(
-"en-US",
-{
-weekday:"long",
-year:"numeric",
-month:"long",
-day:"numeric"
+/* ==========================================
+   LOAD SESSION
+========================================== */
+
+function loadStudentSession(){
+
+    const raw =
+        sessionStorage.getItem(
+            CONFIG.SESSION_KEY
+        );
+
+
+    if(!raw){
+
+        window.location.href =
+            "login.html?role=student";
+
+        return;
+
+    }
+
+
+    try{
+
+        STUDENT_SESSION =
+            JSON.parse(raw);
+
+    }
+
+    catch(err){
+
+        console.error(
+            "SESSION PARSE ERROR:",
+            err
+        );
+
+        sessionStorage.removeItem(
+            CONFIG.SESSION_KEY
+        );
+
+        window.location.href =
+            "login.html?role=student";
+
+        return;
+
+    }
+
+
+    if(
+        !STUDENT_SESSION ||
+        STUDENT_SESSION.role !== "student"
+    ){
+
+        sessionStorage.removeItem(
+            CONFIG.SESSION_KEY
+        );
+
+        sessionStorage.removeItem(
+            CONFIG.TOKEN_KEY
+        );
+
+        window.location.href =
+            "login.html?role=student";
+
+        return;
+
+    }
+
+
+    const name =
+        STUDENT_SESSION.nama ||
+        STUDENT_SESSION.name ||
+        STUDENT_SESSION.username ||
+        "Student";
+
+
+    const nameElement =
+        document.getElementById(
+            "studentName"
+        );
+
+
+    if(nameElement){
+
+        nameElement.textContent =
+            name;
+
+    }
+
 }
-);
 
-})();
+
+/* ==========================================
+   DATE
+========================================== */
+
+function setupDate(){
+
+    const dateElement =
+        document.getElementById(
+            "todayDate"
+        );
+
+
+    if(!dateElement){
+
+        return;
+
+    }
+
+
+    const today =
+        new Date();
+
+
+    dateElement.textContent =
+        today.toLocaleDateString(
+            "en-US",
+            {
+                weekday:"long",
+                year:"numeric",
+                month:"long",
+                day:"numeric"
+            }
+        );
+
+}
+
+
+/* ==========================================
+   LOGOUT
+========================================== */
+
+function setupLogout(){
+
+    const logout =
+        document.getElementById(
+            "logoutLink"
+        );
+
+
+    if(!logout){
+
+        return;
+
+    }
+
+
+    logout.addEventListener(
+        "click",
+        function(e){
+
+            e.preventDefault();
+
+
+            sessionStorage.removeItem(
+                CONFIG.SESSION_KEY
+            );
+
+
+            sessionStorage.removeItem(
+                CONFIG.TOKEN_KEY
+            );
+
+
+            window.location.href =
+                "index.html";
+
+        }
+    );
+
+}
+
+
+/* ==========================================
+   LOAD STUDENT RESULTS
+========================================== */
+
+async function loadStudentResults(){
+
+    const nis =
+        STUDENT_SESSION.nis;
+
+
+    if(!nis){
+
+        console.warn(
+            "Student NIS not found in session."
+        );
+
+
+        showResultError(
+            "Student NIS tidak ditemukan pada session."
+        );
+
+        return;
+
+    }
+
+
+    setResultLoading();
+
+
+    try{
+
+        const response =
+            await apiGetStudentResult({
+
+                nis: nis
+
+            });
+
+
+        console.log(
+            "STUDENT RESULT RESPONSE:",
+            response
+        );
+
+
+        if(
+            !response ||
+            response.success !== true
+        ){
+
+            STUDENT_RESULTS = [];
+
+
+            showResultError(
+                response &&
+                response.message
+                    ? response.message
+                    : "Failed to load student results."
+            );
+
+
+            updateScoreCards();
+
+            return;
+
+        }
+
+
+        STUDENT_RESULTS =
+            Array.isArray(
+                response.data
+            )
+                ? response.data
+                : [];
+
+
+        updateScoreCards();
+
+        renderStudentResults();
+
+    }
+
+    catch(err){
+
+        console.error(
+            "LOAD STUDENT RESULTS ERROR:",
+            err
+        );
+
+
+        STUDENT_RESULTS = [];
+
+
+        showResultError(
+            err.message ||
+            "Unable to load student results."
+        );
+
+
+        updateScoreCards();
+
+    }
+
+}
+
+
+/* ==========================================
+   UPDATE SCORE CARDS
+========================================== */
+
+function updateScoreCards(){
+
+    const attemptCount =
+        STUDENT_RESULTS.length;
+
+
+    const attemptElement =
+        document.getElementById(
+            "attemptCount"
+        );
+
+
+    if(attemptElement){
+
+        attemptElement.textContent =
+            attemptCount;
+
+    }
+
+
+    const latestElement =
+        document.getElementById(
+            "latestScore"
+        );
+
+
+    if(!latestElement){
+
+        return;
+
+    }
+
+
+    if(attemptCount === 0){
+
+        latestElement.textContent =
+            "0";
+
+        return;
+
+    }
+
+
+    const latest =
+        getLatestResult();
+
+
+    latestElement.textContent =
+        latest &&
+        latest.score !== null &&
+        typeof latest.score !== "undefined"
+            ? latest.score
+            : "0";
+
+
+    const statusElement =
+        document.getElementById(
+            "examStatus"
+        );
+
+
+    if(statusElement){
+
+        statusElement.textContent =
+            attemptCount > 0
+                ? "COMPLETED"
+                : "READY";
+
+    }
+
+}
+
+
+/* ==========================================
+   GET LATEST RESULT
+========================================== */
+
+function getLatestResult(){
+
+    if(
+        !Array.isArray(
+            STUDENT_RESULTS
+        ) ||
+        STUDENT_RESULTS.length === 0
+    ){
+
+        return null;
+
+    }
+
+
+    return STUDENT_RESULTS[
+        STUDENT_RESULTS.length - 1
+    ];
+
+}
+
+
+/* ==========================================
+   RENDER RESULTS
+========================================== */
+
+function renderStudentResults(){
+
+    const status =
+        document.getElementById(
+            "resultStatus"
+        );
+
+
+    const table =
+        document.getElementById(
+            "studentResultTable"
+        );
+
+
+    if(!status || !table){
+
+        return;
+
+    }
+
+
+    if(
+        !STUDENT_RESULTS.length
+    ){
+
+        status.textContent =
+            "No speaking result yet.";
+
+        status.className =
+            "empty";
+
+
+        table.innerHTML =
+            "";
+
+        return;
+
+    }
+
+
+    status.textContent =
+        STUDENT_RESULTS.length +
+        " speaking result(s) found.";
+
+
+    status.className =
+        "status-text";
+
+
+    let html = `
+
+        <table class="result-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        No
+                    </th>
+
+                    <th>
+                        Question
+                    </th>
+
+                    <th>
+                        Score
+                    </th>
+
+                    <th>
+                        Feedback
+                    </th>
+
+                    <th>
+                        Date
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+    `;
+
+
+    STUDENT_RESULTS.forEach(
+        function(result,index){
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${index + 1}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            result.question ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+
+                        <span class="score-badge">
+
+                            ${escapeHTML(
+                                result.score !== null &&
+                                typeof result.score !== "undefined"
+                                    ? result.score
+                                    : "0"
+                            )}
+
+                        </span>
+
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            result.feedback ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatDate(
+                            result.createdAt
+                        )}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+    html += `
+
+            </tbody>
+
+        </table>
+
+    `;
+
+
+    table.innerHTML =
+        html;
+
+}
+
+
+/* ==========================================
+   RESULT LOADING
+========================================== */
+
+function setResultLoading(){
+
+    const status =
+        document.getElementById(
+            "resultStatus"
+        );
+
+
+    const table =
+        document.getElementById(
+            "studentResultTable"
+        );
+
+
+    if(status){
+
+        status.textContent =
+            "Loading results...";
+
+        status.className =
+            "loading";
+
+    }
+
+
+    if(table){
+
+        table.innerHTML =
+            "";
+
+    }
+
+}
+
+
+/* ==========================================
+   RESULT ERROR
+========================================== */
+
+function showResultError(message){
+
+    const status =
+        document.getElementById(
+            "resultStatus"
+        );
+
+
+    const table =
+        document.getElementById(
+            "studentResultTable"
+        );
+
+
+    if(status){
+
+        status.textContent =
+            message;
+
+        status.className =
+            "error";
+
+    }
+
+
+    if(table){
+
+        table.innerHTML =
+            "";
+
+    }
+
+}
+
+
+/* ==========================================
+   ESCAPE HTML
+========================================== */
+
+function escapeHTML(value){
+
+    if(
+        value === null ||
+        typeof value === "undefined"
+    ){
+
+        return "";
+
+    }
+
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+/* ==========================================
+   FORMAT DATE
+========================================== */
+
+function formatDate(value){
+
+    if(!value){
+
+        return "-";
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if(
+        Number.isNaN(
+            date.getTime()
+        )
+    ){
+
+        return escapeHTML(
+            value
+        );
+
+    }
+
+
+    return escapeHTML(
+        date.toLocaleString(
+            "en-US",
+            {
+                year:"numeric",
+                month:"short",
+                day:"numeric",
+                hour:"2-digit",
+                minute:"2-digit"
+            }
+        )
+    );
+
+}
 
 </script>
+
 
 </body>
 

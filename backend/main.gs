@@ -269,24 +269,40 @@ function doPost(e) {
         break;
 
 
-      /* ==============================================
-         RESULT
-      ============================================== */
+     /* ==============================================
+   RESULT
+============================================== */
 
-      case "saveResult":
+case "saveResult":
 
-        result =
-          saveResult(data);
+  result =
+    saveResult(data);
 
-        break;
+  break;
 
 
-      case "getStudentResult":
+case "getResult":
 
-        result =
-          getStudentResult(data);
+  result =
+    getResult();
 
-        break;
+  break;
+
+
+case "getStudentResult":
+
+  result =
+    getStudentResult(data);
+
+  break;
+
+
+case "deleteResult":
+
+  result =
+    deleteResult(data);
+
+  break;
 
 
       /* ==============================================
