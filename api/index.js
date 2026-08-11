@@ -3,41 +3,45 @@
  * SAF Speaking Online Test
  * Vercel API Gateway
  * api/index.js
- * Stable Foundation v5.0
+ *
+ * STABLE FOUNDATION v5.1
  * ==========================================
  *
  * Frontend
- *    │
- *    ▼
- *   /api
- *    │
- *    ▼
+ *    ↓
+ * /api
+ *    ↓
  * Google Apps Script
- *    │
- *    ▼
+ *    ↓
  * Google Spreadsheet
  *
  * ==========================================
  */
 
-// ==========================================
-// GOOGLE APPS SCRIPT URL
-// DEPLOYMENT TERBARU / AKTIF
-// ==========================================
+/**
+ * ==========================================
+ * GOOGLE APPS SCRIPT WEB APP
+ * ACTIVE / CURRENT DEPLOYMENT
+ * ==========================================
+ */
 
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbz9SwwEx1tTWFVwDZYZwRpTiRt97x20EnK5yO7WUl3XebrFoHPQKQzT7hQOM8bD03rq/exec";
 
 
-// ==========================================
-// VERCEL SERVERLESS FUNCTION
-// ==========================================
+/**
+ * ==========================================
+ * VERCEL SERVERLESS API
+ * ==========================================
+ */
 
 export default async function handler(req, res) {
 
-  // ========================================
-  // METHOD VALIDATION
-  // ========================================
+  /**
+   * ----------------------------------------
+   * ONLY POST
+   * ----------------------------------------
+   */
 
   if (req.method !== "POST") {
 
@@ -54,16 +58,32 @@ export default async function handler(req, res) {
 
   try {
 
-    // ======================================
-    // REQUEST BODY
-    // ======================================
+    /**
+     * --------------------------------------
+     * GET FRONTEND PAYLOAD
+     * --------------------------------------
+     */
 
     const payload = req.body || {};
 
 
-    // ======================================
-    // SEND REQUEST TO GOOGLE APPS SCRIPT
-    // ======================================
+    /**
+     * --------------------------------------
+     * DEBUG
+     * --------------------------------------
+     */
+
+    console.log(
+      "SAF API REQUEST:",
+      JSON.stringify(payload)
+    );
+
+
+    /**
+     * --------------------------------------
+     * SEND TO GAS
+     * --------------------------------------
+     */
 
     const response = await fetch(GAS_URL, {
 
@@ -71,31 +91,51 @@ export default async function handler(req, res) {
 
       headers: {
 
-        "Content-Type": "application/json"
+        "Content-Type":
+          "application/json"
 
       },
 
-      body: JSON.stringify(payload)
+      body:
+        JSON.stringify(payload)
 
     });
 
 
-    // ======================================
-    // READ RESPONSE
-    // ======================================
+    /**
+     * --------------------------------------
+     * GET RAW RESPONSE
+     * --------------------------------------
+     */
 
-    const text = await response.text();
+    const text =
+      await response.text();
 
 
-    // ======================================
-    // PARSE JSON
-    // ======================================
+    console.log(
+      "GAS STATUS:",
+      response.status
+    );
+
+
+    console.log(
+      "GAS RESPONSE:",
+      text
+    );
+
+
+    /**
+     * --------------------------------------
+     * PARSE JSON
+     * --------------------------------------
+     */
 
     let result;
 
     try {
 
-      result = JSON.parse(text);
+      result =
+        JSON.parse(text);
 
     }
 
@@ -113,26 +153,35 @@ export default async function handler(req, res) {
         message:
           "Google Apps Script returned invalid JSON.",
 
-        raw: text
+        raw:
+          text
 
       });
 
     }
 
 
-    // ======================================
-    // RETURN GAS RESPONSE TO FRONTEND
-    // ======================================
+    /**
+     * --------------------------------------
+     * RETURN GAS RESULT
+     * --------------------------------------
+     */
 
     return res.status(200).json(result);
 
   }
 
 
+  /**
+   * ========================================
+   * ERROR HANDLER
+   * ========================================
+   */
+
   catch (err) {
 
     console.error(
-      "VERCEL API ERROR:",
+      "SAF API ERROR:",
       err
     );
 
