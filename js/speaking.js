@@ -7,13 +7,13 @@
  * js/speaking.js
  *
  * VERSION:
- * Anti-Duplicate Speech Recognition Fix
+ * Token → Question Binding + Anti-Duplicate Speech Recognition
  *
  * RESPONSIBILITY:
  * - Student session
  * - Exam token
  * - Token validation
- * - Load ACTIVE question
+ * - Load QUESTION BELONGING TO TOKEN
  * - Speech Recognition
  * - Transcript reconstruction
  * - Anti-duplicate recognition
@@ -69,17 +69,12 @@
 
     let isSubmitting = false;
 
-
     /*
-     * IMPORTANT:
+     * SpeechRecognition result segments.
      *
-     * SpeechRecognition may send multiple result events.
-     *
-     * We DO NOT append every event blindly.
-     *
-     * Each recognition result is stored by its index.
+     * Each result is stored according to
+     * its SpeechRecognition result index.
      */
-
     let recognitionSegments = [];
 
 
@@ -491,6 +486,8 @@
 
         tokenVerified = false;
 
+        currentQuestion = null;
+
     }
 
 
@@ -524,7 +521,7 @@
                     "Token input not found."
                 );
 
-                return;
+                return false;
 
             }
 
@@ -546,6 +543,8 @@
             tokenVerified = false;
 
             currentToken = "";
+
+            currentQuestion = null;
 
 
             setExamStatus(
@@ -581,6 +580,8 @@
         tokenVerified = false;
 
         currentToken = "";
+
+        currentQuestion = null;
 
 
         setExamStatus(
@@ -627,6 +628,8 @@
                 tokenVerified = false;
 
                 currentToken = "";
+
+                currentQuestion = null;
 
 
                 clearToken();
@@ -696,13 +699,22 @@
             );
 
 
+            /* =================================================
+               CRITICAL:
+               LOAD QUESTION USING TOKEN
+            ================================================= */
+
             const questionLoaded =
-                await loadQuestion();
+                await loadQuestion(
+                    currentToken
+                );
 
 
             if (!questionLoaded) {
 
                 tokenVerified = false;
+
+                currentToken = "";
 
                 currentQuestion = null;
 
@@ -749,6 +761,8 @@
 
             currentToken = "";
 
+            currentQuestion = null;
+
 
             setExamStatus(
                 error.message ||
@@ -783,11 +797,53 @@
 
     /* =====================================================
        LOAD QUESTION
+       
+       CRITICAL TOKEN BINDING
+       
+       The question request MUST include:
+       
+       {
+           token: currentToken
+       }
+       
+       We no longer request:
+       
+       getQuestion({})
+       
+       because that can return the first ACTIVE
+       question instead of the question assigned
+       to the current exam token.
     ===================================================== */
 
-    async function loadQuestion() {
+    async function loadQuestion(token) {
 
         currentQuestion = null;
+
+
+        const normalizedToken =
+            String(
+                token || ""
+            )
+                .trim()
+                .toUpperCase();
+
+
+        if (!normalizedToken) {
+
+            console.error(
+                "LOAD QUESTION: TOKEN EMPTY"
+            );
+
+
+            setText(
+                "question",
+                "Exam token is required."
+            );
+
+
+            return false;
+
+        }
 
 
         setText(
@@ -799,14 +855,31 @@
         try {
 
             console.log(
-                "GET QUESTION REQUEST"
+                "GET QUESTION REQUEST:",
+                {
+                    token:
+                        normalizedToken
+                }
             );
 
+
+            /*
+             * IMPORTANT:
+             *
+             * Token is explicitly sent to backend.
+             *
+             * Backend must resolve:
+             *
+             * token → questionId → question
+             */
 
             const result =
                 await apiRequest(
                     "getQuestion",
-                    {}
+                    {
+                        token:
+                            normalizedToken
+                    }
                 );
 
 
@@ -831,49 +904,275 @@
             }
 
 
-            const questions =
-                Array.isArray(result.data)
-                    ? result.data
-                    : [];
+            /* =================================================
+               EXTRACT QUESTION
+               
+               Supported backend response:
+               
+               1. result.data = question object
+               
+               2. result.data = [question]
+               
+               3. result.question = question object
+            ================================================= */
 
-
-            const activeQuestions =
-                questions.filter(
-                    function (question) {
-
-                        return (
-                            question &&
-                            String(
-                                question.status || ""
-                            )
-                                .trim()
-                                .toUpperCase()
-                            === "ACTIVE"
-                        );
-
-                    }
-                );
+            let question = null;
 
 
             if (
-                activeQuestions.length === 0
+                result.data &&
+                !Array.isArray(result.data) &&
+                typeof result.data === "object"
+            ) {
+
+                question =
+                    result.data;
+
+            }
+
+            else if (
+                Array.isArray(result.data)
+            ) {
+
+                /*
+                 * If backend returns an array, do NOT blindly
+                 * use activeQuestions[0].
+                 *
+                 * First try to identify the question by token.
+                 */
+
+                const questions =
+                    result.data;
+
+
+                const tokenMatchedQuestion =
+                    questions.find(
+                        function (item) {
+
+                            if (!item) {
+                                return false;
+                            }
+
+
+                            const itemToken =
+                                String(
+                                    item.token ||
+                                    item.examToken ||
+                                    item.tokenCode ||
+                                    ""
+                                )
+                                    .trim()
+                                    .toUpperCase();
+
+
+                            return (
+                                itemToken ===
+                                normalizedToken
+                            );
+
+                        }
+                    );
+
+
+                if (tokenMatchedQuestion) {
+
+                    question =
+                        tokenMatchedQuestion;
+
+                }
+
+                /*
+                 * If backend returns exactly one question,
+                 * it is safe to use it.
+                 */
+
+                else if (
+                    questions.length === 1
+                ) {
+
+                    question =
+                        questions[0];
+
+                }
+
+                else {
+
+                    /*
+                     * DO NOT choose the first ACTIVE question.
+                     *
+                     * That was the source of the mismatch.
+                     */
+
+                    throw new Error(
+                        "Backend returned multiple questions without token binding."
+                    );
+
+                }
+
+            }
+
+            else if (
+                result.question &&
+                typeof result.question === "object"
+            ) {
+
+                question =
+                    result.question;
+
+            }
+
+
+            /* =================================================
+               VALIDATE QUESTION OBJECT
+            ================================================= */
+
+            if (
+                !question ||
+                typeof question !== "object"
             ) {
 
                 throw new Error(
-                    "No active speaking question is available."
+                    "Question data tidak ditemukan."
                 );
 
             }
 
 
-            /*
-             * Stable foundation:
-             * first ACTIVE question.
-             */
+            const questionId =
+                String(
+                    question.id ||
+                    question.questionId ||
+                    ""
+                )
+                    .trim();
+
+
+            const questionTitle =
+                String(
+                    question.title ||
+                    question.question ||
+                    question.text ||
+                    ""
+                )
+                    .trim();
+
+
+            if (!questionId) {
+
+                throw new Error(
+                    "Question ID tidak ditemukan."
+                );
+
+            }
+
+
+            if (!questionTitle) {
+
+                throw new Error(
+                    "Question text tidak ditemukan."
+                );
+
+            }
+
+
+            /* =================================================
+               OPTIONAL TOKEN SAFETY CHECK
+               
+               If backend sends token metadata,
+               verify that it belongs to current token.
+            ================================================= */
+
+            const returnedToken =
+                String(
+                    question.token ||
+                    question.examToken ||
+                    question.tokenCode ||
+                    ""
+                )
+                    .trim()
+                    .toUpperCase();
+
+
+            if (
+                returnedToken &&
+                returnedToken !==
+                    normalizedToken
+            ) {
+
+                console.error(
+                    "TOKEN / QUESTION MISMATCH:",
+                    {
+                        requestedToken:
+                            normalizedToken,
+
+                        returnedToken:
+                            returnedToken,
+
+                        question:
+                            question
+                    }
+                );
+
+
+                throw new Error(
+                    "Question does not belong to this exam token."
+                );
+
+            }
+
+
+            /* =================================================
+               QUESTION STATUS
+            ================================================= */
+
+            const status =
+                String(
+                    question.status || ""
+                )
+                    .trim()
+                    .toUpperCase();
+
+
+            if (
+                status &&
+                status !== "ACTIVE"
+            ) {
+
+                throw new Error(
+                    "Question assigned to this token is not ACTIVE."
+                );
+
+            }
+
+
+            /* =================================================
+               SET CURRENT QUESTION
+            ================================================= */
 
             currentQuestion =
-                activeQuestions[0];
+                question;
 
+
+            /*
+             * Normalize essential properties locally.
+             *
+             * This guarantees submitAnswer() always has:
+             *
+             * currentQuestion.id
+             * currentQuestion.title
+             */
+
+            currentQuestion.id =
+                questionId;
+
+
+            currentQuestion.title =
+                questionTitle;
+
+
+            /* =================================================
+               DISPLAY QUESTION
+            ================================================= */
 
             setText(
                 "question",
@@ -906,8 +1205,17 @@
 
 
             console.log(
-                "CURRENT ACTIVE QUESTION:",
-                currentQuestion
+                "TOKEN-BOUND QUESTION:",
+                {
+                    token:
+                        normalizedToken,
+
+                    questionId:
+                        currentQuestion.id,
+
+                    question:
+                        currentQuestion.title
+                }
             );
 
 
@@ -946,23 +1254,34 @@
 
     function normalizeTranscriptWords(text) {
 
-        return String(
-            text || ""
-        )
-            .toLowerCase()
-            .replace(
-                /[.,!?;:()[\]{}"“”‘’]/g,
-                " "
+        const normalized =
+            String(
+                text || ""
             )
-            .replace(
-                /[-–—]/g,
-                " "
-            )
-            .replace(
-                /\s+/g,
-                " "
-            )
-            .trim()
+                .toLowerCase()
+                .replace(
+                    /[.,!?;:()[\]{}"“”‘’]/g,
+                    " "
+                )
+                .replace(
+                    /[-–—]/g,
+                    " "
+                )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+
+        if (!normalized) {
+
+            return [];
+
+        }
+
+
+        return normalized
             .split(/\s+/)
             .filter(Boolean);
 
@@ -996,10 +1315,16 @@
         return (
             String(a || "")
                 .toLowerCase()
-                .replace(/[.,!?;:()[\]{}"“”‘’]/g, "") ===
+                .replace(
+                    /[.,!?;:()[\]{}"“”‘’]/g,
+                    ""
+                ) ===
             String(b || "")
                 .toLowerCase()
-                .replace(/[.,!?;:()[\]{}"“”‘’]/g, "")
+                .replace(
+                    /[.,!?;:()[\]{}"“”‘’]/g,
+                    ""
+                )
         );
 
     }
@@ -1007,22 +1332,21 @@
 
     /* =====================================================
        MERGE TRANSCRIPT SEGMENTS
-       
-       Purpose:
-       Prevent recognition overlap such as:
-       
+
+       Prevent recognition overlap:
+
        "there"
        +
        "there are"
-       
+
        becoming:
-       
+
        "there there are"
-       
-       Instead:
-       
+
+       Result:
+
        "there are"
-       ===================================================== */
+    ===================================================== */
 
     function mergeTranscriptSegments(segments) {
 
@@ -1047,10 +1371,6 @@
                 }
 
 
-                /*
-                 * First segment.
-                 */
-
                 if (
                     words.length === 0
                 ) {
@@ -1062,14 +1382,6 @@
 
                 }
 
-
-                /*
-                 * Find maximum overlap:
-                 *
-                 * end of existing transcript
-                 * ==
-                 * beginning of new segment
-                 */
 
                 let maxOverlap = 0;
 
@@ -1136,11 +1448,6 @@
                 }
 
 
-                /*
-                 * Append only the part that
-                 * is not already present.
-                 */
-
                 words =
                     words.concat(
                         segmentWords.slice(
@@ -1159,19 +1466,19 @@
 
     /* =====================================================
        REMOVE OBVIOUS DUPLICATE PHRASES
-       
+
        Conservative:
        only removes immediately repeated
        identical phrases.
-       
+
        Example:
-       
+
        there are there are
-       
+
        →
-       
+
        there are
-       ===================================================== */
+    ===================================================== */
 
     function removeRepeatedPhrases(text) {
 
@@ -1189,12 +1496,6 @@
 
         }
 
-
-        /*
-         * Repeat detection from 1 to 4 words.
-         *
-         * We intentionally keep this conservative.
-         */
 
         let changed = true;
 
@@ -1228,8 +1529,7 @@
                     i++
                 ) {
 
-                    let same =
-                        true;
+                    let same = true;
 
 
                     for (
@@ -1251,8 +1551,7 @@
                             )
                         ) {
 
-                            same =
-                                false;
+                            same = false;
 
                             break;
 
@@ -1276,8 +1575,7 @@
                             );
 
 
-                        changed =
-                            true;
+                        changed = true;
 
 
                         break;
@@ -1332,6 +1630,20 @@
             }
 
 
+            /*
+             * Only confirmed/final segments are
+             * included in final reconstruction.
+             */
+
+            if (
+                segment.final !== true
+            ) {
+
+                continue;
+
+            }
+
+
             segments.push(
                 segment.text
             );
@@ -1339,21 +1651,11 @@
         }
 
 
-        /*
-         * First merge recognition segments
-         * using overlap detection.
-         */
-
         let merged =
             mergeTranscriptSegments(
                 segments
             );
 
-
-        /*
-         * Then remove only obvious
-         * immediately repeated phrases.
-         */
 
         merged =
             removeRepeatedPhrases(
@@ -1406,14 +1708,6 @@
         }
 
 
-        /*
-         * Interim is only visual.
-         *
-         * It must NOT become part of
-         * finalTranscript until recognition
-         * confirms it.
-         */
-
         interimTranscript =
             normalizeTranscriptDisplay(
                 interimParts.join(" ")
@@ -1460,10 +1754,6 @@
     ===================================================== */
 
     function startRecording() {
-
-        /*
-         * Check internal state.
-         */
 
         if (
             tokenVerified !== true ||
@@ -1526,10 +1816,6 @@
         }
 
 
-        /*
-         * Fresh recognition instance.
-         */
-
         const recognitionInstance =
             new SpeechRecognition();
 
@@ -1553,10 +1839,6 @@
         recognition.maxAlternatives =
             1;
 
-
-        /*
-         * RESET TRANSCRIPT STATE
-         */
 
         finalTranscript = "";
 
@@ -1632,15 +1914,6 @@
                 );
 
 
-                /*
-                 * IMPORTANT:
-                 *
-                 * Do not append event text.
-                 *
-                 * Update the result at its
-                 * actual SpeechRecognition index.
-                 */
-
                 for (
                     let i =
                         event.resultIndex;
@@ -1677,10 +1950,6 @@
                         );
 
 
-                    /*
-                     * Store / replace the segment.
-                     */
-
                     recognitionSegments[i] = {
 
                         text:
@@ -1693,11 +1962,6 @@
 
                 }
 
-
-                /*
-                 * Reconstruct the entire transcript
-                 * from stored result indexes.
-                 */
 
                 updateTranscriptDisplay();
 
@@ -1818,10 +2082,6 @@
                     false;
 
 
-                /*
-                 * Final reconstruction.
-                 */
-
                 const cleanText =
                     rebuildTranscript();
 
@@ -1939,11 +2199,6 @@
             false;
 
 
-        /*
-         * Reconstruct current transcript
-         * immediately as a safe fallback.
-         */
-
         const text =
             rebuildTranscript();
 
@@ -1987,11 +2242,6 @@
 
     function getTranscript() {
 
-        /*
-         * Always reconstruct from recognition
-         * segments first.
-         */
-
         const reconstructed =
             rebuildTranscript();
 
@@ -2007,10 +2257,6 @@
         }
 
 
-        /*
-         * Fallback to internal transcript.
-         */
-
         const internal =
             finalTranscript
                 .trim();
@@ -2022,10 +2268,6 @@
 
         }
 
-
-        /*
-         * Final fallback to DOM.
-         */
 
         const element =
             $("transcript");
@@ -2077,20 +2319,12 @@
 
     async function submitAnswer() {
 
-        /*
-         * Prevent double submit.
-         */
-
         if (isSubmitting) {
 
             return;
 
         }
 
-
-        /*
-         * Token must really be verified.
-         */
 
         if (
             tokenVerified !== true ||
@@ -2107,10 +2341,6 @@
         }
 
 
-        /*
-         * Question must exist.
-         */
-
         if (!currentQuestion) {
 
             alert(
@@ -2122,10 +2352,6 @@
 
         }
 
-
-        /*
-         * Student session must exist.
-         */
 
         if (!student) {
 
@@ -2143,21 +2369,12 @@
         }
 
 
-        /*
-         * Stop recording first.
-         */
-
         if (isRecording) {
 
             stopRecording();
 
         }
 
-
-        /*
-         * Allow SpeechRecognition
-         * to finalize the last event.
-         */
 
         await new Promise(
             function (resolve) {
@@ -2188,8 +2405,31 @@
 
 
         /* =================================================
-           BUILD PAYLOAD
+           FINAL QUESTION SAFETY
+           
+           Ensure the question being submitted
+           is the question loaded for the token.
         ================================================= */
+
+        const questionId =
+            String(
+                currentQuestion.id ||
+                ""
+            )
+                .trim();
+
+
+        if (!questionId) {
+
+            alert(
+                "Question ID is missing."
+            );
+
+
+            return;
+
+        }
+
 
         const payload = {
 
@@ -2211,10 +2451,10 @@
                 currentToken,
 
 
-            /* Question */
+            /* Token-bound Question */
 
             questionId:
-                currentQuestion.id || "",
+                questionId,
 
             question:
                 currentQuestion.title || "",
@@ -2251,14 +2491,6 @@
 
         try {
 
-            /*
-             * Browser
-             * ↓
-             * Vercel /api
-             * ↓
-             * Main.gs
-             */
-
             const result =
                 await apiRequest(
                     "saveScore",
@@ -2287,10 +2519,6 @@
             }
 
 
-            /* =================================================
-               SUCCESS
-            ================================================= */
-
             setRecordStatus(
                 "Answer submitted successfully."
             );
@@ -2300,10 +2528,6 @@
                 "Answer Submitted"
             );
 
-
-            /*
-             * Save latest result locally.
-             */
 
             try {
 
@@ -2390,12 +2614,6 @@
         }
 
 
-        /*
-         * Stored token is NOT automatically verified.
-         *
-         * It must be revalidated by backend.
-         */
-
         setExamStatus(
             "Checking Token..."
         );
@@ -2418,10 +2636,6 @@
             "SAF SPEAKING PAGE INITIALIZING..."
         );
 
-
-        /*
-         * Reset state.
-         */
 
         tokenVerified =
             false;
@@ -2451,10 +2665,6 @@
             false;
 
 
-        /*
-         * CONFIG must exist.
-         */
-
         if (
             typeof CONFIG ===
             "undefined"
@@ -2475,10 +2685,6 @@
         }
 
 
-        /*
-         * Student login required.
-         */
-
         const sessionOK =
             loadStudentSession();
 
@@ -2489,10 +2695,6 @@
 
         }
 
-
-        /*
-         * Initial UI.
-         */
 
         hideExamArea();
 
@@ -2507,10 +2709,6 @@
         );
 
 
-        /*
-         * Restore saved token.
-         */
-
         await restoreSavedToken();
 
 
@@ -2524,15 +2722,6 @@
     /* =====================================================
        GLOBAL FUNCTIONS
     ===================================================== */
-
-    /*
-     * speaking.html:
-     *
-     * onclick="validateToken()"
-     * onclick="startRecording()"
-     * onclick="stopRecording()"
-     * onclick="submitAnswer()"
-     */
 
     window.validateToken =
         validateToken;
@@ -2575,6 +2764,5 @@
         init();
 
     }
-
 
 })();
