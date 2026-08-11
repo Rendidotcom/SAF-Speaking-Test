@@ -1,4 +1,4 @@
-/************************************************************
+/**
  * =========================================================
  * SAF SPEAKING ONLINE TEST
  * Student Speaking Module
@@ -10,7 +10,8 @@
  * - Student session
  * - Exam token
  * - Token validation
- * - Load question assigned to token
+ * - Token → Question mapping
+ * - Load ACTIVE question from Questions Sheet
  * - Speech Recognition
  * - Transcript
  * - Submit answer
@@ -18,24 +19,26 @@
  * LOCKED ARCHITECTURE
  *
  * speaking.html
- *       ↓
+ *      ↓
  * speaking.js
- *       ↓
+ *      ↓
  * /api
- *       ↓
+ *      ↓
  * Vercel API Gateway
- *       ↓
+ *      ↓
  * GAS Main.gs
- *       ↓
+ *      ↓
  * Question.gs / Token.gs / Score.gs
- *       ↓
+ *      ↓
  * Google Spreadsheet
  *
  * IMPORTANT:
- * Browser NEVER calls GAS functions directly.
- * Browser communicates only through /api.
+ * - Browser NEVER calls GAS directly.
+ * - Browser communicates only through /api.
+ * - Token determines the Question ID.
+ * - System MUST NOT fallback to first ACTIVE question.
  * =========================================================
- ************************************************************/
+ */
 
 (function () {
 
@@ -87,8 +90,11 @@
         const element = $(id);
 
         if (!element) {
+
             return;
+
         }
+
 
         if (
             value === undefined ||
@@ -102,7 +108,9 @@
 
         }
 
-        element.textContent = String(value);
+
+        element.textContent =
+            String(value);
 
     }
 
@@ -113,11 +121,15 @@
 
     function showExamArea() {
 
-        const area = $("examArea");
+        const area =
+            $("examArea");
+
 
         if (area) {
 
-            area.classList.remove("hidden");
+            area.classList.remove(
+                "hidden"
+            );
 
         }
 
@@ -130,11 +142,15 @@
 
     function hideExamArea() {
 
-        const area = $("examArea");
+        const area =
+            $("examArea");
+
 
         if (area) {
 
-            area.classList.add("hidden");
+            area.classList.add(
+                "hidden"
+            );
 
         }
 
@@ -186,6 +202,7 @@
 
         }
 
+
         return "SAF_TOKEN";
 
     }
@@ -208,6 +225,7 @@
 
         }
 
+
         return "SAF_SESSION";
 
     }
@@ -218,7 +236,10 @@
        Browser → Vercel /api
     ===================================================== */
 
-    async function apiRequest(action, data) {
+    async function apiRequest(
+        action,
+        data
+    ) {
 
         const response =
             await fetch(
@@ -266,6 +287,7 @@
                 "INVALID API JSON:",
                 text
             );
+
 
             throw new Error(
                 "API returned invalid JSON."
@@ -415,6 +437,7 @@
                 error
             );
 
+
             return "";
 
         }
@@ -473,11 +496,367 @@
         }
 
 
-        currentToken = "";
+        currentToken =
+            "";
 
-        currentQuestionId = "";
+        currentQuestion =
+            null;
 
-        tokenVerified = false;
+        currentQuestionId =
+            "";
+
+        tokenVerified =
+            false;
+
+    }
+
+
+    /* =====================================================
+       FIND QUESTION BY ID
+       
+       IMPORTANT:
+       - Does NOT select first ACTIVE question.
+       - Uses the questionId stored in Token.
+       - Keeps existing getQuestion API contract.
+    ===================================================== */
+
+    function findQuestionById(
+        questions,
+        questionId
+    ) {
+
+        if (
+            !Array.isArray(questions)
+        ) {
+
+            return null;
+
+        }
+
+
+        const targetId =
+            String(
+                questionId || ""
+            )
+            .trim();
+
+
+        if (!targetId) {
+
+            return null;
+
+        }
+
+
+        for (
+            let i = 0;
+            i < questions.length;
+            i++
+        ) {
+
+            const question =
+                questions[i];
+
+
+            if (!question) {
+
+                continue;
+
+            }
+
+
+            const id =
+                String(
+                    question.id || ""
+                )
+                .trim();
+
+
+            if (
+                id === targetId
+            ) {
+
+                return question;
+
+            }
+
+        }
+
+
+        return null;
+
+    }
+
+
+    /* =====================================================
+       LOAD QUESTION
+       
+       Main.gs → Question.gs → Questions Sheet
+       
+       QUESTION SELECTION RULE:
+       
+       Token
+          ↓
+       questionId
+          ↓
+       getQuestion()
+          ↓
+       find exact question ID
+       
+       NEVER:
+       questionId missing → first ACTIVE question
+    ===================================================== */
+
+    async function loadQuestion(
+        questionId
+    ) {
+
+        currentQuestion =
+            null;
+
+
+        currentQuestionId =
+            String(
+                questionId || ""
+            )
+            .trim();
+
+
+        setText(
+            "question",
+            "Loading question..."
+        );
+
+
+        /*
+         * Question ID is mandatory.
+         */
+
+        if (!currentQuestionId) {
+
+            const message =
+                "Token valid tetapi belum memiliki Question ID.";
+
+
+            setText(
+                "question",
+                message
+            );
+
+
+            console.error(
+                "LOAD QUESTION BLOCKED:",
+                message
+            );
+
+
+            return false;
+
+        }
+
+
+        try {
+
+            console.log(
+                "GET QUESTION REQUEST"
+            );
+
+
+            const result =
+                await apiRequest(
+                    "getQuestion",
+                    {}
+                );
+
+
+            console.log(
+                "GET QUESTION RESPONSE:",
+                result
+            );
+
+
+            if (
+                !result ||
+                result.success !== true
+            ) {
+
+                throw new Error(
+                    result &&
+                    result.message
+                        ? result.message
+                        : "Failed to load question."
+                );
+
+            }
+
+
+            /*
+             * Backend response:
+             *
+             * {
+             *     success: true,
+             *     data: [...]
+             * }
+             */
+
+            const questions =
+                Array.isArray(
+                    result.data
+                )
+                    ? result.data
+                    : [];
+
+
+            /*
+             * Find exact question ID.
+             *
+             * This is the critical fix.
+             */
+
+            const question =
+                findQuestionById(
+                    questions,
+                    currentQuestionId
+                );
+
+
+            if (!question) {
+
+                throw new Error(
+                    "Question ID " +
+                    currentQuestionId +
+                    " tidak ditemukan."
+                );
+
+            }
+
+
+            /*
+             * Question must be ACTIVE.
+             */
+
+            const status =
+                String(
+                    question.status || ""
+                )
+                .trim()
+                .toUpperCase();
+
+
+            if (
+                status !== "ACTIVE"
+            ) {
+
+                throw new Error(
+                    "Question yang terhubung dengan token tidak aktif."
+                );
+
+            }
+
+
+            /*
+             * Store exact question.
+             */
+
+            currentQuestion =
+                question;
+
+
+            /*
+             * Keep exact ID.
+             */
+
+            currentQuestionId =
+                String(
+                    question.id || ""
+                )
+                .trim();
+
+
+            /*
+             * Display question title
+             * exactly from Questions Sheet.
+             */
+
+            setText(
+                "question",
+                currentQuestion.title
+            );
+
+
+            /*
+             * Optional difficulty.
+             */
+
+            if (
+                $("questionDifficulty")
+            ) {
+
+                setText(
+                    "questionDifficulty",
+                    currentQuestion.difficulty
+                );
+
+            }
+
+
+            /*
+             * Optional duration.
+             */
+
+            if (
+                $("questionDuration")
+            ) {
+
+                setText(
+                    "questionDuration",
+                    currentQuestion.duration
+                );
+
+            }
+
+
+            console.log(
+                "CURRENT TOKEN QUESTION:",
+                {
+                    token:
+                        currentToken,
+
+                    questionId:
+                        currentQuestionId,
+
+                    question:
+                        currentQuestion
+                }
+            );
+
+
+            return true;
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "LOAD QUESTION ERROR:",
+                error
+            );
+
+
+            currentQuestion =
+                null;
+
+
+            setText(
+                "question",
+                error.message ||
+                "Question could not be loaded."
+            );
+
+
+            return false;
+
+        }
 
     }
 
@@ -486,7 +865,9 @@
        VALIDATE TOKEN
     ===================================================== */
 
-    async function validateToken(tokenFromRestore) {
+    async function validateToken(
+        tokenFromRestore
+    ) {
 
         const input =
             $("token");
@@ -506,9 +887,11 @@
         if (tokenFromRestore) {
 
             token =
-                String(tokenFromRestore)
-                    .trim()
-                    .toUpperCase();
+                String(
+                    tokenFromRestore
+                )
+                .trim()
+                .toUpperCase();
 
         }
 
@@ -520,7 +903,8 @@
                     "Token input not found."
                 );
 
-                return;
+
+                return false;
 
             }
 
@@ -539,13 +923,18 @@
 
         if (!token) {
 
-            tokenVerified = false;
+            tokenVerified =
+                false;
 
-            currentToken = "";
+            currentToken =
+                "";
 
-            currentQuestionId = "";
+            currentQuestion =
+                null;
 
-            currentQuestion = null;
+            currentQuestionId =
+                "";
+
 
             setExamStatus(
                 "Waiting Token"
@@ -564,7 +953,7 @@
             }
 
 
-            return;
+            return false;
 
         }
 
@@ -575,24 +964,27 @@
 
         if (input) {
 
-            input.value = token;
+            input.value =
+                token;
 
         }
 
 
         /*
-         * IMPORTANT:
-         * Never assume token is valid
-         * merely because it exists.
+         * Never assume token is valid.
          */
 
-        tokenVerified = false;
+        tokenVerified =
+            false;
 
-        currentToken = "";
+        currentToken =
+            "";
 
-        currentQuestionId = "";
+        currentQuestion =
+            null;
 
-        currentQuestion = null;
+        currentQuestionId =
+            "";
 
 
         setExamStatus(
@@ -608,7 +1000,8 @@
             console.log(
                 "VALIDATE TOKEN REQUEST:",
                 {
-                    token: token
+                    token:
+                        token
                 }
             );
 
@@ -642,18 +1035,21 @@
                 result.valid !== true
             ) {
 
-                tokenVerified = false;
+                tokenVerified =
+                    false;
 
-                currentToken = "";
+                currentToken =
+                    "";
 
-                currentQuestionId = "";
+                currentQuestion =
+                    null;
 
-                currentQuestion = null;
+                currentQuestionId =
+                    "";
 
 
                 /*
-                 * Invalid token must not
-                 * remain stored.
+                 * Invalid token should not remain stored.
                  */
 
                 clearToken();
@@ -688,56 +1084,87 @@
 
 
             /* =================================================
-               TOKEN IS REALLY VALID
+               TOKEN IS VALID
             ================================================= */
 
-            currentToken =
-                token;
-
-
-            /*
-             * QUESTION ID MUST COME
-             * FROM THE VALIDATED TOKEN.
-             */
-
-            currentQuestionId =
+            const questionId =
                 String(
-                    result.questionId ||
-                    ""
+                    result.questionId || ""
                 )
-                    .trim();
+                .trim();
 
 
             /*
-             * A token without question mapping
-             * must not silently fall back to
-             * the first question.
+             * CRITICAL:
+             *
+             * Token without questionId is NOT usable
+             * for the speaking exam.
+             *
+             * We deliberately DO NOT fallback to
+             * the first ACTIVE question.
              */
 
-            if (!currentQuestionId) {
+            if (!questionId) {
 
-                tokenVerified = false;
+                tokenVerified =
+                    false;
 
-                currentToken = "";
+                currentToken =
+                    "";
 
-                currentQuestion = null;
+                currentQuestion =
+                    null;
 
-
-                clearToken();
+                currentQuestionId =
+                    "";
 
 
                 setExamStatus(
-                    "Token does not have an assigned question."
+                    "Token valid tetapi belum memiliki Question ID."
                 );
 
 
                 hideExamArea();
 
 
+                console.error(
+                    "TOKEN QUESTION MAPPING MISSING:",
+                    {
+                        token:
+                            token,
+
+                        response:
+                            result
+                    }
+                );
+
+
                 if (!tokenFromRestore) {
 
                     alert(
-                        "This exam token has no assigned question."
+                        "Token valid tetapi belum memiliki Question ID. Silakan gunakan token baru yang dibuat untuk sebuah question."
+                    );
+
+                }
+
+
+                /*
+                 * Remove unusable token from local storage.
+                 */
+
+                try {
+
+                    sessionStorage.removeItem(
+                        getTokenKey()
+                    );
+
+                }
+
+                catch (storageError) {
+
+                    console.warn(
+                        "Could not remove invalid mapped token:",
+                        storageError
                     );
 
                 }
@@ -748,14 +1175,25 @@
             }
 
 
+            /*
+             * Store verified token.
+             */
+
+            currentToken =
+                token;
+
+
             tokenVerified =
                 true;
 
 
+            currentQuestionId =
+                questionId;
+
+
             /*
-             * Save only after backend
-             * confirms token validity
-             * AND question mapping exists.
+             * Save only after backend confirms
+             * token validity and question mapping.
              */
 
             saveToken(
@@ -793,7 +1231,7 @@
 
 
             /*
-             * Load ONLY the question assigned
+             * Load the EXACT question assigned
              * to this token.
              */
 
@@ -805,15 +1243,23 @@
 
             if (!questionLoaded) {
 
-                tokenVerified = false;
+                tokenVerified =
+                    false;
 
-                currentQuestion = null;
+                currentQuestion =
+                    null;
+
+                currentQuestionId =
+                    "";
+
 
                 setExamStatus(
                     "Question unavailable"
                 );
 
+
                 hideExamArea();
+
 
                 return false;
 
@@ -849,13 +1295,17 @@
             );
 
 
-            tokenVerified = false;
+            tokenVerified =
+                false;
 
-            currentToken = "";
+            currentToken =
+                "";
 
-            currentQuestionId = "";
+            currentQuestion =
+                null;
 
-            currentQuestion = null;
+            currentQuestionId =
+                "";
 
 
             setExamStatus(
@@ -868,10 +1318,8 @@
 
 
             /*
-             * Do not remove stored token
-             * during temporary network/API errors.
-             *
-             * It may still be valid.
+             * Do not remove stored token during
+             * temporary network/API errors.
              */
 
             if (!tokenFromRestore) {
@@ -892,271 +1340,13 @@
 
 
     /* =====================================================
-       LOAD QUESTION
-       Main.gs → Question.gs → Questions Sheet
-    ===================================================== */
-
-    async function loadQuestion(questionId) {
-
-        currentQuestion = null;
-
-
-        /*
-         * Question ID is mandatory.
-         *
-         * This prevents accidental fallback
-         * to the first ACTIVE question.
-         */
-
-        if (!questionId) {
-
-            setText(
-                "question",
-                "Question unavailable."
-            );
-
-
-            console.error(
-                "LOAD QUESTION: questionId is missing."
-            );
-
-
-            return false;
-
-        }
-
-
-        setText(
-            "question",
-            "Loading question..."
-        );
-
-
-        try {
-
-            console.log(
-                "GET QUESTION REQUEST:",
-                {
-                    questionId:
-                        questionId
-                }
-            );
-
-
-            /*
-             * Existing API action is preserved:
-             *
-             * getQuestion
-             *
-             * Only the payload is extended.
-             */
-
-            const result =
-                await apiRequest(
-                    "getQuestion",
-                    {
-                        questionId:
-                            questionId
-                    }
-                );
-
-
-            console.log(
-                "GET QUESTION RESPONSE:",
-                result
-            );
-
-
-            if (
-                !result ||
-                result.success !== true
-            ) {
-
-                throw new Error(
-                    result &&
-                    result.message
-                        ? result.message
-                        : "Failed to load question."
-                );
-
-            }
-
-
-            /*
-             * Backend response may return
-             * an array of questions.
-             *
-             * We locate the exact question ID.
-             */
-
-            const questions =
-                Array.isArray(result.data)
-                    ? result.data
-                    : [];
-
-
-            const matchedQuestion =
-                questions.find(
-                    function (question) {
-
-                        return (
-                            question &&
-                            String(
-                                question.id || ""
-                            )
-                                .trim()
-                            ===
-                            String(
-                                questionId
-                            )
-                                .trim()
-                        );
-
-                    }
-                );
-
-
-            if (!matchedQuestion) {
-
-                throw new Error(
-                    "Assigned question was not found."
-                );
-
-            }
-
-
-            /*
-             * The assigned question must be ACTIVE.
-             */
-
-            const status =
-                String(
-                    matchedQuestion.status || ""
-                )
-                    .trim()
-                    .toUpperCase();
-
-
-            if (
-                status !== "ACTIVE"
-            ) {
-
-                throw new Error(
-                    "Assigned question is not active."
-                );
-
-            }
-
-
-            /*
-             * IMPORTANT:
-             *
-             * No longer:
-             *
-             * activeQuestions[0]
-             *
-             * The question is now explicitly
-             * selected by questionId.
-             */
-
-            currentQuestion =
-                matchedQuestion;
-
-
-            currentQuestionId =
-                String(
-                    matchedQuestion.id
-                )
-                    .trim();
-
-
-            /*
-             * Display question title
-             * exactly from Questions Sheet.
-             */
-
-            setText(
-                "question",
-                currentQuestion.title
-            );
-
-
-            /*
-             * Optional HTML fields.
-             * These do not affect the
-             * locked architecture.
-             */
-
-            if (
-                $("questionDifficulty")
-            ) {
-
-                setText(
-                    "questionDifficulty",
-                    currentQuestion.difficulty
-                );
-
-            }
-
-
-            if (
-                $("questionDuration")
-            ) {
-
-                setText(
-                    "questionDuration",
-                    currentQuestion.duration
-                );
-
-            }
-
-
-            console.log(
-                "CURRENT ASSIGNED QUESTION:",
-                currentQuestion
-            );
-
-
-            return true;
-
-        }
-
-        catch (error) {
-
-            console.error(
-                "LOAD QUESTION ERROR:",
-                error
-            );
-
-
-            currentQuestion = null;
-
-
-            setText(
-                "question",
-                error.message ||
-                "Question could not be loaded."
-            );
-
-
-            return false;
-
-        }
-
-    }
-
-
-    /* =====================================================
        START RECORDING
     ===================================================== */
 
     function startRecording() {
 
         /*
-         * CRITICAL:
-         *
-         * Check the INTERNAL state,
-         * not the text displayed on screen.
+         * Check INTERNAL state.
          */
 
         if (
@@ -1256,9 +1446,11 @@
          * Reset transcript.
          */
 
-        finalTranscript = "";
+        finalTranscript =
+            "";
 
-        interimTranscript = "";
+        interimTranscript =
+            "";
 
 
         setText(
@@ -1279,7 +1471,8 @@
         recognition.onstart =
             function () {
 
-                isRecording = true;
+                isRecording =
+                    true;
 
 
                 setRecordStatus(
@@ -1301,16 +1494,20 @@
         recognition.onresult =
             function (event) {
 
-                let newFinalText = "";
+                let newFinalText =
+                    "";
 
-                let newInterimText = "";
+                let newInterimText =
+                    "";
 
 
                 for (
                     let i =
                         event.resultIndex;
+
                     i <
                         event.results.length;
+
                     i++
                 ) {
 
@@ -1325,14 +1522,16 @@
                     ) {
 
                         newFinalText +=
-                            transcript + " ";
+                            transcript +
+                            " ";
 
                     }
 
                     else {
 
                         newInterimText +=
-                            transcript + " ";
+                            transcript +
+                            " ";
 
                     }
 
@@ -1340,7 +1539,7 @@
 
 
                 /*
-                 * Add only newly finalized text.
+                 * Add newly finalized text.
                  */
 
                 if (
@@ -1361,7 +1560,8 @@
                     (
                         finalTranscript +
                         interimTranscript
-                    ).trim();
+                    )
+                    .trim();
 
 
                 setText(
@@ -1392,7 +1592,8 @@
                 );
 
 
-                isRecording = false;
+                isRecording =
+                    false;
 
 
                 let message =
@@ -1468,7 +1669,8 @@
         recognition.onend =
             function () {
 
-                isRecording = false;
+                isRecording =
+                    false;
 
 
                 /*
@@ -1476,7 +1678,8 @@
                  * has ended.
                  */
 
-                interimTranscript = "";
+                interimTranscript =
+                    "";
 
 
                 const finalText =
@@ -1531,7 +1734,8 @@
             );
 
 
-            isRecording = false;
+            isRecording =
+                false;
 
 
             setRecordStatus(
@@ -1577,7 +1781,8 @@
         }
 
 
-        isRecording = false;
+        isRecording =
+            false;
 
 
         /*
@@ -1625,8 +1830,7 @@
          */
 
         const internal =
-            finalTranscript
-                .trim();
+            finalTranscript.trim();
 
 
         if (internal) {
@@ -1652,8 +1856,7 @@
 
 
         const text =
-            element.textContent
-                .trim();
+            element.textContent.trim();
 
 
         if (
@@ -1738,9 +1941,7 @@
          * Student session must exist.
          */
 
-        if (
-            !student
-        ) {
+        if (!student) {
 
             alert(
                 "Student session not found."
@@ -1806,7 +2007,9 @@
 
         const payload = {
 
-            /* Student */
+            /* =============================================
+               Student
+            ============================================= */
 
             nis:
                 student.nis || "",
@@ -1818,13 +2021,17 @@
                 student.kelas || "",
 
 
-            /* Token */
+            /* =============================================
+               Token
+            ============================================= */
 
             token:
                 currentToken,
 
 
-            /* Question */
+            /* =============================================
+               Question
+            ============================================= */
 
             questionId:
                 currentQuestionId ||
@@ -1832,16 +2039,21 @@
                 "",
 
             question:
-                currentQuestion.title || "",
+                currentQuestion.title ||
+                "",
 
 
-            /* Answer */
+            /* =============================================
+               Answer
+            ============================================= */
 
             transcript:
                 transcript,
 
 
-            /* Time */
+            /* =============================================
+               Time
+            ============================================= */
 
             submittedAt:
                 new Date().toISOString()
@@ -1855,7 +2067,8 @@
         );
 
 
-        isSubmitting = true;
+        isSubmitting =
+            true;
 
 
         setRecordStatus(
@@ -1920,7 +2133,9 @@
 
                 sessionStorage.setItem(
                     "SAF_LAST_RESULT",
-                    JSON.stringify(result)
+                    JSON.stringify(
+                        result
+                    )
                 );
 
             }
@@ -1964,7 +2179,8 @@
 
         finally {
 
-            isSubmitting = false;
+            isSubmitting =
+                false;
 
         }
 
@@ -2003,10 +2219,9 @@
         /*
          * IMPORTANT:
          *
-         * A stored token is NOT automatically
-         * considered verified.
+         * Stored token is NOT automatically trusted.
          *
-         * We revalidate it against backend.
+         * Backend validation is performed again.
          */
 
         setExamStatus(
@@ -2036,30 +2251,38 @@
          * Reset state.
          */
 
-        tokenVerified = false;
+        tokenVerified =
+            false;
 
-        currentToken = "";
+        currentToken =
+            "";
 
-        currentQuestion = null;
+        currentQuestion =
+            null;
 
-        currentQuestionId = "";
+        currentQuestionId =
+            "";
 
-        recognition = null;
+        recognition =
+            null;
 
-        finalTranscript = "";
+        finalTranscript =
+            "";
 
-        interimTranscript = "";
+        interimTranscript =
+            "";
 
-        isRecording = false;
+        isRecording =
+            false;
 
-        isSubmitting = false;
+        isSubmitting =
+            false;
 
 
         /*
-         * CONFIG is normally loaded by:
+         * CONFIG normally loaded by:
          *
          * <script src="js/config.js"></script>
-         *
          */
 
         if (
@@ -2118,7 +2341,7 @@
          * Restore token if it exists.
          *
          * It will be revalidated against
-         * the backend before becoming verified.
+         * backend before becoming verified.
          */
 
         await restoreSavedToken();
