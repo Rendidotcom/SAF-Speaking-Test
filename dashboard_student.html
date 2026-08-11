@@ -10,7 +10,7 @@
     content="width=device-width, initial-scale=1.0"
 >
 
-<title>Student Dashboard</title>
+<title>SAF Student Dashboard</title>
 
 <link
     rel="icon"
@@ -24,314 +24,646 @@
 
 <style>
 
-/* =====================================
+/* =====================================================
    RESET
-===================================== */
+===================================================== */
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 
-/* =====================================
+/* =====================================================
    BODY
-===================================== */
+===================================================== */
 
-body{
-    background:#eef3f8;
-    font-family:Arial,Helvetica,sans-serif;
-    color:#333;
+body {
+
+    background: #eef3f8;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    color: #333;
+
 }
 
 
-/* =====================================
-   DASHBOARD
-===================================== */
+/* =====================================================
+   DASHBOARD LAYOUT
+===================================================== */
 
-.dashboard{
-    display:flex;
-    min-height:100vh;
+.dashboard {
+
+    display: flex;
+
+    min-height: 100vh;
+
 }
 
 
-/* =====================================
+/* =====================================================
    SIDEBAR
-===================================== */
+===================================================== */
 
-.sidebar{
-    width:280px;
-    background:#0B72B9;
-    color:white;
-    padding:30px;
-    box-shadow:4px 0 20px rgba(0,0,0,.15);
-}
+.sidebar {
 
-.sidebar img{
-    width:120px;
-    display:block;
-    margin:auto;
-    margin-bottom:15px;
-}
+    width: 280px;
 
-.sidebar h2{
-    text-align:center;
-    font-size:22px;
-    margin-bottom:5px;
-}
+    background: #0B72B9;
 
-.sidebar p{
-    text-align:center;
-    font-size:13px;
-    opacity:.85;
-    margin-bottom:35px;
+    color: white;
+
+    padding: 30px;
+
+    box-shadow:
+        4px 0 20px rgba(0,0,0,.15);
+
+    flex-shrink: 0;
+
 }
 
 
-/* =====================================
+.sidebar img {
+
+    width: 120px;
+
+    height: auto;
+
+    display: block;
+
+    margin: 0 auto 15px auto;
+
+}
+
+
+.sidebar h2 {
+
+    text-align: center;
+
+    font-size: 22px;
+
+    margin-bottom: 5px;
+
+}
+
+
+.sidebar p {
+
+    text-align: center;
+
+    font-size: 13px;
+
+    opacity: .85;
+
+    margin-bottom: 35px;
+
+}
+
+
+/* =====================================================
    MENU
-===================================== */
+===================================================== */
 
-.menu{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-}
+.menu {
 
-.menu a{
-    color:white;
-    text-decoration:none;
-    padding:14px 18px;
-    border-radius:10px;
-    transition:.25s;
-    font-size:15px;
-    font-weight:bold;
-}
+    display: flex;
 
-.menu a:hover{
-    background:white;
-    color:#0B72B9;
-    transform:translateX(6px);
+    flex-direction: column;
+
+    gap: 10px;
+
 }
 
 
-/* =====================================
+.menu a {
+
+    color: white;
+
+    text-decoration: none;
+
+    padding: 14px 18px;
+
+    border-radius: 10px;
+
+    transition: .25s;
+
+    font-size: 15px;
+
+    font-weight: bold;
+
+    display: block;
+
+}
+
+
+.menu a:hover {
+
+    background: white;
+
+    color: #0B72B9;
+
+    transform: translateX(6px);
+
+}
+
+
+.menu a.active {
+
+    background: white;
+
+    color: #0B72B9;
+
+}
+
+
+/* =====================================================
    MAIN
-===================================== */
+===================================================== */
 
-.main{
-    flex:1;
-    padding:40px;
+.main {
+
+    flex: 1;
+
+    padding: 40px;
+
+    min-width: 0;
+
 }
 
 
-/* =====================================
+/* =====================================================
    HEADER
-===================================== */
+===================================================== */
 
-.header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:35px;
-}
+.header {
 
-.header h1{
-    font-size:34px;
-    color:#0B72B9;
-    margin-bottom:8px;
-}
+    display: flex;
 
-.header p{
-    color:#666;
-    line-height:1.6;
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 35px;
+
 }
 
 
-/* =====================================
+.header h1 {
+
+    font-size: 34px;
+
+    color: #0B72B9;
+
+    margin-bottom: 8px;
+
+}
+
+
+.header p {
+
+    color: #666;
+
+    line-height: 1.6;
+
+}
+
+
+/* =====================================================
    CARDS
-===================================== */
+===================================================== */
 
-.cards{
-    display:grid;
+.cards {
+
+    display: grid;
+
     grid-template-columns:
-        repeat(auto-fit,minmax(240px,1fr));
-    gap:25px;
-}
+        repeat(
+            auto-fit,
+            minmax(220px, 1fr)
+        );
 
-.card-box{
-    background:white;
-    border-radius:16px;
-    padding:30px;
-    box-shadow:0 8px 25px rgba(0,0,0,.08);
-    transition:.25s;
-}
+    gap: 25px;
 
-.card-box:hover{
-    transform:translateY(-6px);
-    box-shadow:0 15px 35px rgba(0,0,0,.12);
-}
-
-.card-box h3{
-    color:#0B72B9;
-    margin-bottom:15px;
-    font-size:18px;
-}
-
-.number{
-    font-size:42px;
-    font-weight:bold;
-    color:#0B72B9;
 }
 
 
-/* =====================================
+.card-box {
+
+    background: white;
+
+    border-radius: 16px;
+
+    padding: 30px;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.08);
+
+    transition: .25s;
+
+}
+
+
+.card-box:hover {
+
+    transform: translateY(-6px);
+
+    box-shadow:
+        0 15px 35px rgba(0,0,0,.12);
+
+}
+
+
+.card-box h3 {
+
+    color: #0B72B9;
+
+    margin-bottom: 15px;
+
+    font-size: 18px;
+
+}
+
+
+.number {
+
+    font-size: 42px;
+
+    font-weight: bold;
+
+    color: #0B72B9;
+
+    word-break: break-word;
+
+}
+
+
+/* =====================================================
    CONTENT
-===================================== */
+===================================================== */
 
-.content{
-    margin-top:35px;
-    background:white;
-    border-radius:16px;
-    padding:35px;
-    min-height:500px;
-    box-shadow:0 8px 25px rgba(0,0,0,.08);
+.content {
+
+    margin-top: 35px;
+
+    background: white;
+
+    border-radius: 16px;
+
+    padding: 35px;
+
+    min-height: 500px;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.08);
+
 }
 
 
-/* =====================================
-   RESULT TABLE
-===================================== */
+.content h2 {
 
-.result-wrapper{
-    margin-top:25px;
-    overflow-x:auto;
-}
+    color: #333;
 
-.result-table{
-    width:100%;
-    border-collapse:collapse;
-    min-width:650px;
-}
-
-.result-table th,
-.result-table td{
-    border:1px solid #ddd;
-    padding:12px;
-    text-align:left;
-}
-
-.result-table th{
-    background:#0B72B9;
-    color:white;
-}
-
-.result-table tr:nth-child(even){
-    background:#f7f9fb;
 }
 
 
-/* =====================================
-   SCORE
-===================================== */
+.content h3 {
 
-.score-badge{
-    font-weight:bold;
-    font-size:20px;
-    color:#0B72B9;
+    color: #333;
+
 }
 
 
-/* =====================================
+.content p {
+
+    line-height: 1.7;
+
+    color: #555;
+
+}
+
+
+.content ul {
+
+    color: #555;
+
+}
+
+
+/* =====================================================
+   SECTION
+===================================================== */
+
+.dashboard-section {
+
+    margin-top: 40px;
+
+    padding-top: 30px;
+
+    border-top:
+        1px solid #e5e5e5;
+
+}
+
+
+.dashboard-section h2 {
+
+    margin-bottom: 20px;
+
+    color: #333;
+
+}
+
+
+/* =====================================================
+   RESULT CONTAINER
+===================================================== */
+
+#results {
+
+    scroll-margin-top: 30px;
+
+}
+
+
+#studentResults {
+
+    width: 100%;
+
+    overflow-x: auto;
+
+}
+
+
+#studentResults table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    margin-top: 15px;
+
+}
+
+
+#studentResults th,
+#studentResults td {
+
+    border: 1px solid #ddd;
+
+    padding: 10px;
+
+    text-align: left;
+
+}
+
+
+#studentResults th {
+
+    background: #0B72B9;
+
+    color: white;
+
+}
+
+
+#studentResults tr:nth-child(even) {
+
+    background: #f8fbfd;
+
+}
+
+
+/* =====================================================
    STATUS
-===================================== */
+===================================================== */
 
-.status-text{
-    font-weight:bold;
-    color:#0B72B9;
+.status-box {
+
+    padding: 15px;
+
+    border-radius: 10px;
+
+    margin-bottom: 20px;
+
 }
 
 
-/* =====================================
+.status-ready {
+
+    background: #e8f5e9;
+
+    color: #2e7d32;
+
+}
+
+
+.status-info {
+
+    background: #e3f2fd;
+
+    color: #0B72B9;
+
+}
+
+
+/* =====================================================
    BUTTON
-===================================== */
+===================================================== */
 
-.btn{
-    padding:14px 24px;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    font-size:16px;
-    font-weight:bold;
-}
+.btn {
 
-.student{
-    background:#0B72B9;
-    color:white;
-}
+    padding: 14px 24px;
 
-.student:hover{
-    background:#095c95;
-}
+    border: none;
 
+    border-radius: 10px;
 
-/* =====================================
-   LOADING
-===================================== */
+    cursor: pointer;
 
-.loading{
-    color:#666;
-    padding:15px 0;
+    font-size: 16px;
+
+    font-weight: bold;
+
+    text-decoration: none;
+
+    display: inline-block;
+
 }
 
 
-/* =====================================
-   ERROR
-===================================== */
+.student {
 
-.error{
-    color:#c62828;
-    background:#ffebee;
-    border-radius:8px;
-    padding:12px 15px;
+    background: #0B72B9;
+
+    color: white;
+
 }
 
 
-/* =====================================
-   EMPTY
-===================================== */
+.student:hover {
 
-.empty{
-    color:#666;
-    padding:15px 0;
+    background: #095c95;
+
 }
 
 
-/* =====================================
+/* =====================================================
+   PROFILE
+===================================================== */
+
+.profile-box {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(220px, 1fr)
+        );
+
+    gap: 20px;
+
+}
+
+
+.profile-item {
+
+    background: #f7f9fb;
+
+    border-radius: 10px;
+
+    padding: 18px;
+
+}
+
+
+.profile-item strong {
+
+    display: block;
+
+    color: #0B72B9;
+
+    margin-bottom: 6px;
+
+}
+
+
+/* =====================================================
    RESPONSIVE
-===================================== */
+===================================================== */
 
-@media(max-width:900px){
+@media (max-width: 900px) {
 
-    .dashboard{
-        flex-direction:column;
+    .dashboard {
+
+        flex-direction: column;
+
     }
 
-    .sidebar{
-        width:100%;
+
+    .sidebar {
+
+        width: 100%;
+
+        padding: 20px;
+
     }
 
-    .main{
-        padding:25px;
+
+    .sidebar img {
+
+        width: 90px;
+
     }
 
-    .cards{
-        grid-template-columns:1fr;
+
+    .sidebar p {
+
+        margin-bottom: 20px;
+
     }
 
-    .header h1{
-        font-size:28px;
+
+    .menu {
+
+        gap: 6px;
+
+    }
+
+
+    .menu a {
+
+        padding: 11px 14px;
+
+    }
+
+
+    .main {
+
+        padding: 25px;
+
+    }
+
+
+    .cards {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .header {
+
+        display: block;
+
+    }
+
+
+    .header h1 {
+
+        font-size: 28px;
+
+    }
+
+}
+
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 500px) {
+
+    .main {
+
+        padding: 15px;
+
+    }
+
+
+    .content {
+
+        padding: 22px;
+
+    }
+
+
+    .card-box {
+
+        padding: 22px;
+
+    }
+
+
+    .number {
+
+        font-size: 34px;
+
     }
 
 }
@@ -347,20 +679,22 @@ body{
 <div class="dashboard">
 
 
-<!-- =====================================
+<!-- =====================================================
      SIDEBAR
-===================================== -->
+===================================================== -->
 
 <aside class="sidebar">
 
     <img
         src="images/logo.png"
-        alt="Logo"
+        alt="SAF Logo"
     >
+
 
     <h2>
         SAF Student Panel
     </h2>
+
 
     <p>
         Speaking Online Test
@@ -369,44 +703,65 @@ body{
 
     <nav class="menu">
 
-        <a href="#">
+
+        <a
+            href="#dashboard"
+            data-page="dashboard"
+            id="menuDashboard"
+        >
             🏠 Dashboard
         </a>
 
-        <a href="speaking.html">
+
+        <a
+            href="speaking.html"
+            id="menuSpeaking"
+        >
             🎤 Speaking Test
         </a>
 
-        <a href="#results">
+
+        <a
+            href="#results"
+            data-page="results"
+            id="menuResults"
+        >
             📊 My Results
         </a>
 
-        <a href="#">
+
+        <a
+            href="#profile"
+            data-page="profile"
+            id="menuProfile"
+        >
             👤 My Profile
         </a>
 
+
         <a
             href="index.html"
-            id="logoutLink"
+            id="menuLogout"
         >
             🚪 Logout
         </a>
+
 
     </nav>
 
 </aside>
 
 
-<!-- =====================================
+<!-- =====================================================
      MAIN
-===================================== -->
+===================================================== -->
 
 <main class="main">
 
 
-<!-- =====================================
+<!-- =====================================================
      HEADER
-===================================== -->
+===================================================== -->
 
 <div class="header">
 
@@ -415,6 +770,7 @@ body{
         <h1>
 
             Welcome,
+
             <span id="studentName">
                 Student
             </span>
@@ -422,6 +778,7 @@ body{
             👋
 
         </h1>
+
 
         <p>
 
@@ -440,73 +797,91 @@ body{
 </div>
 
 
-<!-- =====================================
-     CARDS
-===================================== -->
+<!-- =====================================================
+     DASHBOARD
+===================================================== -->
 
-<section class="cards">
+<section
+    id="dashboard"
+    class="dashboard-section"
+    style="margin-top:0;padding-top:0;border-top:none;"
+>
 
 
-    <div class="card-box">
+    <div class="cards">
 
-        <h3>
-            Exam Status
-        </h3>
 
-        <div
-            class="number"
-            id="examStatus"
-        >
-            READY
+        <!-- EXAM STATUS -->
+
+        <div class="card-box">
+
+            <h3>
+                Exam Status
+            </h3>
+
+            <div
+                class="number"
+                id="examStatus"
+            >
+                READY
+            </div>
+
         </div>
 
-    </div>
 
+        <!-- CURRENT TOKEN -->
 
-    <div class="card-box">
+        <div class="card-box">
 
-        <h3>
-            Current Token
-        </h3>
+            <h3>
+                Current Token
+            </h3>
 
-        <div
-            class="number"
-            id="examToken"
-        >
-            -
+            <div
+                class="number"
+                id="examToken"
+            >
+                -
+            </div>
+
         </div>
 
-    </div>
 
+        <!-- LATEST SCORE -->
 
-    <div class="card-box">
+        <div class="card-box">
 
-        <h3>
-            Latest Score
-        </h3>
+            <h3>
+                Latest Score
+            </h3>
 
-        <div
-            class="number"
-            id="latestScore"
-        >
-            0
+            <div
+                class="number"
+                id="latestScore"
+            >
+                0
+            </div>
+
         </div>
 
-    </div>
 
+        <!-- ATTEMPTS -->
 
-    <div class="card-box">
+        <div class="card-box">
 
-        <h3>
-            Attempts
-        </h3>
+            <h3>
+                Attempts
+            </h3>
 
-        <div
-            class="number"
-            id="attemptCount"
-        >
-            0
+            <div
+                class="number"
+                id="attemptCount"
+            >
+                0
+            </div>
+
         </div>
+
 
     </div>
 
@@ -514,18 +889,15 @@ body{
 </section>
 
 
-<!-- =====================================
-     CONTENT
-===================================== -->
+<!-- =====================================================
+     WELCOME CONTENT
+===================================================== -->
 
-<section
-    class="content"
-    id="results"
->
+<section class="content">
 
 
     <h2>
-        Student Dashboard
+        Welcome Student
     </h2>
 
 
@@ -533,8 +905,7 @@ body{
 
 
     <p>
-        Welcome to the SAF Speaking Online Test
-        Student Dashboard.
+        Welcome to the SAF Speaking Online Test Student Dashboard.
     </p>
 
 
@@ -577,41 +948,12 @@ body{
 
     <br>
 
+
     <hr>
 
-    <br>
-
-
-    <!-- =================================
-         RESULT SECTION
-    ================================== -->
-
-    <h3>
-        My Speaking Results
-    </h3>
-
-
-    <div
-        id="resultStatus"
-        class="loading"
-    >
-        Loading results...
-    </div>
-
-
-    <div
-        id="studentResultTable"
-        class="result-wrapper"
-    >
-    </div>
-
 
     <br>
 
-
-    <!-- =================================
-         QUICK ACTION
-    ================================== -->
 
     <h3>
         Quick Action
@@ -621,14 +963,126 @@ body{
     <br>
 
 
-    <button
+    <a
+        href="speaking.html"
         class="btn student"
-        onclick="location.href='speaking.html'"
+    >
+        🎤 Start Speaking Test
+    </a>
+
+
+</section>
+
+
+<!-- =====================================================
+     MY RESULTS
+===================================================== -->
+
+<section
+    id="results"
+    class="content dashboard-section"
+>
+
+
+    <h2>
+        My Speaking Results
+    </h2>
+
+
+    <br>
+
+
+    <div
+        id="studentResults"
     >
 
-        🎤 Start Speaking Test
+        <p>
+            Loading speaking results...
+        </p>
 
-    </button>
+    </div>
+
+
+</section>
+
+
+<!-- =====================================================
+     MY PROFILE
+===================================================== -->
+
+<section
+    id="profile"
+    class="content dashboard-section"
+>
+
+
+    <h2>
+        My Profile
+    </h2>
+
+
+    <br>
+
+
+    <div
+        class="profile-box"
+        id="studentProfile"
+    >
+
+
+        <div class="profile-item">
+
+            <strong>
+                NIS
+            </strong>
+
+            <span id="profileNis">
+                -
+            </span>
+
+        </div>
+
+
+        <div class="profile-item">
+
+            <strong>
+                Name
+            </strong>
+
+            <span id="profileNama">
+                -
+            </span>
+
+        </div>
+
+
+        <div class="profile-item">
+
+            <strong>
+                Class
+            </strong>
+
+            <span id="profileKelas">
+                -
+            </span>
+
+        </div>
+
+
+        <div class="profile-item">
+
+            <strong>
+                Username
+            </strong>
+
+            <span id="profileUsername">
+                -
+            </span>
+
+        </div>
+
+
+    </div>
 
 
 </section>
@@ -636,789 +1090,177 @@ body{
 
 </main>
 
-
 </div>
 
 
-<!-- =====================================
-     CORE JS
-===================================== -->
+<!-- =====================================================
+     CORE JAVASCRIPT
+===================================================== -->
 
 <script src="js/config.js"></script>
 
 <script src="js/api.js"></script>
 
+<script src="js/student.js"></script>
+
+
+<!-- =====================================================
+     DASHBOARD SESSION HELPER
+===================================================== -->
 
 <script>
 
-/* =====================================================
-   STUDENT DASHBOARD
-   ===================================================== */
+(function () {
+
+    "use strict";
 
 
-/* ==========================================
-   GLOBAL STATE
-========================================== */
+    /* ==========================================
+       SESSION
+    ========================================== */
 
-let STUDENT_SESSION = {};
-
-let STUDENT_RESULTS = [];
-
-
-/* ==========================================
-   INITIALIZE
-========================================== */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    initStudentDashboard
-);
-
-
-/* ==========================================
-   INIT
-========================================== */
-
-async function initStudentDashboard(){
-
-    try{
-
-        loadStudentSession();
-
-        setupDate();
-
-        setupLogout();
-
-        await loadStudentResults();
-
-    }
-
-    catch(err){
-
-        console.error(
-            "STUDENT DASHBOARD ERROR:",
-            err
-        );
-
-        showResultError(
-            err.message ||
-            "Unable to load student dashboard."
-        );
-
-    }
-
-}
-
-
-/* ==========================================
-   LOAD SESSION
-========================================== */
-
-function loadStudentSession(){
-
-    const raw =
+    const sessionRaw =
         sessionStorage.getItem(
             CONFIG.SESSION_KEY
         );
 
 
-    if(!raw){
-
-        window.location.href =
-            "login.html?role=student";
-
-        return;
-
-    }
+    let session = {};
 
 
-    try{
+    try {
 
-        STUDENT_SESSION =
-            JSON.parse(raw);
+        session =
+            JSON.parse(
+                sessionRaw || "{}"
+            );
 
     }
 
-    catch(err){
+    catch (err) {
 
         console.error(
-            "SESSION PARSE ERROR:",
+            "STUDENT SESSION ERROR:",
             err
         );
 
-        sessionStorage.removeItem(
-            CONFIG.SESSION_KEY
-        );
-
-        window.location.href =
-            "login.html?role=student";
-
-        return;
+        session = {};
 
     }
 
 
-    if(
-        !STUDENT_SESSION ||
-        STUDENT_SESSION.role !== "student"
-    ){
+    /* ==========================================
+       STUDENT NAME
+    ========================================== */
 
-        sessionStorage.removeItem(
-            CONFIG.SESSION_KEY
-        );
-
-        sessionStorage.removeItem(
-            CONFIG.TOKEN_KEY
-        );
-
-        window.location.href =
-            "login.html?role=student";
-
-        return;
-
-    }
-
-
-    const name =
-        STUDENT_SESSION.nama ||
-        STUDENT_SESSION.name ||
-        STUDENT_SESSION.username ||
-        "Student";
-
-
-    const nameElement =
+    const studentName =
         document.getElementById(
             "studentName"
         );
 
 
-    if(nameElement){
+    if (
+        studentName &&
+        session.nama
+    ) {
 
-        nameElement.textContent =
-            name;
+        studentName.textContent =
+            session.nama;
 
     }
 
-}
+
+    /* ==========================================
+       PROFILE
+    ========================================== */
+
+    const profileNis =
+        document.getElementById(
+            "profileNis"
+        );
 
 
-/* ==========================================
-   DATE
-========================================== */
+    const profileNama =
+        document.getElementById(
+            "profileNama"
+        );
 
-function setupDate(){
 
-    const dateElement =
+    const profileKelas =
+        document.getElementById(
+            "profileKelas"
+        );
+
+
+    const profileUsername =
+        document.getElementById(
+            "profileUsername"
+        );
+
+
+    if (profileNis) {
+
+        profileNis.textContent =
+            session.nis || "-";
+
+    }
+
+
+    if (profileNama) {
+
+        profileNama.textContent =
+            session.nama || "-";
+
+    }
+
+
+    if (profileKelas) {
+
+        profileKelas.textContent =
+            session.kelas || "-";
+
+    }
+
+
+    if (profileUsername) {
+
+        profileUsername.textContent =
+            session.username || "-";
+
+    }
+
+
+    /* ==========================================
+       DATE
+    ========================================== */
+
+    const todayDate =
         document.getElementById(
             "todayDate"
         );
 
 
-    if(!dateElement){
+    if (todayDate) {
 
-        return;
-
-    }
-
-
-    const today =
-        new Date();
+        const today =
+            new Date();
 
 
-    dateElement.textContent =
-        today.toLocaleDateString(
-            "en-US",
-            {
-                weekday:"long",
-                year:"numeric",
-                month:"long",
-                day:"numeric"
-            }
-        );
-
-}
-
-
-/* ==========================================
-   LOGOUT
-========================================== */
-
-function setupLogout(){
-
-    const logout =
-        document.getElementById(
-            "logoutLink"
-        );
-
-
-    if(!logout){
-
-        return;
-
-    }
-
-
-    logout.addEventListener(
-        "click",
-        function(e){
-
-            e.preventDefault();
-
-
-            sessionStorage.removeItem(
-                CONFIG.SESSION_KEY
+        todayDate.textContent =
+            today.toLocaleDateString(
+                "en-US",
+                {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric"
+                }
             );
 
-
-            sessionStorage.removeItem(
-                CONFIG.TOKEN_KEY
-            );
-
-
-            window.location.href =
-                "index.html";
-
-        }
-    );
-
-}
-
-
-/* ==========================================
-   LOAD STUDENT RESULTS
-========================================== */
-
-async function loadStudentResults(){
-
-    const nis =
-        STUDENT_SESSION.nis;
-
-
-    if(!nis){
-
-        console.warn(
-            "Student NIS not found in session."
-        );
-
-
-        showResultError(
-            "Student NIS tidak ditemukan pada session."
-        );
-
-        return;
-
     }
 
 
-    setResultLoading();
-
-
-    try{
-
-        const response =
-            await apiGetStudentResult({
-
-                nis: nis
-
-            });
-
-
-        console.log(
-            "STUDENT RESULT RESPONSE:",
-            response
-        );
-
-
-        if(
-            !response ||
-            response.success !== true
-        ){
-
-            STUDENT_RESULTS = [];
-
-
-            showResultError(
-                response &&
-                response.message
-                    ? response.message
-                    : "Failed to load student results."
-            );
-
-
-            updateScoreCards();
-
-            return;
-
-        }
-
-
-        STUDENT_RESULTS =
-            Array.isArray(
-                response.data
-            )
-                ? response.data
-                : [];
-
-
-        updateScoreCards();
-
-        renderStudentResults();
-
-    }
-
-    catch(err){
-
-        console.error(
-            "LOAD STUDENT RESULTS ERROR:",
-            err
-        );
-
-
-        STUDENT_RESULTS = [];
-
-
-        showResultError(
-            err.message ||
-            "Unable to load student results."
-        );
-
-
-        updateScoreCards();
-
-    }
-
-}
-
-
-/* ==========================================
-   UPDATE SCORE CARDS
-========================================== */
-
-function updateScoreCards(){
-
-    const attemptCount =
-        STUDENT_RESULTS.length;
-
-
-    const attemptElement =
-        document.getElementById(
-            "attemptCount"
-        );
-
-
-    if(attemptElement){
-
-        attemptElement.textContent =
-            attemptCount;
-
-    }
-
-
-    const latestElement =
-        document.getElementById(
-            "latestScore"
-        );
-
-
-    if(!latestElement){
-
-        return;
-
-    }
-
-
-    if(attemptCount === 0){
-
-        latestElement.textContent =
-            "0";
-
-        return;
-
-    }
-
-
-    const latest =
-        getLatestResult();
-
-
-    latestElement.textContent =
-        latest &&
-        latest.score !== null &&
-        typeof latest.score !== "undefined"
-            ? latest.score
-            : "0";
-
-
-    const statusElement =
-        document.getElementById(
-            "examStatus"
-        );
-
-
-    if(statusElement){
-
-        statusElement.textContent =
-            attemptCount > 0
-                ? "COMPLETED"
-                : "READY";
-
-    }
-
-}
-
-
-/* ==========================================
-   GET LATEST RESULT
-========================================== */
-
-function getLatestResult(){
-
-    if(
-        !Array.isArray(
-            STUDENT_RESULTS
-        ) ||
-        STUDENT_RESULTS.length === 0
-    ){
-
-        return null;
-
-    }
-
-
-    return STUDENT_RESULTS[
-        STUDENT_RESULTS.length - 1
-    ];
-
-}
-
-
-/* ==========================================
-   RENDER RESULTS
-========================================== */
-
-function renderStudentResults(){
-
-    const status =
-        document.getElementById(
-            "resultStatus"
-        );
-
-
-    const table =
-        document.getElementById(
-            "studentResultTable"
-        );
-
-
-    if(!status || !table){
-
-        return;
-
-    }
-
-
-    if(
-        !STUDENT_RESULTS.length
-    ){
-
-        status.textContent =
-            "No speaking result yet.";
-
-        status.className =
-            "empty";
-
-
-        table.innerHTML =
-            "";
-
-        return;
-
-    }
-
-
-    status.textContent =
-        STUDENT_RESULTS.length +
-        " speaking result(s) found.";
-
-
-    status.className =
-        "status-text";
-
-
-    let html = `
-
-        <table class="result-table">
-
-            <thead>
-
-                <tr>
-
-                    <th>
-                        No
-                    </th>
-
-                    <th>
-                        Question
-                    </th>
-
-                    <th>
-                        Score
-                    </th>
-
-                    <th>
-                        Feedback
-                    </th>
-
-                    <th>
-                        Date
-                    </th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-    `;
-
-
-    STUDENT_RESULTS.forEach(
-        function(result,index){
-
-            html += `
-
-                <tr>
-
-                    <td>
-                        ${index + 1}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            result.question ||
-                            "-"
-                        )}
-                    </td>
-
-                    <td>
-
-                        <span class="score-badge">
-
-                            ${escapeHTML(
-                                result.score !== null &&
-                                typeof result.score !== "undefined"
-                                    ? result.score
-                                    : "0"
-                            )}
-
-                        </span>
-
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            result.feedback ||
-                            "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${formatDate(
-                            result.createdAt
-                        )}
-                    </td>
-
-                </tr>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-
-            </tbody>
-
-        </table>
-
-    `;
-
-
-    table.innerHTML =
-        html;
-
-}
-
-
-/* ==========================================
-   RESULT LOADING
-========================================== */
-
-function setResultLoading(){
-
-    const status =
-        document.getElementById(
-            "resultStatus"
-        );
-
-
-    const table =
-        document.getElementById(
-            "studentResultTable"
-        );
-
-
-    if(status){
-
-        status.textContent =
-            "Loading results...";
-
-        status.className =
-            "loading";
-
-    }
-
-
-    if(table){
-
-        table.innerHTML =
-            "";
-
-    }
-
-}
-
-
-/* ==========================================
-   RESULT ERROR
-========================================== */
-
-function showResultError(message){
-
-    const status =
-        document.getElementById(
-            "resultStatus"
-        );
-
-
-    const table =
-        document.getElementById(
-            "studentResultTable"
-        );
-
-
-    if(status){
-
-        status.textContent =
-            message;
-
-        status.className =
-            "error";
-
-    }
-
-
-    if(table){
-
-        table.innerHTML =
-            "";
-
-    }
-
-}
-
-
-/* ==========================================
-   ESCAPE HTML
-========================================== */
-
-function escapeHTML(value){
-
-    if(
-        value === null ||
-        typeof value === "undefined"
-    ){
-
-        return "";
-
-    }
-
-
-    return String(value)
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-/* ==========================================
-   FORMAT DATE
-========================================== */
-
-function formatDate(value){
-
-    if(!value){
-
-        return "-";
-
-    }
-
-
-    const date =
-        new Date(value);
-
-
-    if(
-        Number.isNaN(
-            date.getTime()
-        )
-    ){
-
-        return escapeHTML(
-            value
-        );
-
-    }
-
-
-    return escapeHTML(
-        date.toLocaleString(
-            "en-US",
-            {
-                year:"numeric",
-                month:"short",
-                day:"numeric",
-                hour:"2-digit",
-                minute:"2-digit"
-            }
-        )
-    );
-
-}
+})();
 
 </script>
 
