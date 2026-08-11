@@ -1,6 +1,6 @@
 /**
- * ==========================================
- * SAF Speaking Online Test
+ * =========================================================
+ * SAF SPEAKING ONLINE TEST
  * Teacher Dashboard
  *
  * File:
@@ -8,48 +8,32 @@
  *
  * Stable Foundation v7.1
  *
- * FRONTEND SYNC:
+ * FIX:
+ * - Exam Token now requires Speaking Question
+ * - Token creation sends questionId
+ * - Question selector uses APP.question
+ * - No dependency on exam.js
  *
- *   Question.gs
- *   Student.gs
- *   Token.gs
- *   Result.gs
- *   Score.gs
+ * Frontend Sync:
+ * - Question.gs
+ * - Student.gs
+ * - Token.gs
+ * - Result.gs
+ * - Score.gs
  *
  * IMPORTANT:
- *
- *   Teacher dashboard business logic
- *   No dependency on exam.js
- *   Question state uses STATE object
- *   Token state uses APP.token
- *
- * RESULT FIX:
- *
- *   API getResult may return:
- *
- *   {
- *       0: {...},
- *       1: {...},
- *       2: {...},
- *       success: true,
- *       message: "Success"
- *   }
- *
- *   instead of:
- *
- *   {
- *       data: [...]
- *   }
- *
- *   normalizeApiArray() handles both formats.
- *
- * ==========================================
+ * - Existing architecture preserved
+ * - Existing API action names preserved
+ * - Existing APP state preserved
+ * - Existing STATE object preserved
+ * - No exam.js dependency
+ * =========================================================
  */
 
 
-/* =====================================================
-INITIALIZE
-===================================================== */
+/* =========================================================
+   INITIALIZE
+========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -57,9 +41,9 @@ document.addEventListener(
 );
 
 
-/* =====================================================
-GLOBAL STATE
-===================================================== */
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
 
 const APP = {
 
@@ -91,9 +75,9 @@ const STATE = {
 };
 
 
-/* =====================================================
-INITIALIZE
-===================================================== */
+/* =========================================================
+   INITIALIZE
+========================================================= */
 
 async function init() {
 
@@ -110,9 +94,9 @@ async function init() {
 }
 
 
-/* =====================================================
-SESSION
-===================================================== */
+/* =========================================================
+   SESSION
+========================================================= */
 
 function checkSession() {
 
@@ -181,9 +165,9 @@ function logout() {
 }
 
 
-/* =====================================================
-LOGOUT BINDING
-===================================================== */
+/* =========================================================
+   LOGOUT BINDING
+========================================================= */
 
 function bindLogout() {
 
@@ -213,9 +197,9 @@ function bindLogout() {
 }
 
 
-/* =====================================================
-SIDEBAR MENU
-===================================================== */
+/* =========================================================
+   SIDEBAR MENU
+========================================================= */
 
 function bindMenu() {
 
@@ -227,6 +211,7 @@ function bindMenu() {
                 function (e) {
 
                     e.preventDefault();
+
 
                     const page =
                         this.dataset.page;
@@ -277,9 +262,9 @@ function bindMenu() {
 }
 
 
-/* =====================================================
-CONTENT
-===================================================== */
+/* =========================================================
+   CONTENT
+========================================================= */
 
 function setContent(html) {
 
@@ -306,94 +291,9 @@ function setContent(html) {
 }
 
 
-/* =====================================================
-API ARRAY NORMALIZER
-===================================================== */
-
-/**
- * Converts API responses into a reliable array.
- *
- * Supported:
- *
- * 1. {
- *      success: true,
- *      data: [...]
- *    }
- *
- * 2. {
- *      success: true,
- *      0: {...},
- *      1: {...},
- *      2: {...}
- *    }
- *
- * 3. [...]
- *
- * This is intentionally kept on the frontend
- * so existing backend behavior is not changed.
- */
-
-function normalizeApiArray(res) {
-
-    if (
-        Array.isArray(res)
-    ) {
-
-        return res;
-
-    }
-
-
-    if (
-        res &&
-        Array.isArray(res.data)
-    ) {
-
-        return res.data;
-
-    }
-
-
-    if (
-        res &&
-        typeof res === "object"
-    ) {
-
-        const numericKeys =
-            Object.keys(res)
-                .filter(
-                    key =>
-                        /^\d+$/.test(key)
-                )
-                .sort(
-                    (a, b) =>
-                        Number(a) -
-                        Number(b)
-                );
-
-
-        if (
-            numericKeys.length > 0
-        ) {
-
-            return numericKeys.map(
-                key =>
-                    res[key]
-            );
-
-        }
-
-    }
-
-
-    return [];
-
-}
-
-
-/* =====================================================
-DASHBOARD DATA
-===================================================== */
+/* =========================================================
+   DASHBOARD DATA
+========================================================= */
 
 async function refreshDashboard() {
 
@@ -420,8 +320,8 @@ async function refreshDashboard() {
         APP.question =
             questionResult &&
             questionResult.success
-                ? normalizeApiArray(
-                    questionResult
+                ? (
+                    questionResult.data || []
                 )
                 : [];
 
@@ -429,8 +329,8 @@ async function refreshDashboard() {
         APP.student =
             studentResult &&
             studentResult.success
-                ? normalizeApiArray(
-                    studentResult
+                ? (
+                    studentResult.data || []
                 )
                 : [];
 
@@ -438,8 +338,8 @@ async function refreshDashboard() {
         APP.token =
             tokenResult &&
             tokenResult.success
-                ? normalizeApiArray(
-                    tokenResult
+                ? (
+                    tokenResult.data || []
                 )
                 : [];
 
@@ -447,16 +347,10 @@ async function refreshDashboard() {
         APP.result =
             resultResult &&
             resultResult.success
-                ? normalizeApiArray(
-                    resultResult
+                ? (
+                    resultResult.data || []
                 )
                 : [];
-
-
-        console.log(
-            "REFRESH DASHBOARD RESULT:",
-            APP.result
-        );
 
 
         updateQuestionCounter(
@@ -492,15 +386,17 @@ async function refreshDashboard() {
 }
 
 
-/* =====================================================
-DASHBOARD PAGE
-===================================================== */
+/* =========================================================
+   DASHBOARD PAGE
+========================================================= */
 
 function loadDashboard() {
 
     setContent(`
 
-        <h2>Dashboard</h2>
+        <h2>
+            Dashboard
+        </h2>
 
         <br>
 
@@ -571,14 +467,15 @@ function loadDashboard() {
 }
 
 
-/* =====================================================
-QUESTION PAGE
-===================================================== */
+/* =========================================================
+   QUESTION PAGE
+========================================================= */
 
 function loadQuestionPage() {
 
     STATE.questionEdit =
         false;
+
 
     STATE.questionId =
         null;
@@ -714,9 +611,9 @@ function loadQuestionPage() {
 }
 
 
-/* =====================================================
-LOAD QUESTIONS
-===================================================== */
+/* =========================================================
+   LOAD QUESTIONS
+========================================================= */
 
 async function loadQuestions() {
 
@@ -780,9 +677,9 @@ async function loadQuestions() {
 
 
         APP.question =
-            normalizeApiArray(
-                res
-            );
+            Array.isArray(res.data)
+                ? res.data
+                : [];
 
 
         updateQuestionCounter(
@@ -833,9 +730,9 @@ async function loadQuestions() {
 }
 
 
-/* =====================================================
-RENDER QUESTIONS
-===================================================== */
+/* =========================================================
+   RENDER QUESTIONS
+========================================================= */
 
 function renderQuestions() {
 
@@ -976,9 +873,9 @@ function renderQuestions() {
 }
 
 
-/* =====================================================
-SAVE QUESTION
-===================================================== */
+/* =========================================================
+   SAVE QUESTION
+========================================================= */
 
 async function saveQuestion(e) {
 
@@ -1181,9 +1078,9 @@ async function saveQuestion(e) {
 }
 
 
-/* =====================================================
-EDIT QUESTION
-===================================================== */
+/* =========================================================
+   EDIT QUESTION
+========================================================= */
 
 function editQuestion(id) {
 
@@ -1266,7 +1163,8 @@ function editQuestion(id) {
     if (duration) {
 
         duration.value =
-            question.duration || 30;
+            question.duration ||
+            30;
 
     }
 
@@ -1296,9 +1194,9 @@ function editQuestion(id) {
 }
 
 
-/* =====================================================
-DELETE QUESTION
-===================================================== */
+/* =========================================================
+   DELETE QUESTION
+========================================================= */
 
 async function deleteQuestion(id) {
 
@@ -1394,9 +1292,9 @@ async function deleteQuestion(id) {
 }
 
 
-/* =====================================================
-RESET QUESTION FORM
-===================================================== */
+/* =========================================================
+   RESET QUESTION FORM
+========================================================= */
 
 function resetQuestionForm() {
 
@@ -1429,7 +1327,8 @@ function resetQuestionForm() {
 
     if (duration) {
 
-        duration.value = 30;
+        duration.value =
+            30;
 
     }
 
@@ -1450,9 +1349,9 @@ function resetQuestionForm() {
 }
 
 
-/* =====================================================
-SEARCH QUESTION
-===================================================== */
+/* =========================================================
+   SEARCH QUESTION
+========================================================= */
 
 function filterQuestion() {
 
@@ -1493,14 +1392,15 @@ function filterQuestion() {
 }
 
 
-/* =====================================================
-STUDENT PAGE
-===================================================== */
+/* =========================================================
+   STUDENT PAGE
+========================================================= */
 
 function loadStudentPage() {
 
     STATE.studentEdit =
         false;
+
 
     STATE.studentId =
         null;
@@ -1632,60 +1532,103 @@ function loadStudentPage() {
 }
 
 
-/* =====================================================
-SAVE STUDENT
-===================================================== */
+/* =========================================================
+   SAVE STUDENT
+========================================================= */
 
 async function saveStudent(e) {
 
     e.preventDefault();
 
 
+    const nis =
+        document.getElementById(
+            "nis"
+        );
+
+
+    const nama =
+        document.getElementById(
+            "nama"
+        );
+
+
+    const kelas =
+        document.getElementById(
+            "kelas"
+        );
+
+
+    const username =
+        document.getElementById(
+            "username"
+        );
+
+
+    const password =
+        document.getElementById(
+            "password"
+        );
+
+
+    if (
+        !nis ||
+        !nama ||
+        !kelas ||
+        !username ||
+        !password
+    ) {
+
+        alert(
+            "Student form is not available."
+        );
+
+        return;
+
+    }
+
+
     const data = {
 
         nis:
-            document
-                .getElementById("nis")
-                .value
-                .trim(),
+            nis.value.trim(),
 
         nama:
-            document
-                .getElementById("nama")
-                .value
-                .trim(),
+            nama.value.trim(),
 
         kelas:
-            document
-                .getElementById("kelas")
-                .value
-                .trim(),
+            kelas.value.trim(),
 
         username:
-            document
-                .getElementById("username")
-                .value
-                .trim(),
+            username.value.trim(),
 
         password:
-            document
-                .getElementById("password")
-                .value
-                .trim(),
+            password.value.trim(),
 
         status:
-            "Active"
+            "ACTIVE"
 
     };
 
 
-    if (
-        STATE.studentEdit &&
-        STATE.studentId
-    ) {
+    if (!data.nis) {
 
-        data.id =
-            STATE.studentId;
+        alert(
+            "NIS wajib diisi."
+        );
+
+        return;
+
+    }
+
+
+    if (!data.nama) {
+
+        alert(
+            "Nama siswa wajib diisi."
+        );
+
+        return;
 
     }
 
@@ -1696,8 +1639,13 @@ async function saveStudent(e) {
     try {
 
         if (
-            STATE.studentEdit
+            STATE.studentEdit === true &&
+            STATE.studentId
         ) {
+
+            data.nis =
+                STATE.studentId;
+
 
             res =
                 await apiUpdateStudent(
@@ -1714,6 +1662,12 @@ async function saveStudent(e) {
                 );
 
         }
+
+
+        console.log(
+            "STUDENT SAVE RESPONSE:",
+            res
+        );
 
 
         alert(
@@ -1762,9 +1716,9 @@ async function saveStudent(e) {
 }
 
 
-/* =====================================================
-LOAD STUDENTS
-===================================================== */
+/* =========================================================
+   LOAD STUDENTS
+========================================================= */
 
 async function loadStudents() {
 
@@ -1776,9 +1730,17 @@ async function loadStudents() {
 
     if (!table) {
 
+        console.warn(
+            "loadStudents: #studentTable not found."
+        );
+
         return;
 
     }
+
+
+    table.innerHTML =
+        "<p>Loading students...</p>";
 
 
     try {
@@ -1787,10 +1749,19 @@ async function loadStudents() {
             await apiGetStudent();
 
 
+        console.log(
+            "GET STUDENT RESPONSE:",
+            res
+        );
+
+
         if (
             !res ||
             res.success !== true
         ) {
+
+            APP.student = [];
+
 
             table.innerHTML =
                 "<p style='color:red'>" +
@@ -1802,15 +1773,18 @@ async function loadStudents() {
                 ) +
                 "</p>";
 
+
+            updateStudentCounter(0);
+
             return;
 
         }
 
 
         APP.student =
-            normalizeApiArray(
-                res
-            );
+            Array.isArray(res.data)
+                ? res.data
+                : [];
 
 
         updateStudentCounter(
@@ -1865,14 +1839,14 @@ async function loadStudents() {
 
 
         APP.student.forEach(
-            (s, i) => {
+            (s, index) => {
 
                 html += `
 
                     <tr>
 
                         <td>
-                            ${i + 1}
+                            ${index + 1}
                         </td>
 
                         <td>
@@ -1947,6 +1921,9 @@ async function loadStudents() {
         );
 
 
+        APP.student = [];
+
+
         table.innerHTML =
             "<p style='color:red'>" +
             escapeHTML(
@@ -1960,9 +1937,9 @@ async function loadStudents() {
 }
 
 
-/* =====================================================
-EDIT STUDENT
-===================================================== */
+/* =========================================================
+   EDIT STUDENT
+========================================================= */
 
 function editStudent(nis) {
 
@@ -2028,6 +2005,9 @@ function editStudent(nis) {
         nisElement.value =
             student.nis || "";
 
+        nisElement.readOnly =
+            true;
+
     }
 
 
@@ -2076,12 +2056,21 @@ function editStudent(nis) {
 
     }
 
+
+    window.scrollTo({
+
+        top: 0,
+
+        behavior: "smooth"
+
+    });
+
 }
 
 
-/* =====================================================
-DELETE STUDENT
-===================================================== */
+/* =========================================================
+   DELETE STUDENT
+========================================================= */
 
 async function deleteStudent(nis) {
 
@@ -2171,9 +2160,9 @@ async function deleteStudent(nis) {
 }
 
 
-/* =====================================================
-RESET STUDENT FORM
-===================================================== */
+/* =========================================================
+   RESET STUDENT FORM
+========================================================= */
 
 function resetStudentForm() {
 
@@ -2198,6 +2187,20 @@ function resetStudentForm() {
     }
 
 
+    const nis =
+        document.getElementById(
+            "nis"
+        );
+
+
+    if (nis) {
+
+        nis.readOnly =
+            false;
+
+    }
+
+
     const button =
         document.getElementById(
             "btnSaveStudent"
@@ -2214,9 +2217,9 @@ function resetStudentForm() {
 }
 
 
-/* =====================================================
-SEARCH STUDENT
-===================================================== */
+/* =========================================================
+   SEARCH STUDENT
+========================================================= */
 
 function filterStudent() {
 
@@ -2257,11 +2260,129 @@ function filterStudent() {
 }
 
 
-/* =====================================================
-TOKEN PAGE
-===================================================== */
+/* =========================================================
+   TOKEN PAGE
+========================================================= */
 
 function loadTokenPage() {
+
+    /*
+     * Make sure question data exists.
+     *
+     * refreshDashboard() normally loads it.
+     * If it is empty, reload Questions before
+     * rendering the selector.
+     */
+
+    if (
+        !Array.isArray(APP.question) ||
+        APP.question.length === 0
+    ) {
+
+        loadQuestionsForTokenPage();
+
+        return;
+
+    }
+
+
+    renderTokenPage();
+
+}
+
+
+/* =========================================================
+   LOAD QUESTIONS FOR TOKEN PAGE
+========================================================= */
+
+async function loadQuestionsForTokenPage() {
+
+    try {
+
+        const result =
+            await apiGetQuestion();
+
+
+        if (
+            result &&
+            result.success === true &&
+            Array.isArray(result.data)
+        ) {
+
+            APP.question =
+                result.data;
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "LOAD TOKEN QUESTIONS ERROR:",
+            err
+        );
+
+    }
+
+
+    renderTokenPage();
+
+}
+
+
+/* =========================================================
+   RENDER TOKEN PAGE
+========================================================= */
+
+function renderTokenPage() {
+
+    const activeQuestions =
+        APP.question.filter(
+            function (question) {
+
+                return (
+                    question &&
+                    String(
+                        question.status || ""
+                    )
+                        .trim()
+                        .toUpperCase()
+                    === "ACTIVE"
+                );
+
+            }
+        );
+
+
+    let questionOptions = `
+
+        <option value="">
+            -- Select Speaking Question --
+        </option>
+
+    `;
+
+
+    activeQuestions.forEach(
+        function (question) {
+
+            questionOptions += `
+
+                <option
+                    value="${escapeAttribute(question.id)}">
+
+                    ${escapeHTML(
+                        question.title
+                    )}
+
+                </option>
+
+            `;
+
+        }
+    );
+
 
     setContent(`
 
@@ -2279,8 +2400,23 @@ function loadTokenPage() {
 
             <input
                 id="tokenClass"
+                type="text"
                 required
             >
+
+            <br><br>
+
+            <label>
+                Speaking Question
+            </label>
+
+            <select
+                id="tokenQuestionId"
+                required>
+
+                ${questionOptions}
+
+            </select>
 
             <br><br>
 
@@ -2304,6 +2440,7 @@ function loadTokenPage() {
 
             <input
                 id="note"
+                type="text"
             >
 
             <br><br>
@@ -2359,9 +2496,9 @@ function loadTokenPage() {
 }
 
 
-/* =====================================================
-GENERATE TOKEN
-===================================================== */
+/* =========================================================
+   GENERATE TOKEN
+========================================================= */
 
 async function generateExamToken(e) {
 
@@ -2371,6 +2508,12 @@ async function generateExamToken(e) {
     const classElement =
         document.getElementById(
             "tokenClass"
+        );
+
+
+    const questionElement =
+        document.getElementById(
+            "tokenQuestionId"
         );
 
 
@@ -2388,12 +2531,13 @@ async function generateExamToken(e) {
 
     if (
         !classElement ||
+        !questionElement ||
         !expiredElement ||
         !noteElement
     ) {
 
         alert(
-            "Exam token form is not available."
+            "Exam Token form is not available."
         );
 
         return;
@@ -2401,26 +2545,32 @@ async function generateExamToken(e) {
     }
 
 
-    const data = {
-
-        kelas:
-            classElement.value.trim(),
-
-        expired:
-            Number(
-                expiredElement.value
-            ),
-
-        note:
-            noteElement.value.trim(),
-
-        createdBy:
-            "Teacher"
-
-    };
+    const kelas =
+        classElement.value
+            .trim();
 
 
-    if (!data.kelas) {
+    const questionId =
+        questionElement.value
+            .trim();
+
+
+    const expired =
+        Number(
+            expiredElement.value
+        );
+
+
+    const note =
+        noteElement.value
+            .trim();
+
+
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
+
+    if (!kelas) {
 
         alert(
             "Class wajib diisi."
@@ -2431,9 +2581,20 @@ async function generateExamToken(e) {
     }
 
 
+    if (!questionId) {
+
+        alert(
+            "Question ID wajib dipilih saat membuat exam token."
+        );
+
+        return;
+
+    }
+
+
     if (
-        !data.expired ||
-        data.expired <= 0
+        !expired ||
+        expired <= 0
     ) {
 
         alert(
@@ -2445,13 +2606,61 @@ async function generateExamToken(e) {
     }
 
 
-    try {
+    /*
+     * Find selected question.
+     */
 
-        console.log(
-            "CREATE TOKEN REQUEST:",
-            data
+    const selectedQuestion =
+        APP.question.find(
+            function (question) {
+
+                return (
+                    String(question.id) ===
+                    String(questionId)
+                );
+
+            }
         );
 
+
+    if (!selectedQuestion) {
+
+        alert(
+            "Speaking Question tidak ditemukan."
+        );
+
+        return;
+
+    }
+
+
+    const data = {
+
+        kelas:
+            kelas,
+
+        questionId:
+            questionId,
+
+        expired:
+            expired,
+
+        note:
+            note,
+
+        createdBy:
+            "Teacher"
+
+    };
+
+
+    console.log(
+        "CREATE TOKEN REQUEST:",
+        data
+    );
+
+
+    try {
 
         const res =
             await apiCreateToken(
@@ -2469,7 +2678,12 @@ async function generateExamToken(e) {
             res &&
             res.message
                 ? res.message
-                : "Token created."
+                : (
+                    res &&
+                    res.success === true
+                        ? "Exam token created."
+                        : "Failed to create exam token."
+                )
         );
 
 
@@ -2482,6 +2696,11 @@ async function generateExamToken(e) {
 
         }
 
+
+        /*
+         * Reset form after successful
+         * token creation.
+         */
 
         const form =
             document.getElementById(
@@ -2496,15 +2715,16 @@ async function generateExamToken(e) {
         }
 
 
-        const expired =
+        const expiredInput =
             document.getElementById(
                 "expired"
             );
 
 
-        if (expired) {
+        if (expiredInput) {
 
-            expired.value = 30;
+            expiredInput.value =
+                30;
 
         }
 
@@ -2534,9 +2754,9 @@ async function generateExamToken(e) {
 }
 
 
-/* =====================================================
-LOAD TOKEN
-===================================================== */
+/* =========================================================
+   LOAD TOKENS
+========================================================= */
 
 async function loadTokens() {
 
@@ -2548,9 +2768,17 @@ async function loadTokens() {
 
     if (!table) {
 
+        console.warn(
+            "loadTokens: #tokenTable not found."
+        );
+
         return;
 
     }
+
+
+    table.innerHTML =
+        "<p>Loading tokens...</p>";
 
 
     try {
@@ -2592,9 +2820,9 @@ async function loadTokens() {
 
 
         APP.token =
-            normalizeApiArray(
-                res
-            );
+            Array.isArray(res.data)
+                ? res.data
+                : [];
 
 
         updateTokenCounter(
@@ -2614,134 +2842,14 @@ async function loadTokens() {
         }
 
 
-        let html = `
-
-            <table
-                border="1"
-                width="100%"
-                cellpadding="8">
-
-                <thead>
-
-                    <tr>
-
-                        <th>No</th>
-
-                        <th>Token</th>
-
-                        <th>Class</th>
-
-                        <th>Status</th>
-
-                        <th>Expired</th>
-
-                        <th>Action</th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-        `;
-
-
-        APP.token.forEach(
-            (t, i) => {
-
-                const status =
-                    String(
-                        t.status || ""
-                    ).toUpperCase();
-
-
-                const disableButton =
-                    status === "ACTIVE"
-
-                        ? `
-
-                            <button
-                                type="button"
-                                class="btn edit"
-                                onclick="disableExamToken('${escapeAttribute(t.token)}')">
-
-                                Disable
-
-                            </button>
-
-                          `
-
-                        : "";
-
-
-                html += `
-
-                    <tr>
-
-                        <td>
-                            ${i + 1}
-                        </td>
-
-                        <td>
-                            <b>
-                                ${escapeHTML(t.token)}
-                            </b>
-                        </td>
-
-                        <td>
-                            ${escapeHTML(t.kelas)}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(t.status)}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(t.expired)}
-                            minutes
-                        </td>
-
-                        <td>
-
-                            ${disableButton}
-
-                            <button
-                                type="button"
-                                class="btn delete"
-                                onclick="deleteExamToken('${escapeAttribute(t.token)}')">
-
-                                Delete
-
-                            </button>
-
-                        </td>
-
-                    </tr>
-
-                `;
-
-            }
-        );
-
-
-        html += `
-
-                </tbody>
-
-            </table>
-
-        `;
-
-
-        table.innerHTML =
-            html;
+        renderTokens();
 
     }
 
     catch (err) {
 
         console.error(
-            "LOAD TOKEN ERROR:",
+            "LOAD TOKENS ERROR:",
             err
         );
 
@@ -2762,9 +2870,189 @@ async function loadTokens() {
 }
 
 
-/* =====================================================
-DISABLE TOKEN
-===================================================== */
+/* =========================================================
+   RENDER TOKENS
+========================================================= */
+
+function renderTokens() {
+
+    const table =
+        document.getElementById(
+            "tokenTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
+    if (
+        !Array.isArray(APP.token) ||
+        APP.token.length === 0
+    ) {
+
+        table.innerHTML =
+            "<p>No token found.</p>";
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <table
+            border="1"
+            width="100%"
+            cellpadding="8">
+
+            <thead>
+
+                <tr>
+
+                    <th>No</th>
+
+                    <th>Token</th>
+
+                    <th>Class</th>
+
+                    <th>Question</th>
+
+                    <th>Status</th>
+
+                    <th>Expired</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+    `;
+
+
+    APP.token.forEach(
+        function (token, index) {
+
+            const question =
+                APP.question.find(
+                    function (q) {
+
+                        return (
+                            String(q.id) ===
+                            String(
+                                token.questionId || ""
+                            )
+                        );
+
+                    }
+                );
+
+
+            const questionTitle =
+                question
+                    ? question.title
+                    : (
+                        token.questionId
+                            ? "Question ID: " +
+                              token.questionId
+                            : "-"
+                    );
+
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${index + 1}
+                    </td>
+
+                    <td>
+                        <b>
+                            ${escapeHTML(
+                                token.token
+                            )}
+                        </b>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            token.kelas
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            questionTitle
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            token.status
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            token.expired
+                        )}
+                    </td>
+
+                    <td>
+
+                        <button
+                            type="button"
+                            class="btn edit"
+                            onclick="disableExamToken('${escapeAttribute(token.token)}')">
+
+                            Disable
+
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn delete"
+                            onclick="deleteExamToken('${escapeAttribute(token.token)}')">
+
+                            Delete
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+    html += `
+
+            </tbody>
+
+        </table>
+
+    `;
+
+
+    table.innerHTML =
+        html;
+
+}
+
+
+/* =========================================================
+   DISABLE TOKEN
+========================================================= */
 
 async function disableExamToken(token) {
 
@@ -2795,7 +3083,8 @@ async function disableExamToken(token) {
         const res =
             await apiDisableToken({
 
-                token: token
+                token:
+                    token
 
             });
 
@@ -2849,9 +3138,9 @@ async function disableExamToken(token) {
 }
 
 
-/* =====================================================
-DELETE TOKEN
-===================================================== */
+/* =========================================================
+   DELETE TOKEN
+========================================================= */
 
 async function deleteExamToken(token) {
 
@@ -2882,7 +3171,8 @@ async function deleteExamToken(token) {
         const res =
             await apiDeleteToken({
 
-                token: token
+                token:
+                    token
 
             });
 
@@ -2936,9 +3226,9 @@ async function deleteExamToken(token) {
 }
 
 
-/* =====================================================
-SEARCH TOKEN
-===================================================== */
+/* =========================================================
+   SEARCH TOKEN
+========================================================= */
 
 function filterToken() {
 
@@ -2979,15 +3269,11 @@ function filterToken() {
 }
 
 
-/* =====================================================
-RESULT PAGE
-===================================================== */
+/* =========================================================
+   RESULT PAGE
+========================================================= */
 
 function loadResultPage() {
-
-    STATE.resultId =
-        null;
-
 
     setContent(`
 
@@ -3020,9 +3306,9 @@ function loadResultPage() {
 }
 
 
-/* =====================================================
-LOAD RESULTS
-===================================================== */
+/* =========================================================
+   LOAD RESULTS
+========================================================= */
 
 async function loadResults() {
 
@@ -3081,35 +3367,10 @@ async function loadResults() {
         }
 
 
-        /*
-         * IMPORTANT FIX
-         *
-         * getResult currently returns
-         * numeric object keys:
-         *
-         * {
-         *     0: {...},
-         *     1: {...},
-         *     2: {...},
-         *     ...
-         *     success: true,
-         *     message: "Success"
-         * }
-         *
-         * normalizeApiArray()
-         * converts it into an array.
-         */
-
         APP.result =
-            normalizeApiArray(
-                res
-            );
-
-
-        console.log(
-            "NORMALIZED RESULT DATA:",
-            APP.result
-        );
+            Array.isArray(res.data)
+                ? res.data
+                : [];
 
 
         updateResultCounter(
@@ -3164,37 +3425,45 @@ async function loadResults() {
 
 
         APP.result.forEach(
-            (r, i) => {
+            function (result, index) {
 
                 html += `
 
                     <tr>
 
                         <td>
-                            ${i + 1}
+                            ${index + 1}
                         </td>
 
                         <td>
-                            ${escapeHTML(r.nis)}
+                            ${escapeHTML(
+                                result.nis
+                            )}
                         </td>
 
                         <td>
-                            ${escapeHTML(r.nama)}
+                            ${escapeHTML(
+                                result.nama
+                            )}
                         </td>
 
                         <td>
-                            ${escapeHTML(r.question)}
+                            ${escapeHTML(
+                                result.question
+                            )}
                         </td>
 
                         <td>
                             <b>
-                                ${escapeHTML(r.score)}
+                                ${escapeHTML(
+                                    result.score
+                                )}
                             </b>
                         </td>
 
                         <td>
                             ${escapeHTML(
-                                r.feedback || "-"
+                                result.feedback
                             )}
                         </td>
 
@@ -3203,7 +3472,7 @@ async function loadResults() {
                             <button
                                 type="button"
                                 class="btn delete"
-                                onclick="deleteResult('${escapeAttribute(r.id)}')">
+                                onclick="deleteResult('${escapeAttribute(result.id)}')">
 
                                 Delete
 
@@ -3252,17 +3521,14 @@ async function loadResults() {
             ) +
             "</p>";
 
-
-        updateResultCounter(0);
-
     }
 
 }
 
 
-/* =====================================================
-DELETE RESULT
-===================================================== */
+/* =========================================================
+   DELETE RESULT
+========================================================= */
 
 async function deleteResult(id) {
 
@@ -3293,7 +3559,8 @@ async function deleteResult(id) {
         const res =
             await apiDeleteResult({
 
-                id: id
+                id:
+                    id
 
             });
 
@@ -3347,9 +3614,9 @@ async function deleteResult(id) {
 }
 
 
-/* =====================================================
-SEARCH RESULT
-===================================================== */
+/* =========================================================
+   SEARCH RESULT
+========================================================= */
 
 function filterResult() {
 
@@ -3390,247 +3657,158 @@ function filterResult() {
 }
 
 
-/* =====================================================
-COUNTERS
-===================================================== */
+/* =========================================================
+   DASHBOARD COUNTERS
+========================================================= */
 
 function updateQuestionCounter(total) {
 
-    const elements = [
-
-        "totalQuestion",
-
-        "dashboardQuestionCount"
-
-    ];
+    const elements =
+        document.querySelectorAll(
+            "#totalQuestion"
+        );
 
 
-    elements.forEach(id => {
+    elements.forEach(
+        function (element) {
 
-        const el =
-            document.getElementById(id);
-
-
-        if (el) {
-
-            el.textContent =
+            element.textContent =
                 total;
 
         }
-
-    });
+    );
 
 }
 
 
 function updateStudentCounter(total) {
 
-    const elements = [
-
-        "totalStudent",
-
-        "dashboardStudentCount"
-
-    ];
+    const elements =
+        document.querySelectorAll(
+            "#totalStudent"
+        );
 
 
-    elements.forEach(id => {
+    elements.forEach(
+        function (element) {
 
-        const el =
-            document.getElementById(id);
-
-
-        if (el) {
-
-            el.textContent =
+            element.textContent =
                 total;
 
         }
-
-    });
+    );
 
 }
 
 
 function updateTokenCounter(total) {
 
-    const elements = [
-
-        "totalToken",
-
-        "dashboardTokenCount"
-
-    ];
+    const elements =
+        document.querySelectorAll(
+            "#totalToken"
+        );
 
 
-    elements.forEach(id => {
+    elements.forEach(
+        function (element) {
 
-        const el =
-            document.getElementById(id);
-
-
-        if (el) {
-
-            el.textContent =
+            element.textContent =
                 total;
 
         }
-
-    });
+    );
 
 }
 
 
 function updateResultCounter(total) {
 
-    const elements = [
-
-        "totalResult",
-
-        "dashboardResultCount"
-
-    ];
+    const elements =
+        document.querySelectorAll(
+            "#totalResult"
+        );
 
 
-    elements.forEach(id => {
+    elements.forEach(
+        function (element) {
 
-        const el =
-            document.getElementById(id);
-
-
-        if (el) {
-
-            el.textContent =
+            element.textContent =
                 total;
 
         }
-
-    });
-
-}
-
-
-/* =====================================================
-ESCAPE HTML
-===================================================== */
-
-function escapeHTML(value) {
-
-    if (
-        value === null ||
-        typeof value === "undefined"
-    ) {
-
-        return "";
-
-    }
-
-
-    return String(value)
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-/* =====================================================
-ESCAPE ATTRIBUTE
-===================================================== */
-
-function escapeAttribute(value) {
-
-    if (
-        value === null ||
-        typeof value === "undefined"
-    ) {
-
-        return "";
-
-    }
-
-
-    return String(value)
-
-        .replace(
-            /\\/g,
-            "\\\\"
-        )
-
-        .replace(
-            /'/g,
-            "\\'"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        );
-
-}
-
-
-/* =====================================================
-FORMAT DATE
-===================================================== */
-
-function formatDate(value) {
-
-    if (!value) {
-
-        return "-";
-
-    }
-
-
-    const date =
-        new Date(value);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return escapeHTML(
-            value
-        );
-
-    }
-
-
-    return escapeHTML(
-
-        date.toLocaleString()
-
     );
 
 }
 
 
-/* =====================================================
-END OF FILE
-===================================================== */
+/* =========================================================
+   COMMON HELPERS
+========================================================= */
+
+function escapeHTML(value) {
+
+    return String(
+        value === null ||
+        typeof value === "undefined"
+            ? ""
+            : value
+    )
+
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+
+    .replace(
+        /</g,
+        "&lt;"
+    )
+
+    .replace(
+        />/g,
+        "&gt;"
+    )
+
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+
+    .replace(
+        /'/g,
+        "&#039;"
+    );
+
+}
+
+
+function escapeAttribute(value) {
+
+    return String(
+        value === null ||
+        typeof value === "undefined"
+            ? ""
+            : value
+    )
+
+    .replace(
+        /\\/g,
+        "\\\\"
+    )
+
+    .replace(
+        /'/g,
+        "\\'"
+    )
+
+    .replace(
+        /"/g,
+        "&quot;"
+    );
+
+}
+
+
+/* =========================================================
+   END OF FILE
+========================================================= */
