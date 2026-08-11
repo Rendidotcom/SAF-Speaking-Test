@@ -3,23 +3,25 @@
  * SAF SPEAKING ONLINE TEST
  * Student Speaking Module
  *
- * File:
+ * FILE:
  * js/speaking.js
  *
  * VERSION:
- * Token → Question Binding + Anti-Duplicate Speech Recognition
+ * Token → Question Binding FIX
  *
  * RESPONSIBILITY:
+ * ---------------------------------------------------------
  * - Student session
  * - Exam token
  * - Token validation
- * - Load QUESTION BELONGING TO TOKEN
+ * - Load question EXACTLY by token questionId
  * - Speech Recognition
  * - Transcript reconstruction
  * - Anti-duplicate recognition
  * - Submit answer
  *
  * LOCKED ARCHITECTURE
+ * ---------------------------------------------------------
  *
  * speaking.html
  *      ↓
@@ -37,7 +39,6 @@
  *
  * IMPORTANT:
  * Browser NEVER calls GAS directly.
- * Browser communicates only through /api.
  *
  * =========================================================
  */
@@ -72,8 +73,7 @@
     /*
      * SpeechRecognition result segments.
      *
-     * Each result is stored according to
-     * its SpeechRecognition result index.
+     * Each segment is stored by its real result index.
      */
     let recognitionSegments = [];
 
@@ -492,10 +492,97 @@
 
 
     /* =====================================================
+       NORMALIZE QUESTION ID
+    ===================================================== */
+
+    function normalizeQuestionId(value) {
+
+        return String(
+            value === undefined ||
+            value === null
+                ? ""
+                : value
+        )
+            .trim();
+
+    }
+
+
+    /* =====================================================
+       FIND QUESTION BY ID
+    ===================================================== */
+
+    function findQuestionById(
+        questions,
+        questionId
+    ) {
+
+        const targetId =
+            normalizeQuestionId(
+                questionId
+            );
+
+
+        if (!targetId) {
+
+            return null;
+
+        }
+
+
+        if (!Array.isArray(questions)) {
+
+            return null;
+
+        }
+
+
+        for (
+            let i = 0;
+            i < questions.length;
+            i++
+        ) {
+
+            const question =
+                questions[i];
+
+
+            if (!question) {
+
+                continue;
+
+            }
+
+
+            const id =
+                normalizeQuestionId(
+                    question.id
+                );
+
+
+            if (
+                id === targetId
+            ) {
+
+                return question;
+
+            }
+
+        }
+
+
+        return null;
+
+    }
+
+
+    /* =====================================================
        VALIDATE TOKEN
     ===================================================== */
 
-    async function validateToken(tokenFromRestore) {
+    async function validateToken(
+        tokenFromRestore
+    ) {
 
         const input =
             $("token");
@@ -699,22 +786,80 @@
             );
 
 
-            /* =================================================
-               CRITICAL:
-               LOAD QUESTION USING TOKEN
-            ================================================= */
+            /*
+             * IMPORTANT:
+             *
+             * The token must provide the questionId.
+             *
+             * We NEVER select the first ACTIVE question.
+             */
+
+            const questionId =
+                normalizeQuestionId(
+                    result.questionId ||
+                    (
+                        result.data &&
+                        result.data.questionId
+                    ) ||
+                    (
+                        result.data &&
+                        result.data.question &&
+                        result.data.question.id
+                    )
+                );
+
+
+            console.log(
+                "TOKEN QUESTION ID:",
+                questionId
+            );
+
+
+            if (!questionId) {
+
+                tokenVerified = false;
+
+                currentQuestion = null;
+
+
+                setExamStatus(
+                    "Token Verified, but question is not linked to this token."
+                );
+
+
+                hideExamArea();
+
+
+                console.error(
+                    "VALID TOKEN WITHOUT QUESTION ID:",
+                    result
+                );
+
+
+                alert(
+                    "Token verified, but this token has no linked question."
+                );
+
+
+                return false;
+
+            }
+
+
+            /*
+             * Load EXACT question belonging
+             * to the validated token.
+             */
 
             const questionLoaded =
                 await loadQuestion(
-                    currentToken
+                    questionId
                 );
 
 
             if (!questionLoaded) {
 
                 tokenVerified = false;
-
-                currentToken = "";
 
                 currentQuestion = null;
 
@@ -773,11 +918,6 @@
             hideExamArea();
 
 
-            /*
-             * Keep stored token during
-             * temporary network/API errors.
-             */
-
             if (!tokenFromRestore) {
 
                 alert(
@@ -796,48 +936,27 @@
 
 
     /* =====================================================
-       LOAD QUESTION
-       
-       CRITICAL TOKEN BINDING
-       
-       The question request MUST include:
-       
-       {
-           token: currentToken
-       }
-       
-       We no longer request:
-       
-       getQuestion({})
-       
-       because that can return the first ACTIVE
-       question instead of the question assigned
-       to the current exam token.
+       LOAD EXACT QUESTION BY QUESTION ID
     ===================================================== */
 
-    async function loadQuestion(token) {
+    async function loadQuestion(
+        questionId
+    ) {
 
         currentQuestion = null;
 
 
-        const normalizedToken =
-            String(
-                token || ""
-            )
-                .trim()
-                .toUpperCase();
-
-
-        if (!normalizedToken) {
-
-            console.error(
-                "LOAD QUESTION: TOKEN EMPTY"
+        const targetQuestionId =
+            normalizeQuestionId(
+                questionId
             );
 
 
+        if (!targetQuestionId) {
+
             setText(
                 "question",
-                "Exam token is required."
+                "Question ID is missing."
             );
 
 
@@ -855,10 +974,10 @@
         try {
 
             console.log(
-                "GET QUESTION REQUEST:",
+                "GET EXACT QUESTION REQUEST:",
                 {
-                    token:
-                        normalizedToken
+                    questionId:
+                        targetQuestionId
                 }
             );
 
@@ -866,19 +985,18 @@
             /*
              * IMPORTANT:
              *
-             * Token is explicitly sent to backend.
+             * Send the question ID.
              *
-             * Backend must resolve:
-             *
-             * token → questionId → question
+             * We do NOT request all ACTIVE
+             * questions and choose [0].
              */
 
             const result =
                 await apiRequest(
                     "getQuestion",
                     {
-                        token:
-                            normalizedToken
+                        id:
+                            targetQuestionId
                     }
                 );
 
@@ -904,226 +1022,188 @@
             }
 
 
-            /* =================================================
-               EXTRACT QUESTION
-               
-               Supported backend response:
-               
-               1. result.data = question object
-               
-               2. result.data = [question]
-               
-               3. result.question = question object
-            ================================================= */
-
             let question = null;
 
 
+            /*
+             * Supported response:
+             *
+             * data = object
+             */
+
             if (
                 result.data &&
-                !Array.isArray(result.data) &&
-                typeof result.data === "object"
-            ) {
-
-                question =
-                    result.data;
-
-            }
-
-            else if (
-                Array.isArray(result.data)
+                !Array.isArray(
+                    result.data
+                )
             ) {
 
                 /*
-                 * If backend returns an array, do NOT blindly
-                 * use activeQuestions[0].
-                 *
-                 * First try to identify the question by token.
+                 * Sometimes data itself is
+                 * the question.
                  */
 
-                const questions =
-                    result.data;
-
-
-                const tokenMatchedQuestion =
-                    questions.find(
-                        function (item) {
-
-                            if (!item) {
-                                return false;
-                            }
-
-
-                            const itemToken =
-                                String(
-                                    item.token ||
-                                    item.examToken ||
-                                    item.tokenCode ||
-                                    ""
-                                )
-                                    .trim()
-                                    .toUpperCase();
-
-
-                            return (
-                                itemToken ===
-                                normalizedToken
-                            );
-
-                        }
-                    );
-
-
-                if (tokenMatchedQuestion) {
-
-                    question =
-                        tokenMatchedQuestion;
-
-                }
-
-                /*
-                 * If backend returns exactly one question,
-                 * it is safe to use it.
-                 */
-
-                else if (
-                    questions.length === 1
+                if (
+                    normalizeQuestionId(
+                        result.data.id
+                    ) ===
+                    targetQuestionId
                 ) {
 
                     question =
-                        questions[0];
+                        result.data;
 
                 }
 
-                else {
 
-                    /*
-                     * DO NOT choose the first ACTIVE question.
-                     *
-                     * That was the source of the mismatch.
-                     */
+                /*
+                 * Or:
+                 *
+                 * data.question
+                 */
 
-                    throw new Error(
-                        "Backend returned multiple questions without token binding."
-                    );
+                else if (
+                    result.data.question
+                ) {
+
+                    const nested =
+                        result.data.question;
+
+
+                    if (
+                        normalizeQuestionId(
+                            nested.id
+                        ) ===
+                        targetQuestionId
+                    ) {
+
+                        question =
+                            nested;
+
+                    }
 
                 }
 
             }
 
-            else if (
-                result.question &&
-                typeof result.question === "object"
+
+            /*
+             * Supported response:
+             *
+             * data = array
+             */
+
+            if (
+                !question &&
+                Array.isArray(
+                    result.data
+                )
             ) {
 
                 question =
-                    result.question;
+                    findQuestionById(
+                        result.data,
+                        targetQuestionId
+                    );
 
             }
 
 
-            /* =================================================
-               VALIDATE QUESTION OBJECT
-            ================================================= */
+            /*
+             * Another possible response:
+             *
+             * result.question
+             */
 
             if (
-                !question ||
-                typeof question !== "object"
+                !question &&
+                result.question
+            ) {
+
+                if (
+                    normalizeQuestionId(
+                        result.question.id
+                    ) ===
+                    targetQuestionId
+                ) {
+
+                    question =
+                        result.question;
+
+                }
+
+            }
+
+
+            /*
+             * Another possible response:
+             *
+             * result.data.questions
+             */
+
+            if (
+                !question &&
+                result.data &&
+                Array.isArray(
+                    result.data.questions
+                )
+            ) {
+
+                question =
+                    findQuestionById(
+                        result.data.questions,
+                        targetQuestionId
+                    );
+
+            }
+
+
+            /*
+             * HARD SAFETY:
+             *
+             * Never use the first ACTIVE
+             * question as fallback.
+             */
+
+            if (!question) {
+
+                throw new Error(
+                    "Question ID " +
+                    targetQuestionId +
+                    " tidak ditemukan."
+                );
+
+            }
+
+
+            /*
+             * Verify ID one more time.
+             */
+
+            const loadedId =
+                normalizeQuestionId(
+                    question.id
+                );
+
+
+            if (
+                loadedId !==
+                targetQuestionId
             ) {
 
                 throw new Error(
-                    "Question data tidak ditemukan."
+                    "Question mismatch. Token question ID tidak sama dengan question yang diterima."
                 );
 
             }
 
 
-            const questionId =
-                String(
-                    question.id ||
-                    question.questionId ||
-                    ""
-                )
-                    .trim();
-
-
-            const questionTitle =
-                String(
-                    question.title ||
-                    question.question ||
-                    question.text ||
-                    ""
-                )
-                    .trim();
-
-
-            if (!questionId) {
-
-                throw new Error(
-                    "Question ID tidak ditemukan."
-                );
-
-            }
-
-
-            if (!questionTitle) {
-
-                throw new Error(
-                    "Question text tidak ditemukan."
-                );
-
-            }
-
-
-            /* =================================================
-               OPTIONAL TOKEN SAFETY CHECK
-               
-               If backend sends token metadata,
-               verify that it belongs to current token.
-            ================================================= */
-
-            const returnedToken =
-                String(
-                    question.token ||
-                    question.examToken ||
-                    question.tokenCode ||
-                    ""
-                )
-                    .trim()
-                    .toUpperCase();
-
-
-            if (
-                returnedToken &&
-                returnedToken !==
-                    normalizedToken
-            ) {
-
-                console.error(
-                    "TOKEN / QUESTION MISMATCH:",
-                    {
-                        requestedToken:
-                            normalizedToken,
-
-                        returnedToken:
-                            returnedToken,
-
-                        question:
-                            question
-                    }
-                );
-
-
-                throw new Error(
-                    "Question does not belong to this exam token."
-                );
-
-            }
-
-
-            /* =================================================
-               QUESTION STATUS
-            ================================================= */
+            /*
+             * ACTIVE status check.
+             *
+             * If status exists and is not ACTIVE,
+             * reject it.
+             */
 
             const status =
                 String(
@@ -1139,44 +1219,21 @@
             ) {
 
                 throw new Error(
-                    "Question assigned to this token is not ACTIVE."
+                    "Question linked to this token is not ACTIVE."
                 );
 
             }
 
 
-            /* =================================================
-               SET CURRENT QUESTION
-            ================================================= */
-
             currentQuestion =
                 question;
 
 
-            /*
-             * Normalize essential properties locally.
-             *
-             * This guarantees submitAnswer() always has:
-             *
-             * currentQuestion.id
-             * currentQuestion.title
-             */
-
-            currentQuestion.id =
-                questionId;
-
-
-            currentQuestion.title =
-                questionTitle;
-
-
-            /* =================================================
-               DISPLAY QUESTION
-            ================================================= */
-
             setText(
                 "question",
-                currentQuestion.title
+                currentQuestion.title ||
+                currentQuestion.question ||
+                ""
             );
 
 
@@ -1205,16 +1262,17 @@
 
 
             console.log(
-                "TOKEN-BOUND QUESTION:",
+                "EXACT TOKEN QUESTION LOADED:",
                 {
                     token:
-                        normalizedToken,
+                        currentToken,
 
                     questionId:
                         currentQuestion.id,
 
                     question:
-                        currentQuestion.title
+                        currentQuestion.title ||
+                        currentQuestion.question
                 }
             );
 
@@ -1254,7 +1312,7 @@
 
     function normalizeTranscriptWords(text) {
 
-        const normalized =
+        const value =
             String(
                 text || ""
             )
@@ -1274,14 +1332,14 @@
                 .trim();
 
 
-        if (!normalized) {
+        if (!value) {
 
             return [];
 
         }
 
 
-        return normalized
+        return value
             .split(/\s+/)
             .filter(Boolean);
 
@@ -1310,21 +1368,32 @@
        WORDS EQUAL
     ===================================================== */
 
-    function transcriptWordsEqual(a, b) {
+    function transcriptWordsEqual(
+        a,
+        b
+    ) {
 
-        return (
+        const first =
             String(a || "")
                 .toLowerCase()
                 .replace(
                     /[.,!?;:()[\]{}"“”‘’]/g,
                     ""
-                ) ===
+                );
+
+
+        const second =
             String(b || "")
                 .toLowerCase()
                 .replace(
                     /[.,!?;:()[\]{}"“”‘’]/g,
                     ""
-                )
+                );
+
+
+        return (
+            first ===
+            second
         );
 
     }
@@ -1332,23 +1401,11 @@
 
     /* =====================================================
        MERGE TRANSCRIPT SEGMENTS
-
-       Prevent recognition overlap:
-
-       "there"
-       +
-       "there are"
-
-       becoming:
-
-       "there there are"
-
-       Result:
-
-       "there are"
     ===================================================== */
 
-    function mergeTranscriptSegments(segments) {
+    function mergeTranscriptSegments(
+        segments
+    ) {
 
         let words = [];
 
@@ -1371,6 +1428,10 @@
                 }
 
 
+                /*
+                 * First segment.
+                 */
+
                 if (
                     words.length === 0
                 ) {
@@ -1382,6 +1443,10 @@
 
                 }
 
+
+                /*
+                 * Find maximum overlap.
+                 */
 
                 let maxOverlap = 0;
 
@@ -1466,18 +1531,6 @@
 
     /* =====================================================
        REMOVE OBVIOUS DUPLICATE PHRASES
-
-       Conservative:
-       only removes immediately repeated
-       identical phrases.
-
-       Example:
-
-       there are there are
-
-       →
-
-       there are
     ===================================================== */
 
     function removeRepeatedPhrases(text) {
@@ -1577,7 +1630,6 @@
 
                         changed = true;
 
-
                         break;
 
                     }
@@ -1623,20 +1675,6 @@
             if (
                 !segment ||
                 !segment.text
-            ) {
-
-                continue;
-
-            }
-
-
-            /*
-             * Only confirmed/final segments are
-             * included in final reconstruction.
-             */
-
-            if (
-                segment.final !== true
             ) {
 
                 continue;
@@ -1693,6 +1731,17 @@
                 recognitionSegments[i];
 
 
+            /*
+             * NOTE:
+             *
+             * rebuildTranscript already contains
+             * all indexed segments, including interim.
+             *
+             * Therefore interim is displayed
+             * separately only when it is not already
+             * represented by the final reconstruction.
+             */
+
             if (
                 segment &&
                 segment.final !== true &&
@@ -1722,28 +1771,16 @@
         }
 
 
-        const display =
-            normalizeTranscriptDisplay(
-                finalText +
-                (
-                    interimTranscript
-                        ? " " +
-                          interimTranscript
-                        : ""
-                )
-            );
-
-
         setText(
             "transcript",
-            display ||
+            finalText ||
             "Listening..."
         );
 
 
         console.log(
             "CLEAN TRANSCRIPT:",
-            display
+            finalText
         );
 
     }
@@ -2258,8 +2295,9 @@
 
 
         const internal =
-            finalTranscript
-                .trim();
+            String(
+                finalTranscript || ""
+            ).trim();
 
 
         if (internal) {
@@ -2281,8 +2319,9 @@
 
 
         const text =
-            element.textContent
-                .trim();
+            String(
+                element.textContent || ""
+            ).trim();
 
 
         if (
@@ -2369,12 +2408,20 @@
         }
 
 
+        /*
+         * Stop recording first.
+         */
+
         if (isRecording) {
 
             stopRecording();
 
         }
 
+
+        /*
+         * Allow final recognition event.
+         */
 
         await new Promise(
             function (resolve) {
@@ -2404,19 +2451,17 @@
         }
 
 
-        /* =================================================
-           FINAL QUESTION SAFETY
-           
-           Ensure the question being submitted
-           is the question loaded for the token.
-        ================================================= */
+        /*
+         * IMPORTANT:
+         *
+         * Submit the EXACT question ID
+         * loaded from the token.
+         */
 
         const questionId =
-            String(
-                currentQuestion.id ||
-                ""
-            )
-                .trim();
+            normalizeQuestionId(
+                currentQuestion.id
+            );
 
 
         if (!questionId) {
@@ -2451,13 +2496,15 @@
                 currentToken,
 
 
-            /* Token-bound Question */
+            /* Exact Question */
 
             questionId:
                 questionId,
 
             question:
-                currentQuestion.title || "",
+                currentQuestion.title ||
+                currentQuestion.question ||
+                "",
 
 
             /* Answer */
@@ -2477,6 +2524,25 @@
         console.log(
             "SAVE SCORE REQUEST:",
             payload
+        );
+
+
+        /*
+         * Final safety audit before submit.
+         */
+
+        console.log(
+            "TOKEN → QUESTION AUDIT:",
+            {
+                token:
+                    currentToken,
+
+                questionId:
+                    questionId,
+
+                question:
+                    payload.question
+            }
         );
 
 
@@ -2518,6 +2584,10 @@
 
             }
 
+
+            /* =================================================
+               SUCCESS
+            ================================================= */
 
             setRecordStatus(
                 "Answer submitted successfully."
