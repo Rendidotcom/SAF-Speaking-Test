@@ -2,7 +2,8 @@
  * SAF SPEAKING ONLINE TEST
  * MAIN API ROUTER
  *
- * File: backend/Code.gs
+ * File:
+ * backend/Code.gs
  *
  * ROLE:
  * - Satu-satunya doGet()
@@ -30,7 +31,8 @@ function doGet(e) {
 
       version: CONFIG.VERSION,
 
-      message: "SAF Speaking Online Test API is running."
+      message:
+        "SAF Speaking Online Test API is running."
 
     });
 
@@ -72,7 +74,9 @@ function doPost(e) {
     ) {
 
       return json(
-        failed("Request body tidak ditemukan.")
+        failed(
+          "Request body tidak ditemukan."
+        )
       );
 
     }
@@ -82,13 +86,16 @@ function doPost(e) {
      * PARSE REQUEST BODY
      **************************************************/
 
-    const body = JSON.parse(
-      e.postData.contents
-    );
+    const body =
+      JSON.parse(
+        e.postData.contents
+      );
 
-    const action = body.action;
+    const action =
+      body.action;
 
-    const data = body.data || {};
+    const data =
+      body.data || {};
 
 
     /**************************************************
@@ -98,7 +105,9 @@ function doPost(e) {
     if (!action) {
 
       return json(
-        failed("Action tidak ditemukan.")
+        failed(
+          "Action tidak ditemukan."
+        )
       );
 
     }
@@ -111,9 +120,9 @@ function doPost(e) {
     switch (action) {
 
 
-      /* ==========================================
+      /**********************************************
        * AUTH
-       * ========================================== */
+       **********************************************/
 
       case "login":
 
@@ -122,9 +131,9 @@ function doPost(e) {
         );
 
 
-      /* ==========================================
+      /**********************************************
        * QUESTION
-       * ========================================== */
+       **********************************************/
 
       case "insertQuestion":
 
@@ -154,9 +163,9 @@ function doPost(e) {
         );
 
 
-      /* ==========================================
+      /**********************************************
        * STUDENT
-       * ========================================== */
+       **********************************************/
 
       case "insertStudent":
 
@@ -186,14 +195,21 @@ function doPost(e) {
         );
 
 
-      /* ==========================================
+      /**********************************************
        * TOKEN
-       * ========================================== */
+       **********************************************/
 
       case "createToken":
 
         return json(
           createToken(data)
+        );
+
+
+      case "getToken":
+
+        return json(
+          getToken()
         );
 
 
@@ -204,9 +220,23 @@ function doPost(e) {
         );
 
 
-      /* ==========================================
+      case "disableToken":
+
+        return json(
+          disableToken(data)
+        );
+
+
+      case "deleteToken":
+
+        return json(
+          deleteToken(data)
+        );
+
+
+      /**********************************************
        * SCORE / RESULT
-       * ========================================== */
+       **********************************************/
 
       case "saveScore":
 
@@ -229,9 +259,9 @@ function doPost(e) {
         );
 
 
-      /* ==========================================
+      /**********************************************
        * UNKNOWN ACTION
-       * ========================================== */
+       **********************************************/
 
       default:
 
@@ -253,9 +283,11 @@ function doPost(e) {
 
       success: false,
 
-      message: err.toString(),
+      message:
+        err.toString(),
 
-      stack: err.stack || ""
+      stack:
+        err.stack || ""
 
     });
 

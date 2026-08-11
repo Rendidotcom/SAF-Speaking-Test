@@ -167,7 +167,10 @@ function getToken() {
      * EMPTY DATA
      **************************************************/
 
-    if (rows.length <= 1) {
+    if (
+      !rows ||
+      rows.length <= 1
+    ) {
 
       return success({
 
@@ -228,7 +231,8 @@ function getToken() {
 
     return success({
 
-      data: data
+      data:
+        data
 
     });
 
@@ -298,7 +302,8 @@ function validateToken(data) {
 
         return success({
 
-          valid: true,
+          valid:
+            true,
 
           token:
             rows[i][0],
@@ -322,9 +327,11 @@ function validateToken(data) {
 
     return {
 
-      success: false,
+      success:
+        false,
 
-      valid: false,
+      valid:
+        false,
 
       message:
         "Token tidak valid."
@@ -351,6 +358,22 @@ function validateToken(data) {
 function disableToken(data) {
 
   try {
+
+    /**************************************************
+     * VALIDATE INPUT
+     **************************************************/
+
+    if (
+      !data ||
+      !data.token
+    ) {
+
+      return failed(
+        "Token tidak ditemukan."
+      );
+
+    }
+
 
     /**************************************************
      * GET TOKEN SHEET
@@ -455,6 +478,22 @@ function disableToken(data) {
 function deleteToken(data) {
 
   try {
+
+    /**************************************************
+     * VALIDATE INPUT
+     **************************************************/
+
+    if (
+      !data ||
+      !data.token
+    ) {
+
+      return failed(
+        "Token tidak ditemukan."
+      );
+
+    }
+
 
     /**************************************************
      * GET TOKEN SHEET
