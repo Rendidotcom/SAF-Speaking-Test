@@ -1,279 +1,310 @@
 /**
  * ==========================================
  * SAF SPEAKING ONLINE TEST
- * SPEAKING MODULE
- * File: js/speaking.js
- * ==========================================
+ * Student Speaking Module
+ *
+ * File:
+ * js/speaking.js
  *
  * ROLE:
- * - Load student session
- * - Display student information
- * - Validate exam token
- * - Load speaking question
+ * - Student session
+ * - Token validation
+ * - Load question from Teacher
  * - Speech Recognition
- * - Display transcript
+ * - Transcript
  * - Submit answer
- * - Save answer through /api
  *
- * STABLE FRONTEND FOUNDATION
+ * ARCHITECTURE LOCKED
+ *
+ * speaking.html
+ *      ↓
+ * speaking.js
+ *      ↓
+ * /api
+ *      ↓
+ * Vercel API Gateway
+ *      ↓
+ * GAS Main.gs
+ *      ↓
+ * Question.gs
+ *      ↓
+ * Questions Sheet
  * ==========================================
  */
 
+(function () {
 
-/* ==========================================
-   GLOBAL STATE
-========================================== */
-
-let recognition = null;
-
-let isRecording = false;
-
-let currentToken = "";
-
-let currentQuestion =
-    "Introduce yourself and tell us about your hobby.";
+    "use strict";
 
 
-/* ==========================================
-   STUDENT SESSION
-========================================== */
+    /* ==========================================
+       GLOBAL STATE
+    ========================================== */
 
-const user = JSON.parse(
-    sessionStorage.getItem(CONFIG.SESSION_KEY) || "{}"
-);
+    let student = null;
 
+    let currentToken = "";
 
-/* ==========================================
-   PAGE INITIALIZATION
-========================================== */
+    let currentQuestion = null;
 
-document.addEventListener("DOMContentLoaded", function () {
+    let recognition = null;
 
-    /* --------------------------------------
-       CHECK LOGIN
-    -------------------------------------- */
+    let finalTranscript = "";
 
-    if (!user || !user.nama) {
+    let interimTranscript = "";
 
-        location.href = "login.html?role=student";
+    let isRecording = false;
 
-        return;
-    }
+    let tokenVerified = false;
 
 
-    /* --------------------------------------
-       DISPLAY STUDENT
-    -------------------------------------- */
+    /* ==========================================
+       DOM HELPER
+    ========================================== */
 
-    const studentName =
-        document.getElementById("studentName");
+    function $(id) {
 
-    const studentClass =
-        document.getElementById("studentClass");
-
-
-    if (studentName) {
-
-        studentName.textContent =
-            user.nama || "-";
+        return document.getElementById(id);
 
     }
 
 
-    if (studentClass) {
+    /* ==========================================
+       SAFE TEXT
+    ========================================== */
 
-        studentClass.textContent =
-            user.kelas || "-";
+    function setText(id, value) {
 
-    }
+        const element = $(id);
 
-
-    /* --------------------------------------
-       INITIAL STATUS
-    -------------------------------------- */
-
-    setExamStatus("Waiting Token");
-
-    setRecordStatus("Ready");
-
-
-    /* --------------------------------------
-       INITIAL QUESTION
-    -------------------------------------- */
-
-    const question =
-        document.getElementById("question");
-
-    if (question) {
-
-        question.textContent =
-            currentQuestion;
-
-    }
-
-});
-
-
-/* ==========================================
-   EXAM STATUS
-========================================== */
-
-function setExamStatus(status) {
-
-    const element =
-        document.getElementById("examStatus");
-
-    if (element) {
-
-        element.textContent = status;
-
-    }
-
-}
-
-
-/* ==========================================
-   RECORD STATUS
-========================================== */
-
-function setRecordStatus(status) {
-
-    const element =
-        document.getElementById("recordStatus");
-
-    if (element) {
-
-        element.textContent = status;
-
-    }
-
-}
-
-
-/* ==========================================
-   TRANSCRIPT
-========================================== */
-
-function setTranscript(text) {
-
-    const element =
-        document.getElementById("transcript");
-
-    if (element) {
+        if (!element) {
+            return;
+        }
 
         element.textContent =
-            text || "";
-
-    }
-
-}
-
-
-/* ==========================================
-   GET TRANSCRIPT
-========================================== */
-
-function getTranscript() {
-
-    const element =
-        document.getElementById("transcript");
-
-    if (!element) {
-
-        return "";
-
-    }
-
-    return element.textContent.trim();
-
-}
-
-
-/* ==========================================
-   VALIDATE TOKEN
-========================================== */
-
-async function validateToken() {
-
-    const input =
-        document.getElementById("token");
-
-
-    if (!input) {
-
-        return;
+            value === undefined ||
+            value === null ||
+            value === ""
+                ? "-"
+                : value;
 
     }
 
 
-    const token =
-        input.value.trim();
+    /* ==========================================
+       SHOW / HIDE
+    ========================================== */
 
+    function showExamArea() {
 
-    if (!token) {
+        const area = $("examArea");
 
-        alert("Token required");
+        if (area) {
 
-        return;
+            area.classList.remove("hidden");
+
+        }
 
     }
 
 
-    try {
+    function hideExamArea() {
 
-        setExamStatus("Validating Token...");
+        const area = $("examArea");
 
+        if (area) {
 
-        const response =
-            await fetch("/api", {
+            area.classList.add("hidden");
 
-                method: "POST",
+        }
 
-                headers: {
-
-                    "Content-Type":
-                        "application/json"
-
-                },
-
-                body: JSON.stringify({
-
-                    action: "validateToken",
-
-                    data: {
-
-                        token: token
-
-                    }
-
-                })
-
-            });
+    }
 
 
-        const result =
-            await response.json();
+    /* ==========================================
+       STATUS
+    ========================================== */
+
+    function setStatus(message) {
+
+        setText("examStatus", message);
+
+    }
 
 
-        console.log(
-            "VALIDATE TOKEN RESPONSE:",
-            result
-        );
+    function setRecordStatus(message) {
+
+        setText("recordStatus", message);
+
+    }
 
 
-        if (
-            !result ||
-            result.success !== true ||
-            result.valid !== true
-        ) {
+    /* ==========================================
+       API REQUEST
+       Directly through Vercel /api
+       ========================================== */
 
-            setExamStatus("Invalid Token");
+    async function apiRequest(action, data) {
+
+        const response = await fetch("/api", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
+            },
+
+            body: JSON.stringify({
+
+                action: action,
+
+                data: data || {}
+
+            })
+
+        });
+
+
+        const text =
+            await response.text();
+
+
+        let result;
+
+
+        try {
+
+            result =
+                JSON.parse(text);
+
+        }
+
+        catch (error) {
+
+            throw new Error(
+                "API returned invalid JSON."
+            );
+
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.message ||
+                "API request failed."
+            );
+
+        }
+
+
+        return result;
+
+    }
+
+
+    /* ==========================================
+       LOAD STUDENT SESSION
+    ========================================== */
+
+    function loadStudentSession() {
+
+        try {
+
+            const raw =
+                sessionStorage.getItem(
+                    CONFIG.SESSION_KEY
+                );
+
+
+            if (!raw) {
+
+                window.location.href =
+                    "login.html?role=student";
+
+                return false;
+
+            }
+
+
+            student =
+                JSON.parse(raw);
+
+
+            if (!student) {
+
+                window.location.href =
+                    "login.html?role=student";
+
+                return false;
+
+            }
+
+
+            setText(
+                "studentName",
+                student.nama
+            );
+
+
+            setText(
+                "studentClass",
+                student.kelas
+            );
+
+
+            return true;
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "STUDENT SESSION ERROR:",
+                error
+            );
+
+
+            window.location.href =
+                "login.html?role=student";
+
+
+            return false;
+
+        }
+
+    }
+
+
+    /* ==========================================
+       VALIDATE TOKEN
+    ========================================== */
+
+    async function validateToken() {
+
+        const input =
+            $("token");
+
+
+        if (!input) {
+
+            return;
+
+        }
+
+
+        const token =
+            input.value
+                .trim()
+                .toUpperCase();
+
+
+        if (!token) {
 
             alert(
-                result &&
-                result.message
-                    ? result.message
-                    : "Token tidak valid."
+                "Please enter an exam token."
             );
 
             return;
@@ -281,275 +312,480 @@ async function validateToken() {
         }
 
 
-        /* ----------------------------------
-           TOKEN VERIFIED
-        ---------------------------------- */
-
-        currentToken = token;
-
-
-        setExamStatus("Token Verified");
-
-
-        /* ----------------------------------
-           QUESTION
-        ---------------------------------- */
-
-        if (result.question) {
-
-            currentQuestion =
-                result.question;
-
-        }
-
-
-        const question =
-            document.getElementById("question");
-
-
-        if (question) {
-
-            question.textContent =
-                currentQuestion;
-
-        }
-
-
-        /* ----------------------------------
-           SHOW EXAM AREA
-        ---------------------------------- */
-
-        const examArea =
-            document.getElementById("examArea");
-
-
-        if (examArea) {
-
-            examArea.classList.remove("hidden");
-
-        }
-
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "VALIDATE TOKEN ERROR:",
-            error
+        setStatus(
+            "Checking Token..."
         );
 
-
-        setExamStatus(
-            "Connection Error"
-        );
-
-
-        alert(
-            "Gagal menghubungi server."
-        );
-
-    }
-
-}
-
-
-/* ==========================================
-   START RECORDING
-========================================== */
-
-function startRecording() {
-
-    if (
-        !("webkitSpeechRecognition" in window)
-    ) {
-
-        alert(
-            "Speech Recognition not supported"
-        );
-
-        return;
-
-    }
-
-
-    /* --------------------------------------
-       STOP EXISTING RECOGNITION
-    -------------------------------------- */
-
-    if (recognition) {
 
         try {
 
-            recognition.stop();
+            const result =
+                await apiRequest(
+                    "validateToken",
+                    {
+                        token: token
+                    }
+                );
 
-        }
 
-        catch (error) {
-
-            console.warn(
-                "Recognition stop warning:",
-                error
+            console.log(
+                "VALIDATE TOKEN RESPONSE:",
+                result
             );
 
-        }
 
-    }
-
-
-    /* --------------------------------------
-       CREATE RECOGNITION
-    -------------------------------------- */
-
-    recognition =
-        new webkitSpeechRecognition();
-
-
-    recognition.lang =
-        "en-US";
-
-
-    recognition.continuous =
-        true;
-
-
-    recognition.interimResults =
-        true;
-
-
-    /* --------------------------------------
-       RESULT
-    -------------------------------------- */
-
-    recognition.onresult =
-        function (event) {
-
-            let text = "";
-
-
-            for (
-                let i = 0;
-                i < event.results.length;
-                i++
+            if (
+                !result ||
+                !result.success ||
+                !result.valid
             ) {
 
-                text +=
-                    event.results[i][0]
-                        .transcript + " ";
+                tokenVerified = false;
+
+                setStatus(
+                    result.message ||
+                    "Token is not valid."
+                );
+
+                hideExamArea();
+
+                return;
 
             }
 
 
-            setTranscript(
-                text.trim()
-            );
-
-        };
+            currentToken =
+                token;
 
 
-    /* --------------------------------------
-       START
-    -------------------------------------- */
-
-    recognition.onstart =
-        function () {
-
-            isRecording = true;
-
-            setRecordStatus(
-                "Recording..."
-            );
-
-        };
+            tokenVerified = true;
 
 
-    /* --------------------------------------
-       END
-    -------------------------------------- */
-
-    recognition.onend =
-        function () {
-
-            isRecording = false;
-
-            /*
-             * Do not automatically restart.
-             * This preserves the current
-             * Start / Stop behavior.
-             */
-
-            setRecordStatus(
-                "Finished"
-            );
-
-        };
-
-
-    /* --------------------------------------
-       ERROR
-    -------------------------------------- */
-
-    recognition.onerror =
-        function (event) {
-
-            console.error(
-                "Speech Recognition Error:",
-                event
+            sessionStorage.setItem(
+                CONFIG.TOKEN_KEY,
+                token
             );
 
 
-            isRecording = false;
-
-
-            setRecordStatus(
-                "Recording Error"
+            setStatus(
+                "Token Verified"
             );
 
-        };
 
-
-    try {
-
-        recognition.start();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "START RECORDING ERROR:",
-            error
-        );
-
-
-        setRecordStatus(
-            "Unable to Start"
-        );
-
-    }
-
-}
-
-
-/* ==========================================
-   STOP RECORDING
-========================================== */
-
-function stopRecording() {
-
-    if (recognition) {
-
-        try {
-
-            recognition.stop();
+            await loadQuestion();
 
         }
 
         catch (error) {
 
-            console.warn(
-                "STOP RECORDING WARNING:",
+            console.error(
+                "TOKEN VALIDATION ERROR:",
                 error
+            );
+
+
+            tokenVerified = false;
+
+
+            setStatus(
+                error.message ||
+                "Unable to validate token."
+            );
+
+
+            hideExamArea();
+
+        }
+
+    }
+
+
+    /* ==========================================
+       LOAD QUESTION
+       FROM TEACHER / QUESTIONS SHEET
+    ========================================== */
+
+    async function loadQuestion() {
+
+        setText(
+            "question",
+            "Loading question..."
+        );
+
+
+        try {
+
+            const result =
+                await apiRequest(
+                    "getQuestion",
+                    {}
+                );
+
+
+            console.log(
+                "GET QUESTION RESPONSE:",
+                result
+            );
+
+
+            if (
+                !result ||
+                !result.success
+            ) {
+
+                throw new Error(
+                    result.message ||
+                    "Failed to load question."
+                );
+
+            }
+
+
+            const questions =
+                Array.isArray(result.data)
+                    ? result.data
+                    : [];
+
+
+            /*
+             * Only ACTIVE questions
+             */
+
+            const activeQuestions =
+                questions.filter(
+                    function (question) {
+
+                        return String(
+                            question.status || ""
+                        ).toUpperCase()
+                        === "ACTIVE";
+
+                    }
+                );
+
+
+            if (
+                activeQuestions.length === 0
+            ) {
+
+                throw new Error(
+                    "No active speaking question is available."
+                );
+
+            }
+
+
+            /*
+             * Current foundation:
+             * use the first ACTIVE question.
+             *
+             * We do NOT invent a new question
+             * selection system.
+             */
+
+            currentQuestion =
+                activeQuestions[0];
+
+
+            /*
+             * Store only necessary
+             * question information.
+             */
+
+            setText(
+                "question",
+                currentQuestion.title
+            );
+
+
+            if ($("questionDifficulty")) {
+
+                setText(
+                    "questionDifficulty",
+                    currentQuestion.difficulty
+                );
+
+            }
+
+
+            if ($("questionDuration")) {
+
+                setText(
+                    "questionDuration",
+                    currentQuestion.duration
+                );
+
+            }
+
+
+            showExamArea();
+
+
+            setRecordStatus(
+                "Ready"
+            );
+
+
+            console.log(
+                "CURRENT QUESTION:",
+                currentQuestion
+            );
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "LOAD QUESTION ERROR:",
+                error
+            );
+
+
+            setText(
+                "question",
+                error.message ||
+                "Question could not be loaded."
+            );
+
+
+            hideExamArea();
+
+        }
+
+    }
+
+
+    /* ==========================================
+       START RECORDING
+    ========================================== */
+
+    function startRecording() {
+
+        if (!tokenVerified) {
+
+            alert(
+                "Please validate the exam token first."
+            );
+
+            return;
+
+        }
+
+
+        if (!currentQuestion) {
+
+            alert(
+                "Question is not available."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            !(
+                "webkitSpeechRecognition"
+                in window
+            ) &&
+            !(
+                "SpeechRecognition"
+                in window
+            )
+        ) {
+
+            alert(
+                "Speech Recognition is not supported in this browser."
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Prevent duplicate recognition
+         */
+
+        if (isRecording) {
+
+            return;
+
+        }
+
+
+        const SpeechRecognition =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+
+
+        recognition =
+            new SpeechRecognition();
+
+
+        recognition.lang =
+            "en-US";
+
+
+        recognition.continuous =
+            true;
+
+
+        recognition.interimResults =
+            true;
+
+
+        finalTranscript = "";
+
+        interimTranscript = "";
+
+
+        recognition.onstart =
+            function () {
+
+                isRecording = true;
+
+                setRecordStatus(
+                    "Recording..."
+                );
+
+            };
+
+
+        recognition.onresult =
+            function (event) {
+
+                let finalText = "";
+
+                let interimText = "";
+
+
+                for (
+                    let i = event.resultIndex;
+                    i < event.results.length;
+                    i++
+                ) {
+
+                    const transcript =
+                        event.results[i][0]
+                            .transcript;
+
+
+                    if (
+                        event.results[i].isFinal
+                    ) {
+
+                        finalText +=
+                            transcript + " ";
+
+                    }
+
+                    else {
+
+                        interimText +=
+                            transcript + " ";
+
+                    }
+
+                }
+
+
+                finalTranscript +=
+                    finalText;
+
+
+                interimTranscript =
+                    interimText;
+
+
+                const displayText =
+                    (
+                        finalTranscript +
+                        interimTranscript
+                    ).trim();
+
+
+                setText(
+                    "transcript",
+                    displayText ||
+                    "Listening..."
+                );
+
+            };
+
+
+        recognition.onerror =
+            function (event) {
+
+                console.error(
+                    "SPEECH RECOGNITION ERROR:",
+                    event
+                );
+
+
+                if (
+                    event.error ===
+                    "not-allowed"
+                ) {
+
+                    setRecordStatus(
+                        "Microphone permission denied."
+                    );
+
+                    return;
+
+                }
+
+
+                setRecordStatus(
+                    "Recording error: " +
+                    event.error
+                );
+
+            };
+
+
+        recognition.onend =
+            function () {
+
+                isRecording = false;
+
+
+                /*
+                 * Do not automatically restart.
+                 * Student controls Start / Stop.
+                 */
+
+                if (
+                    finalTranscript.trim()
+                ) {
+
+                    setRecordStatus(
+                        "Finished"
+                    );
+
+                }
+
+            };
+
+
+        try {
+
+            recognition.start();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "START RECORDING ERROR:",
+                error
+            );
+
+            isRecording = false;
+
+            setRecordStatus(
+                "Unable to start recording."
             );
 
         }
@@ -557,221 +793,235 @@ function stopRecording() {
     }
 
 
-    isRecording = false;
-
-
-    setRecordStatus(
-        "Finished"
-    );
-
-}
-
-
-/* ==========================================
-   BUILD SAVE DATA
-========================================== */
-
-function buildAnswerData() {
-
-    return {
-
-        /* Student */
-
-        nis:
-            user.nis || "",
-
-        nama:
-            user.nama || "",
-
-        kelas:
-            user.kelas || "",
-
-
-        /* Exam */
-
-        token:
-            currentToken ||
-            (
-                document.getElementById("token")
-                    ? document
-                        .getElementById("token")
-                        .value
-                        .trim()
-                    : ""
-            ),
-
-
-        /* Question */
-
-        question:
-            currentQuestion || "",
-
-
-        /* Answer */
-
-        transcript:
-            getTranscript(),
-
-
-        /* Time */
-
-        submittedAt:
-            new Date().toISOString()
-
-    };
-
-}
-
-
-/* ==========================================
-   SUBMIT ANSWER
-========================================== */
-
-async function submitAnswer() {
-
-    const transcript =
-        getTranscript();
-
-
-    /* --------------------------------------
-       VALIDATE TOKEN
-    -------------------------------------- */
-
-    if (!currentToken) {
-
-        const tokenInput =
-            document.getElementById("token");
-
-
-        currentToken =
-            tokenInput
-                ? tokenInput.value.trim()
-                : "";
-
-    }
-
-
-    if (!currentToken) {
-
-        alert(
-            "Please validate the exam token first."
-        );
-
-        return;
-
-    }
-
-
-    /* --------------------------------------
-       VALIDATE TRANSCRIPT
-    -------------------------------------- */
-
-    if (
-        !transcript ||
-        transcript ===
-            "Your transcript will appear here..."
-    ) {
-
-        alert(
-            "Please record your answer first."
-        );
-
-        return;
-
-    }
-
-
-    /* --------------------------------------
+    /* ==========================================
        STOP RECORDING
-    -------------------------------------- */
+    ========================================== */
 
-    if (isRecording) {
-
-        stopRecording();
-
-    }
-
-
-    /* --------------------------------------
-       STATUS
-    -------------------------------------- */
-
-    setRecordStatus(
-        "Submitting..."
-    );
-
-
-    const data =
-        buildAnswerData();
-
-
-    console.log(
-        "SAVE SCORE REQUEST:",
-        data
-    );
-
-
-    try {
-
-        /* ----------------------------------
-           API REQUEST
-        ---------------------------------- */
-
-        const response =
-            await fetch("/api", {
-
-                method: "POST",
-
-                headers: {
-
-                    "Content-Type":
-                        "application/json"
-
-                },
-
-                body: JSON.stringify({
-
-                    action: "saveScore",
-
-                    data: data
-
-                })
-
-            });
-
-
-        console.log(
-            "SAVE SCORE STATUS:",
-            response.status
-        );
-
-
-        const result =
-            await response.json();
-
-
-        console.log(
-            "SAVE SCORE RESPONSE:",
-            result
-        );
-
-
-        /* ----------------------------------
-           SUCCESS
-        ---------------------------------- */
+    function stopRecording() {
 
         if (
-            result &&
-            result.success === true
+            recognition &&
+            isRecording
         ) {
 
-            setRecordStatus(
-                "Submitted"
+            try {
+
+                recognition.stop();
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "STOP RECORDING ERROR:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        isRecording = false;
+
+
+        setRecordStatus(
+            "Finished"
+        );
+
+    }
+
+
+    /* ==========================================
+       GET TRANSCRIPT
+    ========================================== */
+
+    function getTranscript() {
+
+        const element =
+            $("transcript");
+
+
+        if (
+            element &&
+            element.textContent &&
+            element.textContent !==
+                "Your transcript will appear here..."
+        ) {
+
+            return element
+                .textContent
+                .trim();
+
+        }
+
+
+        return (
+            finalTranscript || ""
+        ).trim();
+
+    }
+
+
+    /* ==========================================
+       SUBMIT ANSWER
+    ========================================== */
+
+    async function submitAnswer() {
+
+        if (!tokenVerified) {
+
+            alert(
+                "Please validate the exam token first."
+            );
+
+            return;
+
+        }
+
+
+        if (!currentQuestion) {
+
+            alert(
+                "Question is not available."
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Stop recording before submit.
+         */
+
+        if (isRecording) {
+
+            stopRecording();
+
+        }
+
+
+        const transcript =
+            getTranscript();
+
+
+        if (!transcript) {
+
+            alert(
+                "Please record your answer first."
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT call:
+         *
+         * saveScore(...)
+         *
+         * directly.
+         *
+         * saveScore is a GAS backend function.
+         *
+         * Browser → /api → Main.gs.
+         */
+
+        const payload = {
+
+            /*
+             * Student information
+             */
+
+            nis:
+                student.nis || "",
+
+            nama:
+                student.nama || "",
+
+            kelas:
+                student.kelas || "",
+
+
+            /*
+             * Exam token
+             */
+
+            token:
+                currentToken,
+
+
+            /*
+             * Question information
+             */
+
+            questionId:
+                currentQuestion.id || "",
+
+            question:
+                currentQuestion.title || "",
+
+
+            /*
+             * Student answer
+             */
+
+            transcript:
+                transcript,
+
+
+            /*
+             * Additional information
+             */
+
+            submittedAt:
+                new Date().toISOString()
+
+        };
+
+
+        console.log(
+            "SAVE SCORE REQUEST:",
+            payload
+        );
+
+
+        try {
+
+            const result =
+                await apiRequest(
+                    "saveScore",
+                    payload
+                );
+
+
+            console.log(
+                "SAVE SCORE RESPONSE:",
+                result
             );
 
 
-            setExamStatus(
-                "Answer Saved"
+            if (!result || !result.success) {
+
+                throw new Error(
+                    result.message ||
+                    "Answer could not be saved."
+                );
+
+            }
+
+
+            setRecordStatus(
+                "Answer submitted successfully."
+            );
+
+
+            setStatus(
+                "Answer Submitted"
             );
 
 
@@ -781,62 +1031,165 @@ async function submitAnswer() {
             );
 
 
+            /*
+             * If backend provides a result
+             * page, use it.
+             *
+             * Otherwise stay on this page.
+             */
+
+            if (
+                result.resultId &&
+                window.location
+            ) {
+
+                sessionStorage.setItem(
+                    "SAF_LAST_RESULT",
+                    JSON.stringify(result)
+                );
+
+            }
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "SUBMIT ANSWER ERROR:",
+                error
+            );
+
+
+            alert(
+                error.message ||
+                "Failed to submit answer."
+            );
+
+        }
+
+    }
+
+
+    /* ==========================================
+       INITIALIZE
+    ========================================== */
+
+    function init() {
+
+        /*
+         * CONFIG must already be loaded
+         * before this file.
+         */
+
+        if (
+            typeof CONFIG ===
+            "undefined"
+        ) {
+
+            console.error(
+                "CONFIG is not defined."
+            );
+
             return;
 
         }
 
 
-        /* ----------------------------------
-           BACKEND ERROR
-        ---------------------------------- */
+        hideExamArea();
 
-        setRecordStatus(
-            "Submit Failed"
+
+        if (
+            !loadStudentSession()
+        ) {
+
+            return;
+
+        }
+
+
+        /*
+         * Restore token if available.
+         */
+
+        const savedToken =
+            sessionStorage.getItem(
+                CONFIG.TOKEN_KEY
+            );
+
+
+        if (savedToken) {
+
+            const input =
+                $("token");
+
+
+            if (input) {
+
+                input.value =
+                    savedToken;
+
+            }
+
+        }
+
+
+        setStatus(
+            "Waiting Token"
         );
 
 
-        alert(
-            result &&
-            result.message
-                ? result.message
-                : "Failed to save answer."
+        setRecordStatus(
+            "Ready"
         );
 
     }
 
-    catch (error) {
 
-        console.error(
-            "SUBMIT ANSWER ERROR:",
-            error
-        );
+    /* ==========================================
+       GLOBAL FUNCTIONS
+       ========================================== */
+
+    /*
+     * speaking.html uses onclick=""
+     */
+
+    window.validateToken =
+        validateToken;
 
 
-        setRecordStatus(
-            "Connection Error"
-        );
+    window.startRecording =
+        startRecording;
 
 
-        alert(
-            "Failed to connect to the server."
+    window.stopRecording =
+        stopRecording;
+
+
+    window.submitAnswer =
+        submitAnswer;
+
+
+    /* ==========================================
+       DOM READY
+    ========================================== */
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            init
         );
 
     }
 
-}
+    else {
+
+        init();
+
+    }
 
 
-/* ==========================================
-   EXPORT / GLOBAL FUNCTIONS
-   ==========================================
- *
- * Functions intentionally remain global
- * because speaking.html uses:
- *
- * onclick="validateToken()"
- * onclick="startRecording()"
- * onclick="stopRecording()"
- * onclick="submitAnswer()"
- *
- * ==========================================
- */
+})();
