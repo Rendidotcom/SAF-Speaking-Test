@@ -3,360 +3,445 @@
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<title>Speaking Test | SAF</title>
+    <title>Speaking Test | SAF</title>
 
-<link rel="icon"
-      href="images/logo.png">
+    <link
+        rel="icon"
+        href="images/logo.png"
+    >
 
-<link rel="stylesheet"
-      href="css/style.css">
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
 
+    <style>
 
-<style>
+        /* ==========================================
+           RESET
+        ========================================== */
 
-/* ==========================================
-   RESET
-========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
 
+        /* ==========================================
+           BODY
+        ========================================== */
 
-/* ==========================================
-   BODY
-========================================== */
+        body {
 
-body{
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
 
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
+            background: #eef3f8;
 
-    background:#eef3f8;
+            color: #333;
 
-    color:#333;
+        }
 
-}
 
+        /* ==========================================
+           CONTAINER
+        ========================================== */
 
-/* ==========================================
-   CONTAINER
-========================================== */
+        .container {
 
-.container{
+            max-width: 1100px;
 
-    max-width:1100px;
+            margin: auto;
 
-    margin:auto;
+            padding: 40px;
 
-    padding:40px;
+        }
 
-}
 
+        /* ==========================================
+           CARD
+        ========================================== */
 
-/* ==========================================
-   CARD
-========================================== */
+        .card {
 
-.card{
+            background: #fff;
 
-    background:#fff;
+            padding: 35px;
 
-    padding:35px;
+            border-radius: 18px;
 
-    border-radius:18px;
+            box-shadow:
+                0 8px 25px rgba(0, 0, 0, .08);
 
-    box-shadow:
-        0 8px 25px rgba(0,0,0,.08);
+            margin-bottom: 25px;
 
-    margin-bottom:25px;
+        }
 
-}
 
+        /* ==========================================
+           HEADER
+        ========================================== */
 
-/* ==========================================
-   HEADER
-========================================== */
+        .header {
 
-.header{
+            display: flex;
 
-    display:flex;
+            justify-content: space-between;
 
-    justify-content:space-between;
+            align-items: center;
 
-    align-items:center;
+            margin-bottom: 30px;
 
-    margin-bottom:30px;
+        }
 
-}
 
+        .header h1 {
 
-.header h1{
+            color: #0B72B9;
 
-    color:#0B72B9;
+            margin-bottom: 8px;
 
-}
+        }
 
 
-/* ==========================================
-   INFO
-========================================== */
+        .header p {
 
-.info{
+            color: #555;
 
-    display:grid;
+            line-height: 1.5;
 
-    grid-template-columns:
-        repeat(
-            auto-fit,
-            minmax(250px,1fr)
-        );
+        }
 
-    gap:20px;
 
-}
+        /* ==========================================
+           INFO
+        ========================================== */
 
+        .info {
 
-/* ==========================================
-   INFO BOX
-========================================== */
+            display: grid;
 
-.box{
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(250px, 1fr)
+                );
 
-    background:#f7f9fc;
+            gap: 20px;
 
-    padding:20px;
+        }
 
-    border-radius:12px;
 
-}
+        /* ==========================================
+           INFO BOX
+        ========================================== */
 
+        .box {
 
-.box h3{
+            background: #f7f9fc;
 
-    margin-bottom:8px;
+            padding: 20px;
 
-    color:#0B72B9;
+            border-radius: 12px;
 
-}
+        }
 
 
-/* ==========================================
-   INPUT
-========================================== */
+        .box h3 {
 
-input{
+            margin-bottom: 8px;
 
-    width:100%;
+            color: #0B72B9;
 
-    padding:14px;
+        }
 
-    font-size:16px;
 
-    border:
-        1px solid #ddd;
+        .box p {
 
-    border-radius:10px;
+            line-height: 1.6;
 
-}
+        }
 
 
-/* ==========================================
-   BUTTON
-========================================== */
+        /* ==========================================
+           INPUT
+        ========================================== */
 
-button{
+        input {
 
-    padding:14px 22px;
+            width: 100%;
 
-    border:none;
+            padding: 14px;
 
-    border-radius:10px;
+            font-size: 16px;
 
-    cursor:pointer;
+            border:
+                1px solid #ddd;
 
-    font-size:15px;
+            border-radius: 10px;
 
-    font-weight:bold;
+            outline: none;
 
-    margin-top:15px;
+        }
 
-}
 
+        input:focus {
 
-/* ==========================================
-   PRIMARY
-========================================== */
+            border-color: #0B72B9;
 
-.primary{
+        }
 
-    background:#0B72B9;
 
-    color:white;
+        /* ==========================================
+           BUTTON
+        ========================================== */
 
-}
+        button {
 
+            padding: 14px 22px;
 
-.primary:hover{
+            border: none;
 
-    background:#095c95;
+            border-radius: 10px;
 
-}
+            cursor: pointer;
 
+            font-size: 15px;
 
-/* ==========================================
-   SUCCESS
-========================================== */
+            font-weight: bold;
 
-.success{
+            margin-top: 15px;
 
-    background:#28a745;
+        }
 
-    color:white;
 
-}
+        button:disabled {
 
+            opacity: .6;
 
-.success:hover{
+            cursor: not-allowed;
 
-    background:#218838;
+        }
 
-}
 
+        /* ==========================================
+           PRIMARY
+        ========================================== */
 
-/* ==========================================
-   DANGER
-========================================== */
+        .primary {
 
-.danger{
+            background: #0B72B9;
 
-    background:#dc3545;
+            color: white;
 
-    color:white;
+        }
 
-}
 
+        .primary:hover {
 
-.danger:hover{
+            background: #095c95;
 
-    background:#c82333;
+        }
 
-}
 
+        /* ==========================================
+           SUCCESS
+        ========================================== */
 
-/* ==========================================
-   QUESTION
-========================================== */
+        .success {
 
-.question{
+            background: #28a745;
 
-    font-size:24px;
+            color: white;
 
-    line-height:1.6;
+        }
 
-    margin-top:20px;
 
-}
+        .success:hover {
 
+            background: #218838;
 
-/* ==========================================
-   TRANSCRIPT
-========================================== */
+        }
 
-.transcript{
 
-    margin-top:20px;
+        /* ==========================================
+           DANGER
+        ========================================== */
 
-    padding:20px;
+        .danger {
 
-    background:#fafafa;
+            background: #dc3545;
 
-    border-radius:12px;
+            color: white;
 
-    min-height:180px;
+        }
 
-    border:
-        2px dashed #ccc;
 
-    white-space:pre-wrap;
+        .danger:hover {
 
-}
+            background: #c82333;
 
+        }
 
-/* ==========================================
-   STATUS
-========================================== */
 
-.status{
+        /* ==========================================
+           QUESTION
+        ========================================== */
 
-    margin-top:15px;
+        .question {
 
-    font-weight:bold;
+            font-size: 24px;
 
-    color:#0B72B9;
+            line-height: 1.6;
 
-}
+            margin-top: 20px;
 
+            padding: 20px;
 
-/* ==========================================
-   HIDDEN
-========================================== */
+            background: #f7f9fc;
 
-.hidden{
+            border-radius: 12px;
 
-    display:none;
+        }
 
-}
 
+        /* ==========================================
+           QUESTION META
+        ========================================== */
 
-/* ==========================================
-   RESPONSIVE
-========================================== */
+        .question-meta {
 
-@media(max-width:700px){
+            display: flex;
 
-    .container{
+            flex-wrap: wrap;
 
-        padding:20px;
+            gap: 15px;
 
-    }
+            margin-top: 15px;
 
-    .card{
+        }
 
-        padding:25px;
 
-    }
+        .question-meta span {
 
-    .header{
+            background: #eef3f8;
 
-        gap:20px;
+            padding: 8px 14px;
 
-    }
+            border-radius: 8px;
 
-    .header img{
+            font-size: 14px;
 
-        width:70px;
+        }
 
-    }
 
-    .question{
+        /* ==========================================
+           TRANSCRIPT
+        ========================================== */
 
-        font-size:20px;
+        .transcript {
 
-    }
+            margin-top: 20px;
 
-}
+            padding: 20px;
 
-</style>
+            background: #fafafa;
+
+            border-radius: 12px;
+
+            min-height: 180px;
+
+            border:
+                2px dashed #ccc;
+
+            white-space: pre-wrap;
+
+            line-height: 1.7;
+
+        }
+
+
+        /* ==========================================
+           STATUS
+        ========================================== */
+
+        .status {
+
+            margin-top: 15px;
+
+            font-weight: bold;
+
+            color: #0B72B9;
+
+            line-height: 1.5;
+
+        }
+
+
+        /* ==========================================
+           HIDDEN
+        ========================================== */
+
+        .hidden {
+
+            display: none;
+
+        }
+
+
+        /* ==========================================
+           RESPONSIVE
+        ========================================== */
+
+        @media (max-width: 700px) {
+
+            .container {
+
+                padding: 20px;
+
+            }
+
+
+            .card {
+
+                padding: 25px;
+
+            }
+
+
+            .header {
+
+                gap: 20px;
+
+            }
+
+
+            .header img {
+
+                width: 70px;
+
+            }
+
+
+            .question {
+
+                font-size: 20px;
+
+            }
+
+        }
+
+    </style>
 
 </head>
 
@@ -367,222 +452,287 @@ button{
 <div class="container">
 
 
-<!-- =====================================
-     HEADER
-===================================== -->
+    <!-- ==========================================
+         HEADER
+    ========================================== -->
 
-<div class="header">
+    <div class="header">
 
-    <div>
+        <div>
 
-        <h1>
-            🎤 Speaking Test
-        </h1>
+            <h1>
+                🎤 Speaking Test
+            </h1>
 
-        <p>
-            SAF Speaking Online Test
-        </p>
+            <p>
+                SAF Speaking Online Test
+            </p>
+
+        </div>
+
+
+        <img
+            src="images/logo.png"
+            width="90"
+            alt="SAF Logo"
+        >
 
     </div>
 
 
-    <img
-        src="images/logo.png"
-        width="90"
-        alt="SAF Logo">
+    <!-- ==========================================
+         STUDENT INFORMATION
+    ========================================== -->
 
-</div>
+    <div class="card">
 
-
-<!-- =====================================
-     STUDENT INFORMATION
-===================================== -->
-
-<div class="card">
-
-    <div class="info">
+        <div class="info">
 
 
-        <!-- STUDENT -->
+            <!-- STUDENT -->
 
-        <div class="box">
+            <div class="box">
 
-            <h3>
-                Student
-            </h3>
+                <h3>
+                    Student
+                </h3>
 
-            <p id="studentName">
-                -
-            </p>
+                <p id="studentName">
+                    -
+                </p>
 
-        </div>
-
-
-        <!-- CLASS -->
-
-        <div class="box">
-
-            <h3>
-                Class
-            </h3>
-
-            <p id="studentClass">
-                -
-            </p>
-
-        </div>
+            </div>
 
 
-        <!-- STATUS -->
+            <!-- CLASS -->
 
-        <div class="box">
+            <div class="box">
 
-            <h3>
-                Status
-            </h3>
+                <h3>
+                    Class
+                </h3>
 
-            <p id="examStatus">
-                Waiting Token
-            </p>
+                <p id="studentClass">
+                    -
+                </p>
+
+            </div>
+
+
+            <!-- STATUS -->
+
+            <div class="box">
+
+                <h3>
+                    Status
+                </h3>
+
+                <p id="examStatus">
+                    Waiting Token
+                </p>
+
+            </div>
+
 
         </div>
-
 
     </div>
 
-</div>
 
-
-<!-- =====================================
-     EXAM TOKEN
-===================================== -->
-
-<div class="card">
-
-    <h2>
-        Exam Token
-    </h2>
-
-    <br>
-
-
-    <input
-        id="token"
-        type="text"
-        placeholder="Enter Exam Token"
-        autocomplete="off">
-
-
-    <button
-        type="button"
-        class="primary"
-        onclick="validateToken()">
-
-        Validate Token
-
-    </button>
-
-</div>
-
-
-<!-- =====================================
-     EXAM AREA
-===================================== -->
-
-<div
-    id="examArea"
-    class="hidden">
-
-
-    <!-- =================================
-         QUESTION
-    ================================== -->
+    <!-- ==========================================
+         EXAM TOKEN
+    ========================================== -->
 
     <div class="card">
 
         <h2>
-            Speaking Question
+            Exam Token
         </h2>
 
-
-        <div
-            class="question"
-            id="question">
-
-            Loading...
-
-        </div>
-
-    </div>
+        <br>
 
 
-    <!-- =================================
-         RECORDING
-    ================================== -->
+        <input
+            id="token"
+            type="text"
+            placeholder="Enter Exam Token"
+            autocomplete="off"
+            spellcheck="false"
+        >
 
-    <div class="card">
-
-        <h2>
-            Voice Recording
-        </h2>
-
-
-        <!-- START -->
 
         <button
-            type="button"
-            class="success"
-            onclick="startRecording()">
-
-            🎙 Start Recording
-
-        </button>
-
-
-        <!-- STOP -->
-
-        <button
-            type="button"
-            class="danger"
-            onclick="stopRecording()">
-
-            ⏹ Stop
-
-        </button>
-
-
-        <!-- STATUS -->
-
-        <div
-            class="status"
-            id="recordStatus">
-
-            Ready
-
-        </div>
-
-
-        <!-- TRANSCRIPT -->
-
-        <div
-            class="transcript"
-            id="transcript">
-
-            Your transcript will appear here...
-
-        </div>
-
-
-        <!-- SUBMIT -->
-
-        <button
+            id="validateTokenButton"
             type="button"
             class="primary"
-            onclick="submitAnswer()">
+            onclick="validateToken()"
+        >
 
-            Submit Answer
+            Validate Token
 
         </button>
+
+    </div>
+
+
+    <!-- ==========================================
+         EXAM AREA
+         
+         Hidden until token is successfully
+         validated by speaking.js
+    ========================================== -->
+
+    <div
+        id="examArea"
+        class="hidden"
+    >
+
+
+        <!-- ======================================
+             SPEAKING QUESTION
+        ======================================= -->
+
+        <div class="card">
+
+            <h2>
+                Speaking Question
+            </h2>
+
+
+            <div
+                class="question"
+                id="question"
+            >
+
+                Loading question...
+
+            </div>
+
+
+            <!-- ==================================
+                 QUESTION INFORMATION
+            =================================== -->
+
+            <div class="question-meta">
+
+
+                <span>
+
+                    Difficulty:
+
+                    <strong id="questionDifficulty">
+                        -
+                    </strong>
+
+                </span>
+
+
+                <span>
+
+                    Duration:
+
+                    <strong id="questionDuration">
+                        -
+                    </strong>
+
+                    seconds
+
+                </span>
+
+
+            </div>
+
+        </div>
+
+
+        <!-- ======================================
+             VOICE RECORDING
+        ======================================= -->
+
+        <div class="card">
+
+            <h2>
+                Voice Recording
+            </h2>
+
+
+            <!-- ==================================
+                 START RECORDING
+            =================================== -->
+
+            <button
+                id="startRecordingButton"
+                type="button"
+                class="success"
+                onclick="startRecording()"
+            >
+
+                🎙 Start Recording
+
+            </button>
+
+
+            <!-- ==================================
+                 STOP RECORDING
+            =================================== -->
+
+            <button
+                id="stopRecordingButton"
+                type="button"
+                class="danger"
+                onclick="stopRecording()"
+            >
+
+                ⏹ Stop
+
+            </button>
+
+
+            <!-- ==================================
+                 RECORD STATUS
+            =================================== -->
+
+            <div
+                class="status"
+                id="recordStatus"
+            >
+
+                Ready
+
+            </div>
+
+
+            <!-- ==================================
+                 TRANSCRIPT
+            =================================== -->
+
+            <div
+                class="transcript"
+                id="transcript"
+            >
+
+                Your transcript will appear here...
+
+            </div>
+
+
+            <!-- ==================================
+                 SUBMIT ANSWER
+            =================================== -->
+
+            <button
+                id="submitAnswerButton"
+                type="button"
+                class="primary"
+                onclick="submitAnswer()"
+            >
+
+                Submit Answer
+
+            </button>
+
+
+        </div>
 
 
     </div>
@@ -591,246 +741,29 @@ button{
 </div>
 
 
-</div>
-
-
-<!-- =====================================
+<!-- ==========================================
      CORE CONFIG
-===================================== -->
+     
+     MUST LOAD FIRST
+========================================== -->
 
 <script src="js/config.js"></script>
 
 
-<!-- =====================================
+<!-- ==========================================
      API MODULE
-===================================== -->
+========================================== -->
 
 <script src="js/api.js"></script>
 
 
-<!-- =====================================
+<!-- ==========================================
      SPEAKING MODULE
-===================================== -->
+     
+     ALL SPEAKING LOGIC IS HERE
+========================================== -->
 
 <script src="js/speaking.js"></script>
-
-
-<!-- =====================================
-     TOKEN + PAGE INITIALIZATION
-     
-     Token verification intentionally
-     remains compatible with the currently
-     working Stable Foundation.
-===================================== -->
-
-<script>
-
-/* ==========================================
-   STUDENT SESSION
-========================================== */
-
-const speakingUser = JSON.parse(
-    sessionStorage.getItem(
-        CONFIG.SESSION_KEY
-    ) || "{}"
-);
-
-
-/* ==========================================
-   LOGIN CHECK
-========================================== */
-
-if (
-    !speakingUser ||
-    !speakingUser.nama
-) {
-
-    location.href =
-        "login.html?role=student";
-
-}
-
-
-/* ==========================================
-   DISPLAY STUDENT
-========================================== */
-
-const speakingStudentName =
-    document.getElementById(
-        "studentName"
-    );
-
-
-const speakingStudentClass =
-    document.getElementById(
-        "studentClass"
-    );
-
-
-if (speakingStudentName) {
-
-    speakingStudentName.textContent =
-        speakingUser.nama || "-";
-
-}
-
-
-if (speakingStudentClass) {
-
-    speakingStudentClass.textContent =
-        speakingUser.kelas || "-";
-
-}
-
-
-/* ==========================================
-   CURRENT TOKEN
-========================================== */
-
-let speakingToken = "";
-
-
-/* ==========================================
-   CURRENT QUESTION
-========================================== */
-
-let speakingQuestion =
-    "Introduce yourself and tell us about your hobby.";
-
-
-/* ==========================================
-   TOKEN VALIDATION
-========================================== */
-
-function validateToken() {
-
-
-    const tokenInput =
-        document.getElementById(
-            "token"
-        );
-
-
-    if (!tokenInput) {
-
-        return;
-
-    }
-
-
-    const token =
-        tokenInput.value.trim();
-
-
-    /* --------------------------------------
-       EMPTY TOKEN
-    -------------------------------------- */
-
-    if (!token) {
-
-        alert(
-            "Token required"
-        );
-
-        return;
-
-    }
-
-
-    /* --------------------------------------
-       STORE TOKEN
-    -------------------------------------- */
-
-    speakingToken =
-        token;
-
-
-    /* --------------------------------------
-       STATUS
-    -------------------------------------- */
-
-    const status =
-        document.getElementById(
-            "examStatus"
-        );
-
-
-    if (status) {
-
-        status.textContent =
-            "Token Verified";
-
-    }
-
-
-    /* --------------------------------------
-       QUESTION
-    -------------------------------------- */
-
-    const question =
-        document.getElementById(
-            "question"
-        );
-
-
-    if (question) {
-
-        question.textContent =
-            speakingQuestion;
-
-    }
-
-
-    /* --------------------------------------
-       SHOW EXAM
-    -------------------------------------- */
-
-    const examArea =
-        document.getElementById(
-            "examArea"
-        );
-
-
-    if (examArea) {
-
-        examArea.classList.remove(
-            "hidden"
-        );
-
-    }
-
-}
-
-
-/* ==========================================
-   EXPOSE SESSION DATA TO speaking.js
-========================================== */
-
-window.SAF_SPEAKING = {
-
-    getUser: function(){
-
-        return speakingUser;
-
-    },
-
-
-    getToken: function(){
-
-        return speakingToken;
-
-    },
-
-
-    getQuestion: function(){
-
-        return speakingQuestion;
-
-    }
-
-};
-
-</script>
 
 
 </body>
