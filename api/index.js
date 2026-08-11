@@ -5,23 +5,31 @@
  * api/index.js
  * Stable Foundation v5.0
  * ==========================================
+ *
  * Frontend
- *      │
- *      ▼
- *      /api
- *      │
- *      ▼
+ *    │
+ *    ▼
+ *   /api
+ *    │
+ *    ▼
  * Google Apps Script
- *      │
- *      ▼
+ *    │
+ *    ▼
  * Google Spreadsheet
  * ==========================================
  */
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbz8oMX2172-skeQ9Gv9Cn3bugI__qybA_Vgqf_DCUtDhu870CvDG8fGH7ORvsqg8niB/exec";
+"https://script.google.com/macros/s/AKfycbz9SwwEx1tTWFVwDZYZwRpTiRt97x20EnK5yO7WUl3XebrFoHPQKQzT7hQOM8bD03rq/exec";
+
 
 export default async function handler(req, res) {
+
+    /*
+     * ==========================================
+     * METHOD VALIDATION
+     * ==========================================
+     */
 
     if (req.method !== "POST") {
 
@@ -35,9 +43,23 @@ export default async function handler(req, res) {
 
     }
 
+
     try {
 
+        /*
+         * ==========================================
+         * REQUEST PAYLOAD
+         * ==========================================
+         */
+
         const payload = req.body || {};
+
+
+        /*
+         * ==========================================
+         * SEND REQUEST TO GOOGLE APPS SCRIPT
+         * ==========================================
+         */
 
         const response = await fetch(GAS_URL, {
 
@@ -53,7 +75,21 @@ export default async function handler(req, res) {
 
         });
 
+
+        /*
+         * ==========================================
+         * READ RESPONSE
+         * ==========================================
+         */
+
         const text = await response.text();
+
+
+        /*
+         * ==========================================
+         * PARSE JSON
+         * ==========================================
+         */
 
         let result;
 
@@ -69,7 +105,8 @@ export default async function handler(req, res) {
 
                 success: false,
 
-                message: "Google Apps Script returned invalid JSON.",
+                message:
+                    "Google Apps Script returned invalid JSON.",
 
                 raw: text
 
@@ -77,9 +114,17 @@ export default async function handler(req, res) {
 
         }
 
+
+        /*
+         * ==========================================
+         * RETURN GAS RESPONSE
+         * ==========================================
+         */
+
         return res.status(200).json(result);
 
     }
+
 
     catch (err) {
 
@@ -89,7 +134,9 @@ export default async function handler(req, res) {
 
             success: false,
 
-            message: err.message || "Internal Server Error"
+            message:
+                err.message ||
+                "Internal Server Error"
 
         });
 
