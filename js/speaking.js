@@ -26,9 +26,9 @@
  *      ↓
  * GAS Main.gs
  *      ↓
- * Question.gs
+ * Question.gs / Score.gs
  *      ↓
- * Questions Sheet
+ * Google Spreadsheet
  * ==========================================
  */
 
@@ -92,7 +92,7 @@
 
 
     /* ==========================================
-       SHOW / HIDE
+       SHOW / HIDE EXAM AREA
     ========================================== */
 
     function showExamArea() {
@@ -127,48 +127,69 @@
 
     function setStatus(message) {
 
-        setText("examStatus", message);
+        setText(
+            "examStatus",
+            message
+        );
 
     }
 
 
     function setRecordStatus(message) {
 
-        setText("recordStatus", message);
+        setText(
+            "recordStatus",
+            message
+        );
 
     }
 
 
     /* ==========================================
        API REQUEST
-       Directly through Vercel /api
+       Browser
+       ↓
+       Vercel /api
        ========================================== */
 
     async function apiRequest(action, data) {
 
-        const response = await fetch("/api", {
-
-            method: "POST",
-
-            headers: {
-
-                "Content-Type": "application/json"
-
-            },
-
-            body: JSON.stringify({
-
+        console.log(
+            "API REQUEST:",
+            {
                 action: action,
-
                 data: data || {}
+            }
+        );
 
-            })
 
-        });
+        const response =
+            await fetch(
+                "/api",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        action: action,
+                        data: data || {}
+                    })
+                }
+            );
 
 
         const text =
             await response.text();
+
+
+        console.log(
+            "API RAW RESPONSE:",
+            text
+        );
 
 
         let result;
@@ -182,6 +203,11 @@
         }
 
         catch (error) {
+
+            console.error(
+                "API JSON PARSE ERROR:",
+                error
+            );
 
             throw new Error(
                 "API returned invalid JSON."
@@ -255,6 +281,12 @@
             );
 
 
+            console.log(
+                "STUDENT SESSION:",
+                student
+            );
+
+
             return true;
 
         }
@@ -280,7 +312,8 @@
 
     /* ==========================================
        VALIDATE TOKEN
-    ========================================== */
+       Student enters token manually
+       ========================================== */
 
     async function validateToken() {
 
@@ -289,6 +322,10 @@
 
 
         if (!input) {
+
+            console.error(
+                "Token input not found."
+            );
 
             return;
 
@@ -340,26 +377,44 @@
                 !result.valid
             ) {
 
-                tokenVerified = false;
+                tokenVerified =
+                    false;
+
+                currentToken =
+                    "";
 
                 setStatus(
-                    result.message ||
-                    "Token is not valid."
+                    result &&
+                    result.message
+                        ? result.message
+                        : "Token is not valid."
                 );
 
+
                 hideExamArea();
+
 
                 return;
 
             }
 
 
+            /* ==================================
+               TOKEN VALID
+            ================================== */
+
             currentToken =
                 token;
 
 
-            tokenVerified = true;
+            tokenVerified =
+                true;
 
+
+            /*
+             * Save only AFTER
+             * successful validation.
+             */
 
             sessionStorage.setItem(
                 CONFIG.TOKEN_KEY,
@@ -371,6 +426,17 @@
                 "Token Verified"
             );
 
+
+            console.log(
+                "TOKEN VERIFIED:",
+                currentToken
+            );
+
+
+            /*
+             * Load question created
+             * from Teacher Dashboard.
+             */
 
             await loadQuestion();
 
@@ -384,7 +450,12 @@
             );
 
 
-            tokenVerified = false;
+            tokenVerified =
+                false;
+
+
+            currentToken =
+                "";
 
 
             setStatus(
@@ -402,8 +473,8 @@
 
     /* ==========================================
        LOAD QUESTION
-       FROM TEACHER / QUESTIONS SHEET
-    ========================================== */
+       FROM QUESTIONS SHEET
+       ========================================== */
 
     async function loadQuestion() {
 
@@ -434,8 +505,10 @@
             ) {
 
                 throw new Error(
-                    result.message ||
-                    "Failed to load question."
+                    result &&
+                    result.message
+                        ? result.message
+                        : "Failed to load question."
                 );
 
             }
@@ -447,9 +520,9 @@
                     : [];
 
 
-            /*
-             * Only ACTIVE questions
-             */
+            /* ==================================
+               ONLY ACTIVE QUESTIONS
+            ================================== */
 
             const activeQuestions =
                 questions.filter(
@@ -457,7 +530,8 @@
 
                         return String(
                             question.status || ""
-                        ).toUpperCase()
+                        )
+                        .toUpperCase()
                         === "ACTIVE";
 
                     }
@@ -476,21 +550,21 @@
 
 
             /*
-             * Current foundation:
-             * use the first ACTIVE question.
+             * Stable foundation:
              *
-             * We do NOT invent a new question
-             * selection system.
+             * Use the first ACTIVE question.
+             *
+             * Do not invent random
+             * question selection.
              */
 
             currentQuestion =
                 activeQuestions[0];
 
 
-            /*
-             * Store only necessary
-             * question information.
-             */
+            /* ==================================
+               DISPLAY QUESTION
+            ================================== */
 
             setText(
                 "question",
@@ -518,12 +592,27 @@
             }
 
 
-            showExamArea();
+            /* ==================================
+               RESET ANSWER STATE
+            ================================== */
+
+            finalTranscript = "";
+
+            interimTranscript = "";
+
+
+            setText(
+                "transcript",
+                "Your transcript will appear here..."
+            );
 
 
             setRecordStatus(
                 "Ready"
             );
+
+
+            showExamArea();
 
 
             console.log(
@@ -604,7 +693,7 @@
 
 
         /*
-         * Prevent duplicate recognition
+         * Prevent duplicate recognition.
          */
 
         if (isRecording) {
@@ -635,18 +724,33 @@
             true;
 
 
-        finalTranscript = "";
+        finalTranscript =
+            "";
 
-        interimTranscript = "";
+        interimTranscript =
+            "";
+
+
+        setText(
+            "transcript",
+            "Listening..."
+        );
 
 
         recognition.onstart =
             function () {
 
-                isRecording = true;
+                isRecording =
+                    true;
+
 
                 setRecordStatus(
                     "Recording..."
+                );
+
+
+                console.log(
+                    "SPEECH RECOGNITION STARTED"
                 );
 
             };
@@ -655,9 +759,11 @@
         recognition.onresult =
             function (event) {
 
-                let finalText = "";
+                let finalText =
+                    "";
 
-                let interimText = "";
+                let interimText =
+                    "";
 
 
                 for (
@@ -672,18 +778,21 @@
 
 
                     if (
-                        event.results[i].isFinal
+                        event.results[i]
+                            .isFinal
                     ) {
 
                         finalText +=
-                            transcript + " ";
+                            transcript +
+                            " ";
 
                     }
 
                     else {
 
                         interimText +=
-                            transcript + " ";
+                            transcript +
+                            " ";
 
                     }
 
@@ -702,13 +811,20 @@
                     (
                         finalTranscript +
                         interimTranscript
-                    ).trim();
+                    )
+                    .trim();
 
 
                 setText(
                     "transcript",
                     displayText ||
                     "Listening..."
+                );
+
+
+                console.log(
+                    "TRANSCRIPT:",
+                    displayText
                 );
 
             };
@@ -737,6 +853,20 @@
                 }
 
 
+                if (
+                    event.error ===
+                    "no-speech"
+                ) {
+
+                    setRecordStatus(
+                        "No speech detected."
+                    );
+
+                    return;
+
+                }
+
+
                 setRecordStatus(
                     "Recording error: " +
                     event.error
@@ -748,13 +878,9 @@
         recognition.onend =
             function () {
 
-                isRecording = false;
+                isRecording =
+                    false;
 
-
-                /*
-                 * Do not automatically restart.
-                 * Student controls Start / Stop.
-                 */
 
                 if (
                     finalTranscript.trim()
@@ -765,6 +891,18 @@
                     );
 
                 }
+                else {
+
+                    setRecordStatus(
+                        "Ready"
+                    );
+
+                }
+
+
+                console.log(
+                    "SPEECH RECOGNITION ENDED"
+                );
 
             };
 
@@ -782,7 +920,10 @@
                 error
             );
 
-            isRecording = false;
+
+            isRecording =
+                false;
+
 
             setRecordStatus(
                 "Unable to start recording."
@@ -822,12 +963,26 @@
         }
 
 
-        isRecording = false;
+        isRecording =
+            false;
 
 
-        setRecordStatus(
-            "Finished"
-        );
+        if (
+            finalTranscript.trim()
+        ) {
+
+            setRecordStatus(
+                "Finished"
+            );
+
+        }
+        else {
+
+            setRecordStatus(
+                "Ready"
+            );
+
+        }
 
     }
 
@@ -837,6 +992,30 @@
     ========================================== */
 
     function getTranscript() {
+
+        /*
+         * Use the actual accumulated
+         * final transcript first.
+         */
+
+        const transcript =
+            (
+                finalTranscript +
+                interimTranscript
+            )
+            .trim();
+
+
+        if (transcript) {
+
+            return transcript;
+
+        }
+
+
+        /*
+         * Fallback to DOM.
+         */
 
         const element =
             $("transcript");
@@ -856,16 +1035,21 @@
         }
 
 
-        return (
-            finalTranscript || ""
-        ).trim();
+        return "";
 
     }
 
 
     /* ==========================================
        SUBMIT ANSWER
-    ========================================== */
+       Browser
+       ↓
+       /api
+       ↓
+       Main.gs
+       ↓
+       saveScore()
+       ========================================== */
 
     async function submitAnswer() {
 
@@ -917,24 +1101,14 @@
         }
 
 
-        /*
-         * IMPORTANT:
-         *
-         * Do NOT call:
-         *
-         * saveScore(...)
-         *
-         * directly.
-         *
-         * saveScore is a GAS backend function.
-         *
-         * Browser → /api → Main.gs.
-         */
+        /* ==================================
+           BUILD SAVE SCORE PAYLOAD
+        ================================== */
 
         const payload = {
 
             /*
-             * Student information
+             * Student
              */
 
             nis:
@@ -956,7 +1130,7 @@
 
 
             /*
-             * Question information
+             * Question
              */
 
             questionId:
@@ -975,7 +1149,7 @@
 
 
             /*
-             * Additional information
+             * Timestamp
              */
 
             submittedAt:
@@ -1005,15 +1179,24 @@
             );
 
 
-            if (!result || !result.success) {
+            if (
+                !result ||
+                !result.success
+            ) {
 
                 throw new Error(
-                    result.message ||
-                    "Answer could not be saved."
+                    result &&
+                    result.message
+                        ? result.message
+                        : "Answer could not be saved."
                 );
 
             }
 
+
+            /* ==================================
+               SUCCESS
+            ================================== */
 
             setRecordStatus(
                 "Answer submitted successfully."
@@ -1032,15 +1215,12 @@
 
 
             /*
-             * If backend provides a result
-             * page, use it.
-             *
-             * Otherwise stay on this page.
+             * Store backend result
+             * if available.
              */
 
             if (
-                result.resultId &&
-                window.location
+                result.resultId
             ) {
 
                 sessionStorage.setItem(
@@ -1049,6 +1229,11 @@
                 );
 
             }
+
+
+            console.log(
+                "ANSWER SUBMITTED SUCCESSFULLY"
+            );
 
         }
 
@@ -1078,7 +1263,7 @@
 
         /*
          * CONFIG must already be loaded
-         * before this file.
+         * before speaking.js.
          */
 
         if (
@@ -1098,6 +1283,10 @@
         hideExamArea();
 
 
+        /* ==================================
+           LOAD STUDENT SESSION
+        ================================== */
+
         if (
             !loadStudentSession()
         ) {
@@ -1107,30 +1296,62 @@
         }
 
 
-        /*
-         * Restore token if available.
+        /* ==================================
+           IMPORTANT TOKEN BEHAVIOR
+        ==================================
+
+         * DO NOT restore an old token.
+         *
+         * Every new visit to speaking.html
+         * starts with an empty token field.
+         *
+         * Student must enter the token
+         * provided by Teacher Dashboard.
          */
 
-        const savedToken =
-            sessionStorage.getItem(
-                CONFIG.TOKEN_KEY
-            );
+        const input =
+            $("token");
 
 
-        if (savedToken) {
+        if (input) {
 
-            const input =
-                $("token");
-
-
-            if (input) {
-
-                input.value =
-                    savedToken;
-
-            }
+            input.value =
+                "";
 
         }
+
+
+        /*
+         * Remove stale token from
+         * previous exam session.
+         */
+
+        sessionStorage.removeItem(
+            CONFIG.TOKEN_KEY
+        );
+
+
+        /*
+         * Reset state.
+         */
+
+        currentToken =
+            "";
+
+        tokenVerified =
+            false;
+
+        currentQuestion =
+            null;
+
+        finalTranscript =
+            "";
+
+        interimTranscript =
+            "";
+
+        isRecording =
+            false;
 
 
         setStatus(
@@ -1142,16 +1363,30 @@
             "Ready"
         );
 
+
+        setText(
+            "question",
+            "Waiting for valid token..."
+        );
+
+
+        setText(
+            "transcript",
+            "Your transcript will appear here..."
+        );
+
+
+        console.log(
+            "SPEAKING MODULE INITIALIZED"
+        );
+
     }
 
 
     /* ==========================================
        GLOBAL FUNCTIONS
+       speaking.html uses onclick=""
        ========================================== */
-
-    /*
-     * speaking.html uses onclick=""
-     */
 
     window.validateToken =
         validateToken;
