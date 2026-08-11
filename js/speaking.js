@@ -1,4 +1,4 @@
-/**
+/************************************************************
  * =========================================================
  * SAF SPEAKING ONLINE TEST
  * Student Speaking Module
@@ -10,7 +10,7 @@
  * - Student session
  * - Exam token
  * - Token validation
- * - Load ACTIVE question from Questions Sheet
+ * - Load question assigned to token
  * - Speech Recognition
  * - Transcript
  * - Submit answer
@@ -18,24 +18,24 @@
  * LOCKED ARCHITECTURE
  *
  * speaking.html
- *      ↓
+ *       ↓
  * speaking.js
- *      ↓
+ *       ↓
  * /api
- *      ↓
+ *       ↓
  * Vercel API Gateway
- *      ↓
+ *       ↓
  * GAS Main.gs
- *      ↓
+ *       ↓
  * Question.gs / Token.gs / Score.gs
- *      ↓
+ *       ↓
  * Google Spreadsheet
  *
  * IMPORTANT:
  * Browser NEVER calls GAS functions directly.
  * Browser communicates only through /api.
  * =========================================================
- */
+ ************************************************************/
 
 (function () {
 
@@ -51,6 +51,8 @@
     let currentToken = "";
 
     let currentQuestion = null;
+
+    let currentQuestionId = "";
 
     let recognition = null;
 
@@ -218,25 +220,30 @@
 
     async function apiRequest(action, data) {
 
-        const response = await fetch(
-            "/api",
-            {
-                method: "POST",
+        const response =
+            await fetch(
+                "/api",
+                {
+                    method: "POST",
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                body: JSON.stringify({
+                    body:
+                        JSON.stringify({
 
-                    action: action,
+                            action:
+                                action,
 
-                    data: data || {}
+                            data:
+                                data || {}
 
-                })
+                        })
 
-            }
-        );
+                }
+            );
 
 
         const text =
@@ -468,6 +475,8 @@
 
         currentToken = "";
 
+        currentQuestionId = "";
+
         tokenVerified = false;
 
     }
@@ -534,6 +543,10 @@
 
             currentToken = "";
 
+            currentQuestionId = "";
+
+            currentQuestion = null;
+
             setExamStatus(
                 "Waiting Token"
             );
@@ -577,6 +590,10 @@
 
         currentToken = "";
 
+        currentQuestionId = "";
+
+        currentQuestion = null;
+
 
         setExamStatus(
             "Checking Token..."
@@ -600,7 +617,8 @@
                 await apiRequest(
                     "validateToken",
                     {
-                        token: token
+                        token:
+                            token
                     }
                 );
 
@@ -627,6 +645,10 @@
                 tokenVerified = false;
 
                 currentToken = "";
+
+                currentQuestionId = "";
+
+                currentQuestion = null;
 
 
                 /*
@@ -673,13 +695,67 @@
                 token;
 
 
+            /*
+             * QUESTION ID MUST COME
+             * FROM THE VALIDATED TOKEN.
+             */
+
+            currentQuestionId =
+                String(
+                    result.questionId ||
+                    ""
+                )
+                    .trim();
+
+
+            /*
+             * A token without question mapping
+             * must not silently fall back to
+             * the first question.
+             */
+
+            if (!currentQuestionId) {
+
+                tokenVerified = false;
+
+                currentToken = "";
+
+                currentQuestion = null;
+
+
+                clearToken();
+
+
+                setExamStatus(
+                    "Token does not have an assigned question."
+                );
+
+
+                hideExamArea();
+
+
+                if (!tokenFromRestore) {
+
+                    alert(
+                        "This exam token has no assigned question."
+                    );
+
+                }
+
+
+                return false;
+
+            }
+
+
             tokenVerified =
                 true;
 
 
             /*
              * Save only after backend
-             * confirms token validity.
+             * confirms token validity
+             * AND question mapping exists.
              */
 
             saveToken(
@@ -706,17 +782,25 @@
 
             console.log(
                 "TOKEN VERIFIED:",
-                currentToken
+                {
+                    token:
+                        currentToken,
+
+                    questionId:
+                        currentQuestionId
+                }
             );
 
 
             /*
-             * Load question only AFTER
-             * token is successfully verified.
+             * Load ONLY the question assigned
+             * to this token.
              */
 
             const questionLoaded =
-                await loadQuestion();
+                await loadQuestion(
+                    currentQuestionId
+                );
 
 
             if (!questionLoaded) {
@@ -769,6 +853,10 @@
 
             currentToken = "";
 
+            currentQuestionId = "";
+
+            currentQuestion = null;
+
 
             setExamStatus(
                 error.message ||
@@ -808,9 +896,34 @@
        Main.gs → Question.gs → Questions Sheet
     ===================================================== */
 
-    async function loadQuestion() {
+    async function loadQuestion(questionId) {
 
         currentQuestion = null;
+
+
+        /*
+         * Question ID is mandatory.
+         *
+         * This prevents accidental fallback
+         * to the first ACTIVE question.
+         */
+
+        if (!questionId) {
+
+            setText(
+                "question",
+                "Question unavailable."
+            );
+
+
+            console.error(
+                "LOAD QUESTION: questionId is missing."
+            );
+
+
+            return false;
+
+        }
 
 
         setText(
@@ -822,14 +935,29 @@
         try {
 
             console.log(
-                "GET QUESTION REQUEST"
+                "GET QUESTION REQUEST:",
+                {
+                    questionId:
+                        questionId
+                }
             );
 
+
+            /*
+             * Existing API action is preserved:
+             *
+             * getQuestion
+             *
+             * Only the payload is extended.
+             */
 
             const result =
                 await apiRequest(
                     "getQuestion",
-                    {}
+                    {
+                        questionId:
+                            questionId
+                    }
                 );
 
 
@@ -855,12 +983,10 @@
 
 
             /*
-             * Backend response:
+             * Backend response may return
+             * an array of questions.
              *
-             * {
-             *   success: true,
-             *   data: [...]
-             * }
+             * We locate the exact question ID.
              */
 
             const questions =
@@ -869,50 +995,79 @@
                     : [];
 
 
-            /*
-             * Only ACTIVE questions.
-             */
-
-            const activeQuestions =
-                questions.filter(
+            const matchedQuestion =
+                questions.find(
                     function (question) {
 
                         return (
                             question &&
                             String(
-                                question.status || ""
+                                question.id || ""
                             )
                                 .trim()
-                                .toUpperCase()
-                            === "ACTIVE"
+                            ===
+                            String(
+                                questionId
+                            )
+                                .trim()
                         );
 
                     }
                 );
 
 
-            if (
-                activeQuestions.length === 0
-            ) {
+            if (!matchedQuestion) {
 
                 throw new Error(
-                    "No active speaking question is available."
+                    "Assigned question was not found."
                 );
 
             }
 
 
             /*
-             * Stable foundation:
-             * use the first ACTIVE question.
+             * The assigned question must be ACTIVE.
+             */
+
+            const status =
+                String(
+                    matchedQuestion.status || ""
+                )
+                    .trim()
+                    .toUpperCase();
+
+
+            if (
+                status !== "ACTIVE"
+            ) {
+
+                throw new Error(
+                    "Assigned question is not active."
+                );
+
+            }
+
+
+            /*
+             * IMPORTANT:
              *
-             * No randomization.
-             * No invented question.
-             * No hardcoded question.
+             * No longer:
+             *
+             * activeQuestions[0]
+             *
+             * The question is now explicitly
+             * selected by questionId.
              */
 
             currentQuestion =
-                activeQuestions[0];
+                matchedQuestion;
+
+
+            currentQuestionId =
+                String(
+                    matchedQuestion.id
+                )
+                    .trim();
 
 
             /*
@@ -957,7 +1112,7 @@
 
 
             console.log(
-                "CURRENT ACTIVE QUESTION:",
+                "CURRENT ASSIGNED QUESTION:",
                 currentQuestion
             );
 
@@ -1152,8 +1307,10 @@
 
 
                 for (
-                    let i = event.resultIndex;
-                    i < event.results.length;
+                    let i =
+                        event.resultIndex;
+                    i <
+                        event.results.length;
                     i++
                 ) {
 
@@ -1163,7 +1320,8 @@
 
 
                     if (
-                        event.results[i].isFinal
+                        event.results[i]
+                            .isFinal
                     ) {
 
                         newFinalText +=
@@ -1669,7 +1827,9 @@
             /* Question */
 
             questionId:
-                currentQuestion.id || "",
+                currentQuestionId ||
+                currentQuestion.id ||
+                "",
 
             question:
                 currentQuestion.title || "",
@@ -1882,6 +2042,8 @@
 
         currentQuestion = null;
 
+        currentQuestionId = "";
+
         recognition = null;
 
         finalTranscript = "";
@@ -1971,7 +2133,7 @@
 
     /* =====================================================
        GLOBAL FUNCTIONS
-       ===================================================== */
+    ===================================================== */
 
     /*
      * speaking.html uses:
@@ -2023,6 +2185,5 @@
         init();
 
     }
-
 
 })();
