@@ -25,6 +25,7 @@
  * - Tidak mengubah teacher.js
  * - Tidak menggunakan exam.js
  * - Tidak mengubah architecture
+ * - Student hanya membaca result miliknya
  * ==========================================
  */
 
@@ -40,13 +41,36 @@ document.addEventListener(
 
 
 /* =====================================================
+GLOBAL STUDENT STATE
+===================================================== */
+
+const STUDENT_APP = {
+
+    session: null,
+
+    results: [],
+
+    initialized: false
+
+};
+
+
+/* =====================================================
 INITIALIZE STUDENT
 ===================================================== */
 
 async function initStudent() {
 
     console.log(
+        "================================="
+    );
+
+    console.log(
         "SAF Student Dashboard initializing..."
+    );
+
+    console.log(
+        "================================="
     );
 
 
@@ -61,6 +85,14 @@ async function initStudent() {
     }
 
 
+    STUDENT_APP.session =
+        session;
+
+
+    STUDENT_APP.initialized =
+        true;
+
+
     setStudentIdentity(
         session
     );
@@ -72,8 +104,26 @@ async function initStudent() {
     bindStudentMenu();
 
 
+    /*
+     * Load current token
+     * if available in session.
+     */
+
+    setCurrentToken(
+        session
+    );
+
+
+    /*
+     * Load result student.
+     */
+
     await loadStudentResults();
 
+
+    /*
+     * Final dashboard update.
+     */
 
     updateDashboardFromResults();
 
@@ -133,8 +183,19 @@ function getStudentSession() {
 
 
         console.log(
-            "STUDENT SESSION:",
+            "================================="
+        );
+
+        console.log(
+            "STUDENT SESSION:"
+        );
+
+        console.log(
             session
+        );
+
+        console.log(
+            "================================="
         );
 
 
@@ -223,6 +284,120 @@ function setTodayDate() {
 
 
 /* =====================================================
+CURRENT TOKEN
+===================================================== */
+
+function setCurrentToken(session) {
+
+    const tokenElement =
+        document.getElementById(
+            "examToken"
+        );
+
+
+    if (!tokenElement) {
+
+        return;
+
+    }
+
+
+    let token = "";
+
+
+    /*
+     * Try session token fields.
+     */
+
+    if (session.token) {
+
+        token =
+            session.token;
+
+    }
+
+
+    /*
+     * Try sessionStorage token.
+     */
+
+    if (!token) {
+
+        try {
+
+            const rawToken =
+                sessionStorage.getItem(
+                    CONFIG.TOKEN_KEY
+                );
+
+
+            if (rawToken) {
+
+                try {
+
+                    const parsedToken =
+                        JSON.parse(
+                            rawToken
+                        );
+
+
+                    if (
+                        typeof parsedToken ===
+                        "string"
+                    ) {
+
+                        token =
+                            parsedToken;
+
+                    }
+
+                    else if (
+                        parsedToken &&
+                        parsedToken.token
+                    ) {
+
+                        token =
+                            parsedToken.token;
+
+                    }
+
+                }
+
+                catch (err) {
+
+                    /*
+                     * TOKEN_KEY may contain
+                     * plain string.
+                     */
+
+                    token =
+                        rawToken;
+
+                }
+
+            }
+
+        }
+
+        catch (err) {
+
+            console.warn(
+                "TOKEN READ ERROR:",
+                err
+            );
+
+        }
+
+    }
+
+
+    tokenElement.textContent =
+        token || "-";
+
+}
+
+
+/* =====================================================
 MENU
 ===================================================== */
 
@@ -243,6 +418,26 @@ function bindStudentMenu() {
             if (
                 text.includes("logout")
             ) {
+
+                /*
+                 * Avoid duplicate listener.
+                 */
+
+                if (
+                    link.dataset
+                        .studentLogoutBound ===
+                    "true"
+                ) {
+
+                    return;
+
+                }
+
+
+                link.dataset
+                    .studentLogoutBound =
+                    "true";
+
 
                 link.addEventListener(
                     "click",
@@ -290,7 +485,40 @@ LOAD STUDENT RESULTS
 
 async function loadStudentResults() {
 
+    const resultContainer =
+        document.getElementById(
+            "studentResults"
+        );
+
+
+    if (!resultContainer) {
+
+        console.error(
+            "Student dashboard error: " +
+            "#studentResults not found."
+        );
+
+        return;
+
+    }
+
+
+    resultContainer.innerHTML = `
+
+        <p>
+            Loading your speaking results...
+        </p>
+
+    `;
+
+
+    /*
+     * Use the session already loaded
+     * during initialization.
+     */
+
     const session =
+        STUDENT_APP.session ||
         getStudentSession();
 
 
@@ -301,97 +529,188 @@ async function loadStudentResults() {
     }
 
 
-    const resultContainer =
-        document.getElementById(
-            "studentResults"
-        );
-
-
-    if (!resultContainer) {
-
-        console.warn(
-            "#studentResults not found."
-        );
-
-        return;
-
-    }
-
-
-    resultContainer.innerHTML =
-        "<p>Loading your speaking results...</p>";
-
+    /*
+     * NIS is the primary student identifier.
+     */
 
     const nis =
-        session.nis;
+        session.nis !== undefined &&
+        session.nis !== null
+            ? String(session.nis).trim()
+            : "";
 
 
     if (!nis) {
 
-        resultContainer.innerHTML =
-            "<p style='color:red'>" +
-            "Student NIS tidak ditemukan pada session." +
-            "</p>";
+        console.error(
+            "Student NIS is missing from session:",
+            session
+        );
+
+
+        resultContainer.innerHTML = `
+
+            <p style="color:red;">
+                Student NIS tidak ditemukan
+                pada session.
+            </p>
+
+        `;
 
         return;
 
     }
 
 
+    /*
+     * Store session again.
+     */
+
+    STUDENT_APP.session =
+        session;
+
+
+    const requestData = {
+
+        nis: nis
+
+    };
+
+
     console.log(
-        "GET STUDENT RESULT REQUEST:",
-        {
-            nis: nis
-        }
+        "================================="
+    );
+
+    console.log(
+        "GET STUDENT RESULT REQUEST"
+    );
+
+    console.log(
+        requestData
+    );
+
+    console.log(
+        "================================="
     );
 
 
     try {
 
+        /*
+         * IMPORTANT:
+         * Student uses getStudentResult,
+         * NOT getResult.
+         */
+
         const res =
-            await apiGetStudentResult({
-
-                nis: nis
-
-            });
+            await apiGetStudentResult(
+                requestData
+            );
 
 
         console.log(
-            "GET STUDENT RESULT RESPONSE:",
+            "================================="
+        );
+
+        console.log(
+            "GET STUDENT RESULT RESPONSE"
+        );
+
+        console.log(
             res
         );
 
+        console.log(
+            "================================="
+        );
 
-        if (
-            !res ||
-            res.success !== true
-        ) {
 
-            resultContainer.innerHTML =
-                "<p>" +
-                escapeStudentHTML(
-                    res &&
-                    res.message
-                        ? res.message
-                        : "Unable to load speaking results."
-                ) +
-                "</p>";
+        if (!res) {
+
+            resultContainer.innerHTML = `
+
+                <p style="color:red;">
+                    No response from server.
+                </p>
+
+            `;
 
             return;
 
         }
 
 
-        const results =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+        if (
+            res.success !== true
+        ) {
 
+            console.error(
+                "GET STUDENT RESULT FAILED:",
+                res
+            );
+
+
+            resultContainer.innerHTML = `
+
+                <p style="color:red;">
+
+                    ${escapeStudentHTML(
+                        res.message ||
+                        "Unable to load speaking results."
+                    )}
+
+                </p>
+
+            `;
+
+            return;
+
+        }
+
+
+        /*
+         * Normalize API response.
+         *
+         * Primary:
+         * res.data = [...]
+         *
+         * Also supports:
+         * res.data.results
+         * res.results
+         * res.items
+         */
+
+        const results =
+            normalizeStudentResults(
+                res
+            );
+
+
+        console.log(
+            "NORMALIZED STUDENT RESULTS:"
+        );
+
+        console.log(
+            results
+        );
+
+
+        STUDENT_APP.results =
+            results;
+
+
+        /*
+         * Render result table.
+         */
 
         renderStudentResults(
             results
         );
 
+
+        /*
+         * Update dashboard cards.
+         */
 
         updateStudentStatistics(
             results
@@ -402,20 +721,139 @@ async function loadStudentResults() {
     catch (err) {
 
         console.error(
-            "LOAD STUDENT RESULTS ERROR:",
+            "================================="
+        );
+
+        console.error(
+            "LOAD STUDENT RESULTS ERROR"
+        );
+
+        console.error(
             err
         );
 
+        console.error(
+            "================================="
+        );
 
-        resultContainer.innerHTML =
-            "<p style='color:red'>" +
-            escapeStudentHTML(
-                err.message ||
-                "Unable to load speaking results."
-            ) +
-            "</p>";
+
+        resultContainer.innerHTML = `
+
+            <p style="color:red;">
+
+                ${escapeStudentHTML(
+                    err &&
+                    err.message
+                        ? err.message
+                        : "Unable to load speaking results."
+                )}
+
+            </p>
+
+        `;
 
     }
+
+}
+
+
+/* =====================================================
+NORMALIZE STUDENT RESULTS
+===================================================== */
+
+function normalizeStudentResults(res) {
+
+    if (!res) {
+
+        return [];
+
+    }
+
+
+    /*
+     * Standard response:
+     *
+     * {
+     *   success: true,
+     *   data: [...]
+     * }
+     */
+
+    if (
+        Array.isArray(
+            res.data
+        )
+    ) {
+
+        return res.data;
+
+    }
+
+
+    /*
+     * Alternative:
+     *
+     * {
+     *   success: true,
+     *   data: {
+     *      results: [...]
+     *   }
+     * }
+     */
+
+    if (
+        res.data &&
+        Array.isArray(
+            res.data.results
+        )
+    ) {
+
+        return res.data.results;
+
+    }
+
+
+    /*
+     * Alternative:
+     *
+     * {
+     *   success: true,
+     *   results: [...]
+     * }
+     */
+
+    if (
+        Array.isArray(
+            res.results
+        )
+    ) {
+
+        return res.results;
+
+    }
+
+
+    /*
+     * Alternative:
+     *
+     * {
+     *   success: true,
+     *   items: [...]
+     * }
+     */
+
+    if (
+        Array.isArray(
+            res.items
+        )
+    ) {
+
+        return res.items;
+
+    }
+
+
+    return [];
 
 }
 
@@ -457,6 +895,75 @@ function renderStudentResults(results) {
     }
 
 
+    /*
+     * Copy array so original API data
+     * is not modified.
+     */
+
+    const sortedResults =
+        [...results];
+
+
+    /*
+     * Latest result first when
+     * createdAt exists.
+     */
+
+    sortedResults.sort(
+        function(a, b) {
+
+            const dateA =
+                getStudentDateValue(
+                    a.createdAt ||
+                    a.updatedAt
+                );
+
+
+            const dateB =
+                getStudentDateValue(
+                    b.createdAt ||
+                    b.updatedAt
+                );
+
+
+            if (
+                dateA === 0 &&
+                dateB === 0
+            ) {
+
+                return 0;
+
+            }
+
+
+            if (dateA === 0) {
+
+                return 1;
+
+            }
+
+
+            if (dateB === 0) {
+
+                return -1;
+
+            }
+
+
+            return dateB - dateA;
+
+        }
+    );
+
+
+    /*
+     * Save sorted version.
+     */
+
+    STUDENT_APP.results =
+        sortedResults;
+
+
     let html = `
 
         <div
@@ -474,6 +981,7 @@ function renderStudentResults(results) {
                 style="
                     border-collapse:collapse;
                     background:white;
+                    width:100%;
                 "
             >
 
@@ -504,15 +1012,32 @@ function renderStudentResults(results) {
     `;
 
 
-    results.forEach(
-        (result, index) => {
+    sortedResults.forEach(
+        function(result, index) {
 
             const score =
+                result &&
                 result.score !== undefined &&
                 result.score !== null &&
                 result.score !== ""
                     ? result.score
                     : "-";
+
+
+            const scoreNumber =
+                Number(score);
+
+
+            const scoreDisplay =
+                Number.isNaN(
+                    scoreNumber
+                )
+                    ? escapeStudentHTML(
+                        score
+                    )
+                    : escapeStudentHTML(
+                        scoreNumber
+                    );
 
 
             html += `
@@ -525,41 +1050,46 @@ function renderStudentResults(results) {
 
                     <td>
                         ${escapeStudentHTML(
-                            result.question
+                            result.question ||
+                            "-"
                         )}
                     </td>
 
                     <td>
                         ${escapeStudentHTML(
-                            result.transcript
+                            result.transcript ||
+                            "-"
                         )}
                     </td>
 
                     <td>
 
                         <strong>
-                            ${escapeStudentHTML(
-                                score
-                            )}
+
+                            ${scoreDisplay}
+
                         </strong>
 
                     </td>
 
                     <td>
                         ${escapeStudentHTML(
-                            result.feedback || "-"
+                            result.feedback ||
+                            "-"
                         )}
                     </td>
 
                     <td>
                         ${escapeStudentHTML(
-                            result.token || "-"
+                            result.token ||
+                            "-"
                         )}
                     </td>
 
                     <td>
                         ${formatStudentDate(
-                            result.createdAt
+                            result.createdAt ||
+                            result.updatedAt
                         )}
                     </td>
 
@@ -589,7 +1119,7 @@ function renderStudentResults(results) {
 
 
 /* =====================================================
-UPDATE STATISTICS
+UPDATE STUDENT STATISTICS
 ===================================================== */
 
 function updateStudentStatistics(results) {
@@ -604,12 +1134,17 @@ function updateStudentStatistics(results) {
         0;
 
 
-    if (total > 0) {
+    /*
+     * Results are already sorted
+     * latest first.
+     */
+
+    if (
+        total > 0
+    ) {
 
         const latest =
-            results[
-                results.length - 1
-            ];
+            results[0];
 
 
         if (
@@ -619,19 +1154,27 @@ function updateStudentStatistics(results) {
             latest.score !== ""
         ) {
 
-            latestScore =
+            const numericScore =
                 Number(
                     latest.score
                 );
 
 
             if (
-                Number.isNaN(
-                    latestScore
+                !Number.isNaN(
+                    numericScore
                 )
             ) {
 
-                latestScore = 0;
+                latestScore =
+                    numericScore;
+
+            }
+
+            else {
+
+                latestScore =
+                    latest.score;
 
             }
 
@@ -639,6 +1182,10 @@ function updateStudentStatistics(results) {
 
     }
 
+
+    /*
+     * Latest Score
+     */
 
     const scoreElement =
         document.getElementById(
@@ -654,6 +1201,10 @@ function updateStudentStatistics(results) {
     }
 
 
+    /*
+     * Attempts
+     */
+
     const attemptElement =
         document.getElementById(
             "attemptCount"
@@ -667,6 +1218,10 @@ function updateStudentStatistics(results) {
 
     }
 
+
+    /*
+     * Exam Status
+     */
 
     const statusElement =
         document.getElementById(
@@ -693,12 +1248,51 @@ DASHBOARD STATISTICS
 function updateDashboardFromResults() {
 
     /*
-     * Statistik sudah diperbarui
-     * oleh updateStudentStatistics()
+     * Statistics are already updated
+     * by updateStudentStatistics().
      *
-     * Fungsi ini disediakan sebagai
-     * entry point dashboard.
+     * This function remains as the
+     * dashboard entry point.
      */
+
+    updateStudentStatistics(
+        STUDENT_APP.results
+    );
+
+}
+
+
+/* =====================================================
+GET DATE VALUE
+===================================================== */
+
+function getStudentDateValue(value) {
+
+    if (!value) {
+
+        return 0;
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    const time =
+        date.getTime();
+
+
+    if (
+        Number.isNaN(time)
+    ) {
+
+        return 0;
+
+    }
+
+
+    return time;
 
 }
 
@@ -782,7 +1376,14 @@ function formatStudentDate(value) {
     return escapeStudentHTML(
 
         date.toLocaleString(
-            "en-US"
+            "en-US",
+            {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            }
         )
 
     );
