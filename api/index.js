@@ -1,46 +1,31 @@
 /**
  * ==========================================
- * SAF Speaking Online Test
+ * SAF SPEAKING ONLINE TEST
  * Vercel API Gateway
  * api/index.js
  *
- * STABLE FOUNDATION v5.1
- * ==========================================
+ * FINAL STABLE FOUNDATION
  *
  * Frontend
  *    ↓
- * /api
+ * Vercel /api
  *    ↓
- * Google Apps Script
+ * Main.gs Google Apps Script
  *    ↓
  * Google Spreadsheet
- *
- * ==========================================
- */
-
-/**
- * ==========================================
- * GOOGLE APPS SCRIPT WEB APP
- * ACTIVE / CURRENT DEPLOYMENT
  * ==========================================
  */
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbz9SwwEx1tTWFVwDZYZwRpTiRt97x20EnK5yO7WUl3XebrFoHPQKQzT7hQOM8bD03rq/exec";
+  "https://script.google.com/macros/s/AKfycbxaDPvFccT0lsemIjUaAJ4QS1ouJA-6f5-vUWdAYn3_LVHcI1rKCUy7KcuNYuJZDViI/exec";
 
-
-/**
- * ==========================================
- * VERCEL SERVERLESS API
- * ==========================================
- */
 
 export default async function handler(req, res) {
 
   /**
-   * ----------------------------------------
-   * ONLY POST
-   * ----------------------------------------
+   * ========================================
+   * METHOD CHECK
+   * ========================================
    */
 
   if (req.method !== "POST") {
@@ -59,30 +44,37 @@ export default async function handler(req, res) {
   try {
 
     /**
-     * --------------------------------------
-     * GET FRONTEND PAYLOAD
-     * --------------------------------------
+     * ========================================
+     * REQUEST BODY
+     * ========================================
      */
 
     const payload = req.body || {};
 
 
     /**
-     * --------------------------------------
-     * DEBUG
-     * --------------------------------------
+     * ========================================
+     * VALIDATE ACTION
+     * ========================================
      */
 
-    console.log(
-      "SAF API REQUEST:",
-      JSON.stringify(payload)
-    );
+    if (!payload.action) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message: "Action tidak ditemukan."
+
+      });
+
+    }
 
 
     /**
-     * --------------------------------------
-     * SEND TO GAS
-     * --------------------------------------
+     * ========================================
+     * FORWARD TO GOOGLE APPS SCRIPT
+     * ========================================
      */
 
     const response = await fetch(GAS_URL, {
@@ -91,51 +83,41 @@ export default async function handler(req, res) {
 
       headers: {
 
-        "Content-Type":
-          "application/json"
+        "Content-Type": "application/json"
 
       },
 
-      body:
-        JSON.stringify(payload)
+      body: JSON.stringify({
+
+        action: payload.action,
+
+        data: payload.data || {}
+
+      })
 
     });
 
 
     /**
-     * --------------------------------------
-     * GET RAW RESPONSE
-     * --------------------------------------
+     * ========================================
+     * READ RESPONSE
+     * ========================================
      */
 
-    const text =
-      await response.text();
-
-
-    console.log(
-      "GAS STATUS:",
-      response.status
-    );
-
-
-    console.log(
-      "GAS RESPONSE:",
-      text
-    );
+    const text = await response.text();
 
 
     /**
-     * --------------------------------------
+     * ========================================
      * PARSE JSON
-     * --------------------------------------
+     * ========================================
      */
 
     let result;
 
     try {
 
-      result =
-        JSON.parse(text);
+      result = JSON.parse(text);
 
     }
 
@@ -146,15 +128,14 @@ export default async function handler(req, res) {
         text
       );
 
-      return res.status(500).json({
+      return res.status(502).json({
 
         success: false,
 
         message:
           "Google Apps Script returned invalid JSON.",
 
-        raw:
-          text
+        raw: text
 
       });
 
@@ -162,12 +143,14 @@ export default async function handler(req, res) {
 
 
     /**
-     * --------------------------------------
-     * RETURN GAS RESULT
-     * --------------------------------------
+     * ========================================
+     * RETURN GAS RESPONSE
+     * ========================================
      */
 
-    return res.status(200).json(result);
+    return res
+      .status(response.ok ? 200 : response.status)
+      .json(result);
 
   }
 
@@ -181,10 +164,9 @@ export default async function handler(req, res) {
   catch (err) {
 
     console.error(
-      "SAF API ERROR:",
+      "VERCEL API ERROR:",
       err
     );
-
 
     return res.status(500).json({
 
