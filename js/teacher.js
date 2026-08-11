@@ -6,26 +6,49 @@
  * File:
  * js/teacher.js
  *
- * Stable Foundation v7.0
+ * Stable Foundation v7.1
  *
- * Frontend Sync:
- * - Question.gs
- * - Student.gs
- * - Token.gs
- * - Result.gs
- * - Score.gs
+ * FRONTEND SYNC:
+ *
+ *   Question.gs
+ *   Student.gs
+ *   Token.gs
+ *   Result.gs
+ *   Score.gs
  *
  * IMPORTANT:
- * - Teacher dashboard business logic
- * - No dependency on exam.js
- * - Question state uses STATE object
- * - Token state uses APP.token
+ *
+ *   Teacher dashboard business logic
+ *   No dependency on exam.js
+ *   Question state uses STATE object
+ *   Token state uses APP.token
+ *
+ * RESULT FIX:
+ *
+ *   API getResult may return:
+ *
+ *   {
+ *       0: {...},
+ *       1: {...},
+ *       2: {...},
+ *       success: true,
+ *       message: "Success"
+ *   }
+ *
+ *   instead of:
+ *
+ *   {
+ *       data: [...]
+ *   }
+ *
+ *   normalizeApiArray() handles both formats.
+ *
  * ==========================================
  */
 
 
 /* =====================================================
-   INITIALIZE
+INITIALIZE
 ===================================================== */
 
 document.addEventListener(
@@ -35,7 +58,7 @@ document.addEventListener(
 
 
 /* =====================================================
-   GLOBAL STATE
+GLOBAL STATE
 ===================================================== */
 
 const APP = {
@@ -69,7 +92,7 @@ const STATE = {
 
 
 /* =====================================================
-   INITIALIZE
+INITIALIZE
 ===================================================== */
 
 async function init() {
@@ -88,7 +111,7 @@ async function init() {
 
 
 /* =====================================================
-   SESSION
+SESSION
 ===================================================== */
 
 function checkSession() {
@@ -146,9 +169,11 @@ function logout() {
         CONFIG.SESSION_KEY
     );
 
+
     sessionStorage.removeItem(
         CONFIG.TOKEN_KEY
     );
+
 
     window.location.href =
         "index.html";
@@ -157,7 +182,7 @@ function logout() {
 
 
 /* =====================================================
-   LOGOUT BINDING
+LOGOUT BINDING
 ===================================================== */
 
 function bindLogout() {
@@ -189,7 +214,7 @@ function bindLogout() {
 
 
 /* =====================================================
-   SIDEBAR MENU
+SIDEBAR MENU
 ===================================================== */
 
 function bindMenu() {
@@ -253,7 +278,7 @@ function bindMenu() {
 
 
 /* =====================================================
-   CONTENT
+CONTENT
 ===================================================== */
 
 function setContent(html) {
@@ -275,13 +300,99 @@ function setContent(html) {
     }
 
 
-    content.innerHTML = html;
+    content.innerHTML =
+        html;
 
 }
 
 
 /* =====================================================
-   DASHBOARD DATA
+API ARRAY NORMALIZER
+===================================================== */
+
+/**
+ * Converts API responses into a reliable array.
+ *
+ * Supported:
+ *
+ * 1. {
+ *      success: true,
+ *      data: [...]
+ *    }
+ *
+ * 2. {
+ *      success: true,
+ *      0: {...},
+ *      1: {...},
+ *      2: {...}
+ *    }
+ *
+ * 3. [...]
+ *
+ * This is intentionally kept on the frontend
+ * so existing backend behavior is not changed.
+ */
+
+function normalizeApiArray(res) {
+
+    if (
+        Array.isArray(res)
+    ) {
+
+        return res;
+
+    }
+
+
+    if (
+        res &&
+        Array.isArray(res.data)
+    ) {
+
+        return res.data;
+
+    }
+
+
+    if (
+        res &&
+        typeof res === "object"
+    ) {
+
+        const numericKeys =
+            Object.keys(res)
+                .filter(
+                    key =>
+                        /^\d+$/.test(key)
+                )
+                .sort(
+                    (a, b) =>
+                        Number(a) -
+                        Number(b)
+                );
+
+
+        if (
+            numericKeys.length > 0
+        ) {
+
+            return numericKeys.map(
+                key =>
+                    res[key]
+            );
+
+        }
+
+    }
+
+
+    return [];
+
+}
+
+
+/* =====================================================
+DASHBOARD DATA
 ===================================================== */
 
 async function refreshDashboard() {
@@ -309,8 +420,8 @@ async function refreshDashboard() {
         APP.question =
             questionResult &&
             questionResult.success
-                ? (
-                    questionResult.data || []
+                ? normalizeApiArray(
+                    questionResult
                 )
                 : [];
 
@@ -318,8 +429,8 @@ async function refreshDashboard() {
         APP.student =
             studentResult &&
             studentResult.success
-                ? (
-                    studentResult.data || []
+                ? normalizeApiArray(
+                    studentResult
                 )
                 : [];
 
@@ -327,8 +438,8 @@ async function refreshDashboard() {
         APP.token =
             tokenResult &&
             tokenResult.success
-                ? (
-                    tokenResult.data || []
+                ? normalizeApiArray(
+                    tokenResult
                 )
                 : [];
 
@@ -336,23 +447,32 @@ async function refreshDashboard() {
         APP.result =
             resultResult &&
             resultResult.success
-                ? (
-                    resultResult.data || []
+                ? normalizeApiArray(
+                    resultResult
                 )
                 : [];
+
+
+        console.log(
+            "REFRESH DASHBOARD RESULT:",
+            APP.result
+        );
 
 
         updateQuestionCounter(
             APP.question.length
         );
 
+
         updateStudentCounter(
             APP.student.length
         );
 
+
         updateTokenCounter(
             APP.token.length
         );
+
 
         updateResultCounter(
             APP.result.length
@@ -373,7 +493,7 @@ async function refreshDashboard() {
 
 
 /* =====================================================
-   DASHBOARD PAGE
+DASHBOARD PAGE
 ===================================================== */
 
 function loadDashboard() {
@@ -452,14 +572,16 @@ function loadDashboard() {
 
 
 /* =====================================================
-   QUESTION PAGE
+QUESTION PAGE
 ===================================================== */
 
 function loadQuestionPage() {
 
-    STATE.questionEdit = false;
+    STATE.questionEdit =
+        false;
 
-    STATE.questionId = null;
+    STATE.questionId =
+        null;
 
 
     setContent(`
@@ -593,7 +715,7 @@ function loadQuestionPage() {
 
 
 /* =====================================================
-   LOAD QUESTIONS
+LOAD QUESTIONS
 ===================================================== */
 
 async function loadQuestions() {
@@ -658,9 +780,9 @@ async function loadQuestions() {
 
 
         APP.question =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+            normalizeApiArray(
+                res
+            );
 
 
         updateQuestionCounter(
@@ -712,7 +834,7 @@ async function loadQuestions() {
 
 
 /* =====================================================
-   RENDER QUESTIONS
+RENDER QUESTIONS
 ===================================================== */
 
 function renderQuestions() {
@@ -848,13 +970,14 @@ function renderQuestions() {
     `;
 
 
-    table.innerHTML = html;
+    table.innerHTML =
+        html;
 
 }
 
 
 /* =====================================================
-   SAVE QUESTION
+SAVE QUESTION
 ===================================================== */
 
 async function saveQuestion(e) {
@@ -1059,7 +1182,7 @@ async function saveQuestion(e) {
 
 
 /* =====================================================
-   EDIT QUESTION
+EDIT QUESTION
 ===================================================== */
 
 function editQuestion(id) {
@@ -1174,7 +1297,7 @@ function editQuestion(id) {
 
 
 /* =====================================================
-   DELETE QUESTION
+DELETE QUESTION
 ===================================================== */
 
 async function deleteQuestion(id) {
@@ -1272,7 +1395,7 @@ async function deleteQuestion(id) {
 
 
 /* =====================================================
-   RESET QUESTION FORM
+RESET QUESTION FORM
 ===================================================== */
 
 function resetQuestionForm() {
@@ -1328,7 +1451,7 @@ function resetQuestionForm() {
 
 
 /* =====================================================
-   SEARCH QUESTION
+SEARCH QUESTION
 ===================================================== */
 
 function filterQuestion() {
@@ -1371,7 +1494,7 @@ function filterQuestion() {
 
 
 /* =====================================================
-   STUDENT PAGE
+STUDENT PAGE
 ===================================================== */
 
 function loadStudentPage() {
@@ -1510,7 +1633,7 @@ function loadStudentPage() {
 
 
 /* =====================================================
-   SAVE STUDENT
+SAVE STUDENT
 ===================================================== */
 
 async function saveStudent(e) {
@@ -1640,7 +1763,7 @@ async function saveStudent(e) {
 
 
 /* =====================================================
-   LOAD STUDENTS
+LOAD STUDENTS
 ===================================================== */
 
 async function loadStudents() {
@@ -1685,9 +1808,9 @@ async function loadStudents() {
 
 
         APP.student =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+            normalizeApiArray(
+                res
+            );
 
 
         updateStudentCounter(
@@ -1838,7 +1961,7 @@ async function loadStudents() {
 
 
 /* =====================================================
-   EDIT STUDENT
+EDIT STUDENT
 ===================================================== */
 
 function editStudent(nis) {
@@ -1957,7 +2080,7 @@ function editStudent(nis) {
 
 
 /* =====================================================
-   DELETE STUDENT
+DELETE STUDENT
 ===================================================== */
 
 async function deleteStudent(nis) {
@@ -2049,7 +2172,7 @@ async function deleteStudent(nis) {
 
 
 /* =====================================================
-   RESET STUDENT FORM
+RESET STUDENT FORM
 ===================================================== */
 
 function resetStudentForm() {
@@ -2092,7 +2215,7 @@ function resetStudentForm() {
 
 
 /* =====================================================
-   SEARCH STUDENT
+SEARCH STUDENT
 ===================================================== */
 
 function filterStudent() {
@@ -2135,7 +2258,7 @@ function filterStudent() {
 
 
 /* =====================================================
-   TOKEN PAGE
+TOKEN PAGE
 ===================================================== */
 
 function loadTokenPage() {
@@ -2237,7 +2360,7 @@ function loadTokenPage() {
 
 
 /* =====================================================
-   GENERATE TOKEN
+GENERATE TOKEN
 ===================================================== */
 
 async function generateExamToken(e) {
@@ -2412,7 +2535,7 @@ async function generateExamToken(e) {
 
 
 /* =====================================================
-   LOAD TOKEN
+LOAD TOKEN
 ===================================================== */
 
 async function loadTokens() {
@@ -2469,9 +2592,9 @@ async function loadTokens() {
 
 
         APP.token =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+            normalizeApiArray(
+                res
+            );
 
 
         updateTokenCounter(
@@ -2640,7 +2763,7 @@ async function loadTokens() {
 
 
 /* =====================================================
-   DISABLE TOKEN
+DISABLE TOKEN
 ===================================================== */
 
 async function disableExamToken(token) {
@@ -2727,7 +2850,7 @@ async function disableExamToken(token) {
 
 
 /* =====================================================
-   DELETE TOKEN
+DELETE TOKEN
 ===================================================== */
 
 async function deleteExamToken(token) {
@@ -2814,7 +2937,7 @@ async function deleteExamToken(token) {
 
 
 /* =====================================================
-   SEARCH TOKEN
+SEARCH TOKEN
 ===================================================== */
 
 function filterToken() {
@@ -2857,10 +2980,14 @@ function filterToken() {
 
 
 /* =====================================================
-   RESULT PAGE
+RESULT PAGE
 ===================================================== */
 
 function loadResultPage() {
+
+    STATE.resultId =
+        null;
+
 
     setContent(`
 
@@ -2894,7 +3021,7 @@ function loadResultPage() {
 
 
 /* =====================================================
-   LOAD RESULTS
+LOAD RESULTS
 ===================================================== */
 
 async function loadResults() {
@@ -2912,16 +3039,29 @@ async function loadResults() {
     }
 
 
+    table.innerHTML =
+        "<p>Loading results...</p>";
+
+
     try {
 
         const res =
             await apiGetResult();
 
 
+        console.log(
+            "GET RESULT RESPONSE:",
+            res
+        );
+
+
         if (
             !res ||
             res.success !== true
         ) {
+
+            APP.result = [];
+
 
             table.innerHTML =
                 "<p style='color:red'>" +
@@ -2933,15 +3073,43 @@ async function loadResults() {
                 ) +
                 "</p>";
 
+
+            updateResultCounter(0);
+
             return;
 
         }
 
 
+        /*
+         * IMPORTANT FIX
+         *
+         * getResult currently returns
+         * numeric object keys:
+         *
+         * {
+         *     0: {...},
+         *     1: {...},
+         *     2: {...},
+         *     ...
+         *     success: true,
+         *     message: "Success"
+         * }
+         *
+         * normalizeApiArray()
+         * converts it into an array.
+         */
+
         APP.result =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+            normalizeApiArray(
+                res
+            );
+
+
+        console.log(
+            "NORMALIZED RESULT DATA:",
+            APP.result
+        );
 
 
         updateResultCounter(
@@ -3073,6 +3241,9 @@ async function loadResults() {
         );
 
 
+        APP.result = [];
+
+
         table.innerHTML =
             "<p style='color:red'>" +
             escapeHTML(
@@ -3081,13 +3252,16 @@ async function loadResults() {
             ) +
             "</p>";
 
+
+        updateResultCounter(0);
+
     }
 
 }
 
 
 /* =====================================================
-   DELETE RESULT
+DELETE RESULT
 ===================================================== */
 
 async function deleteResult(id) {
@@ -3122,6 +3296,12 @@ async function deleteResult(id) {
                 id: id
 
             });
+
+
+        console.log(
+            "DELETE RESULT RESPONSE:",
+            res
+        );
 
 
         alert(
@@ -3168,7 +3348,7 @@ async function deleteResult(id) {
 
 
 /* =====================================================
-   SEARCH RESULT
+SEARCH RESULT
 ===================================================== */
 
 function filterResult() {
@@ -3211,7 +3391,7 @@ function filterResult() {
 
 
 /* =====================================================
-   COUNTERS
+COUNTERS
 ===================================================== */
 
 function updateQuestionCounter(total) {
@@ -3331,7 +3511,7 @@ function updateResultCounter(total) {
 
 
 /* =====================================================
-   ESCAPE HTML
+ESCAPE HTML
 ===================================================== */
 
 function escapeHTML(value) {
@@ -3377,7 +3557,7 @@ function escapeHTML(value) {
 
 
 /* =====================================================
-   ESCAPE ATTRIBUTE
+ESCAPE ATTRIBUTE
 ===================================================== */
 
 function escapeAttribute(value) {
@@ -3413,7 +3593,7 @@ function escapeAttribute(value) {
 
 
 /* =====================================================
-   FORMAT DATE
+FORMAT DATE
 ===================================================== */
 
 function formatDate(value) {
@@ -3452,5 +3632,5 @@ function formatDate(value) {
 
 
 /* =====================================================
-   END OF FILE
+END OF FILE
 ===================================================== */
