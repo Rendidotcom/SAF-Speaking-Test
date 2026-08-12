@@ -6,15 +6,25 @@
  * File:
  * js/teacher.js
  *
- * Stable Foundation v7.1
+ * Stable Foundation v7.2
  *
  * FIX:
+ *
  * - Exam Token now requires Speaking Question
  * - Token creation sends questionId
  * - Question selector uses APP.question
  * - No dependency on exam.js
  *
+ * RESULT RESPONSE FIX:
+ *
+ * - Normalize API array responses
+ * - Supports:
+ *      1. Direct Array
+ *      2. Object with data Array
+ *      3. Object with numeric keys
+ *
  * Frontend Sync:
+ *
  * - Question.gs
  * - Student.gs
  * - Token.gs
@@ -22,6 +32,7 @@
  * - Score.gs
  *
  * IMPORTANT:
+ *
  * - Existing architecture preserved
  * - Existing API action names preserved
  * - Existing APP state preserved
@@ -32,7 +43,7 @@
 
 
 /* =========================================================
-   INITIALIZE
+INITIALIZE
 ========================================================= */
 
 document.addEventListener(
@@ -42,7 +53,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   GLOBAL STATE
+GLOBAL STATE
 ========================================================= */
 
 const APP = {
@@ -76,7 +87,138 @@ const STATE = {
 
 
 /* =========================================================
-   INITIALIZE
+API ARRAY NORMALIZER
+========================================================= */
+
+/**
+ * Normalize API response data into a real JavaScript Array.
+ *
+ * Supported formats:
+ *
+ * 1. Direct Array
+ *
+ * [
+ *     {...},
+ *     {...}
+ * ]
+ *
+ *
+ * 2. Object containing data Array
+ *
+ * {
+ *     data: [
+ *         {...},
+ *         {...}
+ *     ]
+ * }
+ *
+ *
+ * 3. Object with numeric keys
+ *
+ * {
+ *     "0": {...},
+ *     "1": {...},
+ *     "2": {...}
+ * }
+ *
+ *
+ * This is especially important for Result API responses.
+ */
+
+function normalizeApiArray(value) {
+
+    /* -----------------------------------------------------
+       FORMAT 1
+       Already an Array
+    ----------------------------------------------------- */
+
+    if (Array.isArray(value)) {
+
+        return value;
+
+    }
+
+
+    /* -----------------------------------------------------
+       FORMAT 2
+       Object with data Array
+    ----------------------------------------------------- */
+
+    if (
+        value &&
+        Array.isArray(value.data)
+    ) {
+
+        return value.data;
+
+    }
+
+
+    /* -----------------------------------------------------
+       FORMAT 3
+       Object with numeric keys
+    ----------------------------------------------------- */
+
+    if (
+        value &&
+        typeof value === "object"
+    ) {
+
+        const keys =
+            Object.keys(value);
+
+
+        const numericKeys =
+            keys.filter(
+                function (key) {
+
+                    return /^\d+$/.test(
+                        key
+                    );
+
+                }
+            );
+
+
+        if (
+            numericKeys.length > 0
+        ) {
+
+            return numericKeys
+                .sort(
+                    function (a, b) {
+
+                        return (
+                            Number(a) -
+                            Number(b)
+                        );
+
+                    }
+                )
+                .map(
+                    function (key) {
+
+                        return value[key];
+
+                    }
+                );
+
+        }
+
+    }
+
+
+    /* -----------------------------------------------------
+       FALLBACK
+    ----------------------------------------------------- */
+
+    return [];
+
+}
+
+
+/* =========================================================
+INITIALIZE
 ========================================================= */
 
 async function init() {
@@ -95,7 +237,7 @@ async function init() {
 
 
 /* =========================================================
-   SESSION
+SESSION
 ========================================================= */
 
 function checkSession() {
@@ -166,104 +308,108 @@ function logout() {
 
 
 /* =========================================================
-   LOGOUT BINDING
+LOGOUT BINDING
 ========================================================= */
 
 function bindLogout() {
 
     document
         .querySelectorAll("a")
-        .forEach(link => {
+        .forEach(
+            function (link) {
 
-            if (
-                link.textContent
-                    .trim()
-                    .includes("Logout")
-            ) {
+                if (
+                    link.textContent
+                        .trim()
+                        .includes("Logout")
+                ) {
 
-                link.onclick =
-                    function (e) {
+                    link.onclick =
+                        function (e) {
 
-                        e.preventDefault();
+                            e.preventDefault();
 
-                        logout();
+                            logout();
 
-                    };
+                        };
+
+                }
 
             }
-
-        });
+        );
 
 }
 
 
 /* =========================================================
-   SIDEBAR MENU
+SIDEBAR MENU
 ========================================================= */
 
 function bindMenu() {
 
     document
         .querySelectorAll("[data-page]")
-        .forEach(menu => {
+        .forEach(
+            function (menu) {
 
-            menu.onclick =
-                function (e) {
+                menu.onclick =
+                    function (e) {
 
-                    e.preventDefault();
-
-
-                    const page =
-                        this.dataset.page;
+                        e.preventDefault();
 
 
-                    switch (page) {
-
-                        case "dashboard":
-
-                            loadDashboard();
-
-                            break;
+                        const page =
+                            this.dataset.page;
 
 
-                        case "question":
+                        switch (page) {
 
-                            loadQuestionPage();
+                            case "dashboard":
 
-                            break;
+                                loadDashboard();
 
-
-                        case "student":
-
-                            loadStudentPage();
-
-                            break;
+                                break;
 
 
-                        case "token":
+                            case "question":
 
-                            loadTokenPage();
+                                loadQuestionPage();
 
-                            break;
+                                break;
 
 
-                        case "result":
+                            case "student":
 
-                            loadResultPage();
+                                loadStudentPage();
 
-                            break;
+                                break;
 
-                    }
 
-                };
+                            case "token":
 
-        });
+                                loadTokenPage();
+
+                                break;
+
+
+                            case "result":
+
+                                loadResultPage();
+
+                                break;
+
+                        }
+
+                    };
+
+            }
+        );
 
 }
 
 
 /* =========================================================
-   CONTENT
+CONTENT
 ========================================================= */
 
 function setContent(html) {
@@ -292,7 +438,7 @@ function setContent(html) {
 
 
 /* =========================================================
-   DASHBOARD DATA
+DASHBOARD DATA
 ========================================================= */
 
 async function refreshDashboard() {
@@ -317,40 +463,71 @@ async function refreshDashboard() {
         ]);
 
 
+        /* -------------------------------------------------
+           QUESTIONS
+        ------------------------------------------------- */
+
         APP.question =
             questionResult &&
             questionResult.success
-                ? (
-                    questionResult.data || []
+                ? normalizeApiArray(
+                    questionResult.data
                 )
                 : [];
 
+
+        /* -------------------------------------------------
+           STUDENTS
+        ------------------------------------------------- */
 
         APP.student =
             studentResult &&
             studentResult.success
-                ? (
-                    studentResult.data || []
+                ? normalizeApiArray(
+                    studentResult.data
                 )
                 : [];
 
+
+        /* -------------------------------------------------
+           TOKENS
+        ------------------------------------------------- */
 
         APP.token =
             tokenResult &&
             tokenResult.success
-                ? (
-                    tokenResult.data || []
+                ? normalizeApiArray(
+                    tokenResult.data
                 )
                 : [];
 
+
+        /* -------------------------------------------------
+           RESULTS
+           
+           IMPORTANT:
+           Do not use Array.isArray() directly here.
+        ------------------------------------------------- */
 
         APP.result =
             resultResult &&
             resultResult.success
-                ? (
-                    resultResult.data || []
+                ? normalizeApiArray(
+                    resultResult.data
                 )
                 : [];
+
+
+        console.log(
+            "REFRESH DASHBOARD RESULT:",
+            resultResult
+        );
+
+
+        console.log(
+            "NORMALIZED APP.result:",
+            APP.result
+        );
 
 
         updateQuestionCounter(
@@ -387,7 +564,7 @@ async function refreshDashboard() {
 
 
 /* =========================================================
-   DASHBOARD PAGE
+DASHBOARD PAGE
 ========================================================= */
 
 function loadDashboard() {
@@ -468,7 +645,7 @@ function loadDashboard() {
 
 
 /* =========================================================
-   QUESTION PAGE
+QUESTION PAGE
 ========================================================= */
 
 function loadQuestionPage() {
@@ -612,7 +789,7 @@ function loadQuestionPage() {
 
 
 /* =========================================================
-   LOAD QUESTIONS
+LOAD QUESTIONS
 ========================================================= */
 
 async function loadQuestions() {
@@ -677,9 +854,9 @@ async function loadQuestions() {
 
 
         APP.question =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+            normalizeApiArray(
+                res.data
+            );
 
 
         updateQuestionCounter(
@@ -731,7 +908,7 @@ async function loadQuestions() {
 
 
 /* =========================================================
-   RENDER QUESTIONS
+RENDER QUESTIONS
 ========================================================= */
 
 function renderQuestions() {
@@ -797,7 +974,7 @@ function renderQuestions() {
 
 
     APP.question.forEach(
-        (q, index) => {
+        function (q, index) {
 
             html += `
 
@@ -874,7 +1051,7 @@ function renderQuestions() {
 
 
 /* =========================================================
-   SAVE QUESTION
+SAVE QUESTION
 ========================================================= */
 
 async function saveQuestion(e) {
@@ -1079,16 +1256,21 @@ async function saveQuestion(e) {
 
 
 /* =========================================================
-   EDIT QUESTION
+EDIT QUESTION
 ========================================================= */
 
 function editQuestion(id) {
 
     const question =
         APP.question.find(
-            item =>
-                String(item.id) ===
-                String(id)
+            function (item) {
+
+                return (
+                    String(item.id) ===
+                    String(id)
+                );
+
+            }
         );
 
 
@@ -1195,7 +1377,7 @@ function editQuestion(id) {
 
 
 /* =========================================================
-   DELETE QUESTION
+DELETE QUESTION
 ========================================================= */
 
 async function deleteQuestion(id) {
@@ -1293,7 +1475,7 @@ async function deleteQuestion(id) {
 
 
 /* =========================================================
-   RESET QUESTION FORM
+RESET QUESTION FORM
 ========================================================= */
 
 function resetQuestionForm() {
@@ -1350,7 +1532,7 @@ function resetQuestionForm() {
 
 
 /* =========================================================
-   SEARCH QUESTION
+SEARCH QUESTION
 ========================================================= */
 
 function filterQuestion() {
@@ -1378,22 +1560,24 @@ function filterQuestion() {
         .querySelectorAll(
             "#questionTable tbody tr"
         )
-        .forEach(row => {
+        .forEach(
+            function (row) {
 
-            row.style.display =
-                row.innerText
-                    .toLowerCase()
-                    .includes(keyword)
-                        ? ""
-                        : "none";
+                row.style.display =
+                    row.innerText
+                        .toLowerCase()
+                        .includes(keyword)
+                            ? ""
+                            : "none";
 
-        });
+            }
+        );
 
 }
 
 
 /* =========================================================
-   STUDENT PAGE
+STUDENT PAGE
 ========================================================= */
 
 function loadStudentPage() {
@@ -1533,7 +1717,7 @@ function loadStudentPage() {
 
 
 /* =========================================================
-   SAVE STUDENT
+SAVE STUDENT
 ========================================================= */
 
 async function saveStudent(e) {
@@ -1717,7 +1901,7 @@ async function saveStudent(e) {
 
 
 /* =========================================================
-   LOAD STUDENTS
+LOAD STUDENTS
 ========================================================= */
 
 async function loadStudents() {
@@ -1782,9 +1966,9 @@ async function loadStudents() {
 
 
         APP.student =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+            normalizeApiArray(
+                res.data
+            );
 
 
         updateStudentCounter(
@@ -1839,7 +2023,7 @@ async function loadStudents() {
 
 
         APP.student.forEach(
-            (s, index) => {
+            function (s, index) {
 
                 html += `
 
@@ -1938,16 +2122,21 @@ async function loadStudents() {
 
 
 /* =========================================================
-   EDIT STUDENT
+EDIT STUDENT
 ========================================================= */
 
 function editStudent(nis) {
 
     const student =
         APP.student.find(
-            item =>
-                String(item.nis) ===
-                String(nis)
+            function (item) {
+
+                return (
+                    String(item.nis) ===
+                    String(nis)
+                );
+
+            }
         );
 
 
@@ -2069,7 +2258,7 @@ function editStudent(nis) {
 
 
 /* =========================================================
-   DELETE STUDENT
+DELETE STUDENT
 ========================================================= */
 
 async function deleteStudent(nis) {
@@ -2161,7 +2350,7 @@ async function deleteStudent(nis) {
 
 
 /* =========================================================
-   RESET STUDENT FORM
+RESET STUDENT FORM
 ========================================================= */
 
 function resetStudentForm() {
@@ -2218,7 +2407,7 @@ function resetStudentForm() {
 
 
 /* =========================================================
-   SEARCH STUDENT
+SEARCH STUDENT
 ========================================================= */
 
 function filterStudent() {
@@ -2246,22 +2435,24 @@ function filterStudent() {
         .querySelectorAll(
             "#studentTable tbody tr"
         )
-        .forEach(row => {
+        .forEach(
+            function (row) {
 
-            row.style.display =
-                row.innerText
-                    .toLowerCase()
-                    .includes(keyword)
-                        ? ""
-                        : "none";
+                row.style.display =
+                    row.innerText
+                        .toLowerCase()
+                        .includes(keyword)
+                            ? ""
+                            : "none";
 
-        });
+            }
+        );
 
 }
 
 
 /* =========================================================
-   TOKEN PAGE
+TOKEN PAGE
 ========================================================= */
 
 function loadTokenPage() {
@@ -2292,7 +2483,7 @@ function loadTokenPage() {
 
 
 /* =========================================================
-   LOAD QUESTIONS FOR TOKEN PAGE
+LOAD QUESTIONS FOR TOKEN PAGE
 ========================================================= */
 
 async function loadQuestionsForTokenPage() {
@@ -2305,12 +2496,13 @@ async function loadQuestionsForTokenPage() {
 
         if (
             result &&
-            result.success === true &&
-            Array.isArray(result.data)
+            result.success === true
         ) {
 
             APP.question =
-                result.data;
+                normalizeApiArray(
+                    result.data
+                );
 
         }
 
@@ -2332,7 +2524,7 @@ async function loadQuestionsForTokenPage() {
 
 
 /* =========================================================
-   RENDER TOKEN PAGE
+RENDER TOKEN PAGE
 ========================================================= */
 
 function renderTokenPage() {
@@ -2497,7 +2689,7 @@ function renderTokenPage() {
 
 
 /* =========================================================
-   GENERATE TOKEN
+GENERATE TOKEN
 ========================================================= */
 
 async function generateExamToken(e) {
@@ -2755,7 +2947,7 @@ async function generateExamToken(e) {
 
 
 /* =========================================================
-   LOAD TOKENS
+LOAD TOKENS
 ========================================================= */
 
 async function loadTokens() {
@@ -2820,9 +3012,9 @@ async function loadTokens() {
 
 
         APP.token =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+            normalizeApiArray(
+                res.data
+            );
 
 
         updateTokenCounter(
@@ -2871,7 +3063,7 @@ async function loadTokens() {
 
 
 /* =========================================================
-   RENDER TOKENS
+RENDER TOKENS
 ========================================================= */
 
 function renderTokens() {
@@ -3051,7 +3243,7 @@ function renderTokens() {
 
 
 /* =========================================================
-   DISABLE TOKEN
+DISABLE TOKEN
 ========================================================= */
 
 async function disableExamToken(token) {
@@ -3139,7 +3331,7 @@ async function disableExamToken(token) {
 
 
 /* =========================================================
-   DELETE TOKEN
+DELETE TOKEN
 ========================================================= */
 
 async function deleteExamToken(token) {
@@ -3227,7 +3419,7 @@ async function deleteExamToken(token) {
 
 
 /* =========================================================
-   SEARCH TOKEN
+SEARCH TOKEN
 ========================================================= */
 
 function filterToken() {
@@ -3255,22 +3447,24 @@ function filterToken() {
         .querySelectorAll(
             "#tokenTable tbody tr"
         )
-        .forEach(row => {
+        .forEach(
+            function (row) {
 
-            row.style.display =
-                row.innerText
-                    .toLowerCase()
-                    .includes(keyword)
-                        ? ""
-                        : "none";
+                row.style.display =
+                    row.innerText
+                        .toLowerCase()
+                        .includes(keyword)
+                            ? ""
+                            : "none";
 
-        });
+            }
+        );
 
 }
 
 
 /* =========================================================
-   RESULT PAGE
+RESULT PAGE
 ========================================================= */
 
 function loadResultPage() {
@@ -3307,7 +3501,7 @@ function loadResultPage() {
 
 
 /* =========================================================
-   LOAD RESULTS
+LOAD RESULTS
 ========================================================= */
 
 async function loadResults() {
@@ -3341,6 +3535,51 @@ async function loadResults() {
         );
 
 
+        /* -------------------------------------------------
+           RAW RESPONSE DIAGNOSTIC
+        ------------------------------------------------- */
+
+        console.log(
+            "RESULT SUCCESS:",
+            res &&
+            res.success
+        );
+
+
+        console.log(
+            "RESULT DATA:",
+            res &&
+            res.data
+        );
+
+
+        console.log(
+            "RESULT DATA IS ARRAY:",
+            res &&
+            Array.isArray(res.data)
+        );
+
+
+        if (
+            res &&
+            res.data &&
+            typeof res.data === "object"
+        ) {
+
+            console.log(
+                "RESULT DATA KEYS:",
+                Object.keys(
+                    res.data
+                )
+            );
+
+        }
+
+
+        /* -------------------------------------------------
+           API FAILURE
+        ------------------------------------------------- */
+
         if (
             !res ||
             res.success !== true
@@ -3367,10 +3606,26 @@ async function loadResults() {
         }
 
 
+        /* -------------------------------------------------
+           IMPORTANT RESULT NORMALIZATION
+        ------------------------------------------------- */
+
         APP.result =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+            normalizeApiArray(
+                res.data
+            );
+
+
+        console.log(
+            "NORMALIZED RESULT ARRAY:",
+            APP.result
+        );
+
+
+        console.log(
+            "NORMALIZED RESULT LENGTH:",
+            APP.result.length
+        );
 
 
         updateResultCounter(
@@ -3527,7 +3782,7 @@ async function loadResults() {
 
 
 /* =========================================================
-   DELETE RESULT
+DELETE RESULT
 ========================================================= */
 
 async function deleteResult(id) {
@@ -3615,7 +3870,7 @@ async function deleteResult(id) {
 
 
 /* =========================================================
-   SEARCH RESULT
+SEARCH RESULT
 ========================================================= */
 
 function filterResult() {
@@ -3643,22 +3898,24 @@ function filterResult() {
         .querySelectorAll(
             "#resultTable tbody tr"
         )
-        .forEach(row => {
+        .forEach(
+            function (row) {
 
-            row.style.display =
-                row.innerText
-                    .toLowerCase()
-                    .includes(keyword)
-                        ? ""
-                        : "none";
+                row.style.display =
+                    row.innerText
+                        .toLowerCase()
+                        .includes(keyword)
+                            ? ""
+                            : "none";
 
-        });
+            }
+        );
 
 }
 
 
 /* =========================================================
-   DASHBOARD COUNTERS
+DASHBOARD COUNTERS
 ========================================================= */
 
 function updateQuestionCounter(total) {
@@ -3742,7 +3999,7 @@ function updateResultCounter(total) {
 
 
 /* =========================================================
-   COMMON HELPERS
+COMMON HELPERS
 ========================================================= */
 
 function escapeHTML(value) {
@@ -3810,5 +4067,5 @@ function escapeAttribute(value) {
 
 
 /* =========================================================
-   END OF FILE
+END OF FILE
 ========================================================= */
