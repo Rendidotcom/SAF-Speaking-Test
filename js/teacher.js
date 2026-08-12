@@ -1,70 +1,55 @@
 /**
- * ==========================================
+ * ==========================================================
  * SAF Speaking Online Test
  * Teacher Dashboard
  *
  * File:
  * js/teacher.js
  *
- * Stable Foundation v8.0
- * Result Bulk Delete
+ * Stable Foundation v7.1
  *
- * ==========================================
- *
- * Frontend Sync:
- *
- * - Question.gs
- * - Student.gs
- * - Token.gs
- * - Result.gs
- * - Score.gs
+ * UPDATE:
+ * Reports Page
+ * - Filter Class
+ * - Preview Report
+ * - Summary
+ * - Export Excel
  *
  * IMPORTANT:
- *
  * - Teacher dashboard business logic
  * - No dependency on exam.js
- * - Question state uses STATE object
- * - Student state uses STATE object
+ * - Question state uses APP.question
+ * - Student state uses APP.student
  * - Token state uses APP.token
  * - Result state uses APP.result
  *
- * RESULT FEATURES:
+ * RESULT API:
+ * Supports:
  *
- * - Result score display
- * - Result search
- * - Checkbox per result
- * - Select All
- * - Delete Selected
- * - Delete All
+ * 1. {
+ *      success: true,
+ *      data: [...]
+ *    }
  *
- * RESULT API SUPPORT:
+ * 2. {
+ *      0: {...},
+ *      1: {...},
+ *      2: {...},
+ *      success: true,
+ *      message: "Success"
+ *    }
  *
- * API Result dapat mengembalikan:
+ * REPORT:
+ * Uses existing Result API.
+ * No backend change required.
  *
- * {
- *   0: {...},
- *   1: {...},
- *   2: {...},
- *   success: true,
- *   message: "Success"
- * }
- *
- * atau:
- *
- * {
- *   success: true,
- *   data: [...]
- * }
- *
- * Keduanya didukung.
- *
- * ==========================================
+ * ==========================================================
  */
 
 
-/* =====================================================
+/* ==========================================================
 INITIALIZE
-===================================================== */
+========================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -72,9 +57,9 @@ document.addEventListener(
 );
 
 
-/* =====================================================
+/* ==========================================================
 GLOBAL STATE
-===================================================== */
+========================================================== */
 
 const APP = {
 
@@ -89,6 +74,10 @@ const APP = {
 };
 
 
+/* ==========================================================
+STATE
+========================================================== */
+
 const STATE = {
 
     questionEdit: false,
@@ -99,14 +88,16 @@ const STATE = {
 
     studentId: null,
 
-    resultId: null
+    resultId: null,
+
+    reportClass: ""
 
 };
 
 
-/* =====================================================
+/* ==========================================================
 INITIALIZE
-===================================================== */
+========================================================== */
 
 async function init() {
 
@@ -123,9 +114,9 @@ async function init() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 SESSION
-===================================================== */
+========================================================== */
 
 function checkSession() {
 
@@ -176,9 +167,9 @@ function checkSession() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 LOGOUT
-===================================================== */
+========================================================== */
 
 function logout() {
 
@@ -198,9 +189,9 @@ function logout() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 LOGOUT BINDING
-===================================================== */
+========================================================== */
 
 function bindLogout() {
 
@@ -230,9 +221,9 @@ function bindLogout() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 SIDEBAR MENU
-===================================================== */
+========================================================== */
 
 function bindMenu() {
 
@@ -286,6 +277,15 @@ function bindMenu() {
 
                             break;
 
+
+                        case "report":
+
+                        case "reports":
+
+                            loadReportsPage();
+
+                            break;
+
                     }
 
                 };
@@ -295,9 +295,9 @@ function bindMenu() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 CONTENT
-===================================================== */
+========================================================== */
 
 function setContent(html) {
 
@@ -324,9 +324,9 @@ function setContent(html) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 API ARRAY NORMALIZER
-===================================================== */
+========================================================== */
 
 function normalizeApiArray(value) {
 
@@ -368,9 +368,9 @@ function normalizeApiArray(value) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 DASHBOARD DATA
-===================================================== */
+========================================================== */
 
 async function refreshDashboard() {
 
@@ -427,16 +427,6 @@ async function refreshDashboard() {
                 : [];
 
 
-        /*
-         * RESULT FIX
-         *
-         * Supports:
-         *
-         * response.data
-         *
-         * or direct numeric properties.
-         */
-
         APP.result =
             resultResult &&
             resultResult.success === true
@@ -465,9 +455,9 @@ async function refreshDashboard() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 DASHBOARD COUNTERS
-===================================================== */
+========================================================== */
 
 function updateDashboardCounters() {
 
@@ -493,9 +483,9 @@ function updateDashboardCounters() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 DASHBOARD PAGE
-===================================================== */
+========================================================== */
 
 function loadDashboard() {
 
@@ -516,8 +506,8 @@ function loadDashboard() {
 
         <p>
             Use the left menu to manage
-            Questions, Students, Exam Tokens
-            and Results.
+            Questions, Students, Exam Tokens,
+            Results and Reports.
         </p>
 
         <br>
@@ -574,9 +564,9 @@ function loadDashboard() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 QUESTION PAGE
-===================================================== */
+========================================================== */
 
 function loadQuestionPage() {
 
@@ -710,9 +700,9 @@ function loadQuestionPage() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 SAVE QUESTION
-===================================================== */
+========================================================== */
 
 async function saveQuestion(e) {
 
@@ -809,9 +799,9 @@ async function saveQuestion(e) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 LOAD QUESTIONS
-===================================================== */
+========================================================== */
 
 async function loadQuestions() {
 
@@ -924,9 +914,9 @@ async function loadQuestions() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 RENDER QUESTIONS
-===================================================== */
+========================================================== */
 
 function renderQuestions() {
 
@@ -967,33 +957,19 @@ function renderQuestions() {
 
                 <tr>
 
-                    <th>
-                        No
-                    </th>
+                    <th>No</th>
 
-                    <th>
-                        Title
-                    </th>
+                    <th>Title</th>
 
-                    <th>
-                        Answer Key
-                    </th>
+                    <th>Answer Key</th>
 
-                    <th>
-                        Difficulty
-                    </th>
+                    <th>Difficulty</th>
 
-                    <th>
-                        Duration
-                    </th>
+                    <th>Duration</th>
 
-                    <th>
-                        Status
-                    </th>
+                    <th>Status</th>
 
-                    <th>
-                        Action
-                    </th>
+                    <th>Action</th>
 
                 </tr>
 
@@ -1080,9 +1056,9 @@ function renderQuestions() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 EDIT QUESTION
-===================================================== */
+========================================================== */
 
 function editQuestion(id) {
 
@@ -1148,9 +1124,9 @@ function editQuestion(id) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 DELETE QUESTION
-===================================================== */
+========================================================== */
 
 async function deleteQuestion(id) {
 
@@ -1198,9 +1174,9 @@ async function deleteQuestion(id) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 RESET QUESTION FORM
-===================================================== */
+========================================================== */
 
 function resetQuestionForm() {
 
@@ -1254,9 +1230,9 @@ function resetQuestionForm() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 SEARCH QUESTION
-===================================================== */
+========================================================== */
 
 function filterQuestion() {
 
@@ -1297,9 +1273,9 @@ function filterQuestion() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 STUDENT PAGE
-===================================================== */
+========================================================== */
 
 function loadStudentPage() {
 
@@ -1429,9 +1405,9 @@ function loadStudentPage() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 SAVE STUDENT
-===================================================== */
+========================================================== */
 
 async function saveStudent(e) {
 
@@ -1531,9 +1507,9 @@ async function saveStudent(e) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 LOAD STUDENTS
-===================================================== */
+========================================================== */
 
 async function loadStudents() {
 
@@ -1610,33 +1586,19 @@ async function loadStudents() {
 
                     <tr>
 
-                        <th>
-                            No
-                        </th>
+                        <th>No</th>
 
-                        <th>
-                            NIS
-                        </th>
+                        <th>NIS</th>
 
-                        <th>
-                            Name
-                        </th>
+                        <th>Name</th>
 
-                        <th>
-                            Class
-                        </th>
+                        <th>Class</th>
 
-                        <th>
-                            Username
-                        </th>
+                        <th>Username</th>
 
-                        <th>
-                            Status
-                        </th>
+                        <th>Status</th>
 
-                        <th>
-                            Action
-                        </th>
+                        <th>Action</th>
 
                     </tr>
 
@@ -1743,9 +1705,9 @@ async function loadStudents() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 EDIT STUDENT
-===================================================== */
+========================================================== */
 
 function editStudent(id) {
 
@@ -1817,9 +1779,9 @@ function editStudent(id) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 DELETE STUDENT
-===================================================== */
+========================================================== */
 
 async function deleteStudent(id) {
 
@@ -1867,9 +1829,9 @@ async function deleteStudent(id) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 RESET STUDENT FORM
-===================================================== */
+========================================================== */
 
 function resetStudentForm() {
 
@@ -1909,9 +1871,9 @@ function resetStudentForm() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 SEARCH STUDENT
-===================================================== */
+========================================================== */
 
 function filterStudent() {
 
@@ -1952,9 +1914,9 @@ function filterStudent() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 TOKEN PAGE
-===================================================== */
+========================================================== */
 
 function loadTokenPage() {
 
@@ -2054,9 +2016,9 @@ function loadTokenPage() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 GENERATE TOKEN
-===================================================== */
+========================================================== */
 
 async function generateExamToken(e) {
 
@@ -2231,9 +2193,9 @@ async function generateExamToken(e) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 LOAD TOKENS
-===================================================== */
+========================================================== */
 
 async function loadTokens() {
 
@@ -2310,33 +2272,19 @@ async function loadTokens() {
 
                     <tr>
 
-                        <th>
-                            No
-                        </th>
+                        <th>No</th>
 
-                        <th>
-                            Token
-                        </th>
+                        <th>Token</th>
 
-                        <th>
-                            Class
-                        </th>
+                        <th>Class</th>
 
-                        <th>
-                            Status
-                        </th>
+                        <th>Status</th>
 
-                        <th>
-                            Expired
-                        </th>
+                        <th>Expired</th>
 
-                        <th>
-                            Created
-                        </th>
+                        <th>Created</th>
 
-                        <th>
-                            Action
-                        </th>
+                        <th>Action</th>
 
                     </tr>
 
@@ -2386,35 +2334,25 @@ async function loadTokens() {
 
                         <td>
                             <b>
-                                ${escapeHTML(
-                                    t.token
-                                )}
+                                ${escapeHTML(t.token)}
                             </b>
                         </td>
 
                         <td>
-                            ${escapeHTML(
-                                t.kelas
-                            )}
+                            ${escapeHTML(t.kelas)}
                         </td>
 
                         <td>
-                            ${escapeHTML(
-                                t.status
-                            )}
+                            ${escapeHTML(t.status)}
                         </td>
 
                         <td>
-                            ${escapeHTML(
-                                t.expired
-                            )}
+                            ${escapeHTML(t.expired)}
                             minutes
                         </td>
 
                         <td>
-                            ${formatDate(
-                                t.createdAt
-                            )}
+                            ${formatDate(t.createdAt)}
                         </td>
 
                         <td>
@@ -2475,9 +2413,9 @@ async function loadTokens() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 DISABLE TOKEN
-===================================================== */
+========================================================== */
 
 async function disableExamToken(token) {
 
@@ -2561,9 +2499,9 @@ async function disableExamToken(token) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 DELETE TOKEN
-===================================================== */
+========================================================== */
 
 async function deleteExamToken(token) {
 
@@ -2647,9 +2585,9 @@ async function deleteExamToken(token) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 SEARCH TOKEN
-===================================================== */
+========================================================== */
 
 function filterToken() {
 
@@ -2690,9 +2628,9 @@ function filterToken() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 RESULT PAGE
-===================================================== */
+========================================================== */
 
 function loadResultPage() {
 
@@ -2713,55 +2651,6 @@ function loadResultPage() {
 
         <br><br>
 
-        <div
-            id="resultActions"
-            style="
-                display:flex;
-                gap:8px;
-                flex-wrap:wrap;
-                align-items:center;
-                margin-bottom:15px;
-            "
-        >
-
-            <button
-                type="button"
-                class="btn teacher"
-                onclick="selectAllResults()">
-
-                Select All
-
-            </button>
-
-            <button
-                type="button"
-                class="btn delete"
-                onclick="deleteSelectedResults()">
-
-                Delete Selected
-
-            </button>
-
-            <button
-                type="button"
-                class="btn delete"
-                onclick="deleteAllResults()">
-
-                Delete All
-
-            </button>
-
-            <span
-                id="selectedResultCount"
-                style="margin-left:5px;"
-            >
-                0 selected
-            </span>
-
-        </div>
-
-        <br>
-
         <div id="resultTable">
 
             Loading...
@@ -2776,9 +2665,9 @@ function loadResultPage() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 LOAD RESULTS
-===================================================== */
+========================================================== */
 
 async function loadResults() {
 
@@ -2822,34 +2711,14 @@ async function loadResults() {
                 ) +
                 "</p>";
 
-
             APP.result = [];
 
-
             updateResultCounter(0);
-
-            updateSelectedResultCount();
 
             return;
 
         }
 
-
-        /*
-         * =================================================
-         * RESULT FIX
-         * =================================================
-         *
-         * Supports:
-         *
-         * response.data = [...]
-         *
-         * OR:
-         *
-         * response[0]
-         * response[1]
-         * response[2]
-         */
 
         APP.result =
             normalizeApiArray(
@@ -2869,8 +2738,6 @@ async function loadResults() {
 
             table.innerHTML =
                 "<p>No result found.</p>";
-
-            updateSelectedResultCount();
 
             return;
 
@@ -2895,9 +2762,6 @@ async function loadResults() {
         updateResultCounter(0);
 
 
-        updateSelectedResultCount();
-
-
         table.innerHTML =
             "<p style='color:red'>" +
             escapeHTML(
@@ -2911,9 +2775,9 @@ async function loadResults() {
 }
 
 
-/* =====================================================
+/* ==========================================================
 RENDER RESULT LIST
-===================================================== */
+========================================================== */
 
 function renderResultList() {
 
@@ -2938,8 +2802,6 @@ function renderResultList() {
         table.innerHTML =
             "<p>No result found.</p>";
 
-        updateSelectedResultCount();
-
         return;
 
     }
@@ -2956,57 +2818,27 @@ function renderResultList() {
 
                 <tr>
 
-                    <th>
-                        <input
-                            type="checkbox"
-                            id="selectAllResultsCheckbox"
-                            onchange="toggleAllResults(this)"
-                        >
-                    </th>
+                    <th>No</th>
 
-                    <th>
-                        No
-                    </th>
+                    <th>NIS</th>
 
-                    <th>
-                        NIS
-                    </th>
+                    <th>Name</th>
 
-                    <th>
-                        Name
-                    </th>
+                    <th>Class</th>
 
-                    <th>
-                        Class
-                    </th>
+                    <th>Question</th>
 
-                    <th>
-                        Question
-                    </th>
+                    <th>Score</th>
 
-                    <th>
-                        Score
-                    </th>
+                    <th>Accuracy</th>
 
-                    <th>
-                        Accuracy
-                    </th>
+                    <th>Transcript</th>
 
-                    <th>
-                        Transcript
-                    </th>
+                    <th>Feedback</th>
 
-                    <th>
-                        Feedback
-                    </th>
+                    <th>Result ID</th>
 
-                    <th>
-                        Result ID
-                    </th>
-
-                    <th>
-                        Action
-                    </th>
+                    <th>Action</th>
 
                 </tr>
 
@@ -3019,10 +2851,6 @@ function renderResultList() {
 
     APP.result.forEach(
         (r, i) => {
-
-            /*
-             * Score compatibility.
-             */
 
             const score =
                 r.score ??
@@ -3060,111 +2888,62 @@ function renderResultList() {
                 "-";
 
 
-            const safeResultId =
-                escapeAttribute(
-                    resultId
-                );
-
-
             html += `
 
                 <tr>
-
-                    <td style="text-align:center;">
-
-                        ${
-                            resultId !== "-"
-                                ? `
-                                    <input
-                                        type="checkbox"
-                                        class="result-checkbox"
-                                        value="${safeResultId}"
-                                        onchange="updateSelectedResultCount()"
-                                    >
-                                  `
-                                : ""
-                        }
-
-                    </td>
 
                     <td>
                         ${i + 1}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            r.nis
-                        )}
+                        ${escapeHTML(r.nis)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            r.nama
-                        )}
+                        ${escapeHTML(r.nama)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            r.kelas
-                        )}
+                        ${escapeHTML(r.kelas)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            r.question
-                        )}
+                        ${escapeHTML(r.question)}
                     </td>
 
                     <td>
-
                         <b>
-                            ${escapeHTML(
-                                score
-                            )}
+                            ${escapeHTML(score)}
                         </b>
-
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            accuracy
-                        )}
+                        ${escapeHTML(accuracy)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            transcript
-                        )}
+                        ${escapeHTML(transcript)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            feedback
-                        )}
+                        ${escapeHTML(feedback)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            resultId
-                        )}
+                        ${escapeHTML(resultId)}
                     </td>
 
                     <td>
 
-                        ${
-                            resultId !== "-"
-                                ? `
-                                    <button
-                                        type="button"
-                                        class="btn delete"
-                                        onclick="deleteResult('${safeResultId}')">
+                        <button
+                            type="button"
+                            class="btn delete"
+                            onclick="deleteResult('${escapeAttribute(resultId)}')">
 
-                                        Delete
+                            Delete
 
-                                    </button>
-                                  `
-                                : ""
-                        }
+                        </button>
 
                     </td>
 
@@ -3188,458 +2967,16 @@ function renderResultList() {
     table.innerHTML =
         html;
 
-
-    updateSelectedResultCount();
-
 }
 
 
-/* =====================================================
-TOGGLE ALL RESULTS
-===================================================== */
-
-function toggleAllResults(masterCheckbox) {
-
-    const checked =
-        Boolean(
-            masterCheckbox &&
-            masterCheckbox.checked
-        );
-
-
-    document
-        .querySelectorAll(
-            "#resultTable .result-checkbox"
-        )
-        .forEach(
-            checkbox => {
-
-                checkbox.checked =
-                    checked;
-
-            }
-        );
-
-
-    updateSelectedResultCount();
-
-}
-
-
-/* =====================================================
-SELECT ALL RESULTS
-===================================================== */
-
-function selectAllResults() {
-
-    const checkboxes =
-        document.querySelectorAll(
-            "#resultTable .result-checkbox"
-        );
-
-
-    if (
-        !checkboxes.length
-    ) {
-
-        alert(
-            "No result available."
-        );
-
-        return;
-
-    }
-
-
-    checkboxes.forEach(
-        checkbox => {
-
-            checkbox.checked =
-                true;
-
-        }
-    );
-
-
-    const master =
-        document.getElementById(
-            "selectAllResultsCheckbox"
-        );
-
-
-    if (master) {
-
-        master.checked =
-            true;
-
-        master.indeterminate =
-            false;
-
-    }
-
-
-    updateSelectedResultCount();
-
-}
-
-
-/* =====================================================
-GET SELECTED RESULT IDS
-===================================================== */
-
-function getSelectedResultIds() {
-
-    return Array.from(
-        document.querySelectorAll(
-            "#resultTable .result-checkbox:checked"
-        )
-    )
-
-    .map(
-        checkbox =>
-            String(
-                checkbox.value
-            ).trim()
-    )
-
-    .filter(
-        id =>
-            id !== ""
-    );
-
-}
-
-
-/* =====================================================
-UPDATE SELECTED RESULT COUNT
-===================================================== */
-
-function updateSelectedResultCount() {
-
-    const selected =
-        getSelectedResultIds();
-
-
-    const counter =
-        document.getElementById(
-            "selectedResultCount"
-        );
-
-
-    if (counter) {
-
-        counter.textContent =
-            selected.length +
-            " selected";
-
-    }
-
-
-    const checkboxes =
-        document.querySelectorAll(
-            "#resultTable .result-checkbox"
-        );
-
-
-    const master =
-        document.getElementById(
-            "selectAllResultsCheckbox"
-        );
-
-
-    if (
-        master &&
-        checkboxes.length > 0
-    ) {
-
-        const checkedCount =
-            Array.from(
-                checkboxes
-            )
-            .filter(
-                checkbox =>
-                    checkbox.checked
-            )
-            .length;
-
-
-        master.checked =
-            checkedCount ===
-            checkboxes.length;
-
-
-        master.indeterminate =
-            checkedCount > 0 &&
-            checkedCount <
-                checkboxes.length;
-
-    }
-
-}
-
-
-/* =====================================================
-DELETE SELECTED RESULTS
-===================================================== */
-
-async function deleteSelectedResults() {
-
-    const ids =
-        getSelectedResultIds();
-
-
-    if (
-        ids.length === 0
-    ) {
-
-        alert(
-            "Please select at least one result."
-        );
-
-        return;
-
-    }
-
-
-    const confirmed =
-        confirm(
-            "Delete " +
-            ids.length +
-            " selected result(s)?"
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
-    try {
-
-        console.log(
-            "DELETE SELECTED RESULT IDS:",
-            ids
-        );
-
-
-        const res =
-            await apiDeleteResults({
-
-                ids: ids
-
-            });
-
-
-        console.log(
-            "DELETE SELECTED RESULT RESPONSE:",
-            res
-        );
-
-
-        alert(
-            res &&
-            res.message
-                ? res.message
-                : ids.length +
-                  " result(s) deleted."
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            return;
-
-        }
-
-
-        await loadResults();
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE SELECTED RESULTS ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to delete selected results."
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-DELETE ALL RESULTS
-===================================================== */
-
-async function deleteAllResults() {
-
-    /*
-     * Get all IDs from current APP.result.
-     *
-     * We intentionally use Result IDs,
-     * not spreadsheet row numbers.
-     */
-
-    const ids =
-        APP.result
-
-            .map(
-                result =>
-                    result.id ??
-                    result.resultId ??
-                    ""
-            )
-
-            .map(
-                id =>
-                    String(id).trim()
-            )
-
-            .filter(
-                id =>
-                    id !== ""
-            );
-
-
-    if (
-        ids.length === 0
-    ) {
-
-        alert(
-            "No result available to delete."
-        );
-
-        return;
-
-    }
-
-
-    const confirmed =
-        confirm(
-            "WARNING!\n\n" +
-            "This will delete ALL " +
-            ids.length +
-            " speaking result(s).\n\n" +
-            "This action cannot be undone.\n\n" +
-            "Continue?"
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
-    /*
-     * Second confirmation.
-     *
-     * Delete All is intentionally protected
-     * against accidental clicks.
-     */
-
-    const finalConfirmed =
-        confirm(
-            "Are you absolutely sure you want to DELETE ALL RESULTS?"
-        );
-
-
-    if (!finalConfirmed) {
-
-        return;
-
-    }
-
-
-    try {
-
-        console.log(
-            "DELETE ALL RESULT IDS:",
-            ids
-        );
-
-
-        const res =
-            await apiDeleteResults({
-
-                ids: ids
-
-            });
-
-
-        console.log(
-            "DELETE ALL RESULT RESPONSE:",
-            res
-        );
-
-
-        alert(
-            res &&
-            res.message
-                ? res.message
-                : "All results deleted."
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            return;
-
-        }
-
-
-        await loadResults();
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE ALL RESULTS ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to delete all results."
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-DELETE SINGLE RESULT
-===================================================== */
+/* ==========================================================
+DELETE RESULT
+========================================================== */
 
 async function deleteResult(id) {
 
-    if (
-        !id ||
-        id === "-"
-    ) {
+    if (!id || id === "-") {
 
         alert(
             "Result ID is not available."
@@ -3669,12 +3006,6 @@ async function deleteResult(id) {
                 id: id
 
             });
-
-
-        console.log(
-            "DELETE RESULT RESPONSE:",
-            res
-        );
 
 
         alert(
@@ -3719,9 +3050,9 @@ async function deleteResult(id) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 SEARCH RESULT
-===================================================== */
+========================================================== */
 
 function filterResult() {
 
@@ -3762,9 +3093,1441 @@ function filterResult() {
 }
 
 
-/* =====================================================
+/* ==========================================================
+REPORT PAGE
+========================================================== */
+
+function loadReportsPage() {
+
+    STATE.reportClass = "";
+
+
+    setContent(`
+
+        <h2>
+            📊 Speaking Reports
+        </h2>
+
+        <p>
+            View and export speaking test results
+            by class.
+        </p>
+
+        <br>
+
+        <div
+            style="
+                display:flex;
+                gap:12px;
+                flex-wrap:wrap;
+                align-items:center;
+            "
+        >
+
+            <label>
+                <b>
+                    Class:
+                </b>
+            </label>
+
+            <select
+                id="reportClassFilter"
+                onchange="filterReportClass()"
+                style="
+                    min-width:180px;
+                    padding:8px;
+                "
+            >
+
+                <option value="">
+                    All Classes
+                </option>
+
+            </select>
+
+
+            <button
+                type="button"
+                class="btn teacher"
+                onclick="refreshReports()"
+            >
+
+                Refresh Report
+
+            </button>
+
+
+            <button
+                type="button"
+                class="btn teacher"
+                onclick="exportReportExcel()"
+            >
+
+                📥 Export Excel
+
+            </button>
+
+        </div>
+
+        <br>
+
+
+        <div
+            id="reportSummary"
+        >
+
+            Loading summary...
+
+        </div>
+
+        <br>
+
+
+        <div
+            id="reportTable"
+        >
+
+            Loading report...
+
+        </div>
+
+    `);
+
+
+    loadReports();
+
+}
+
+
+/* ==========================================================
+LOAD REPORTS
+========================================================== */
+
+async function loadReports() {
+
+    const table =
+        document.getElementById(
+            "reportTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
+    table.innerHTML =
+        "<p>Loading reports...</p>";
+
+
+    try {
+
+        const res =
+            await apiGetResult();
+
+
+        console.log(
+            "REPORT RESULT RESPONSE:",
+            res
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            APP.result = [];
+
+
+            updateReportClassOptions();
+
+
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load reports."
+                ) +
+                "</p>";
+
+
+            renderReportSummary([]);
+
+            return;
+
+        }
+
+
+        APP.result =
+            normalizeApiArray(
+                res.data ??
+                res
+            );
+
+
+        updateResultCounter(
+            APP.result.length
+        );
+
+
+        updateReportClassOptions();
+
+
+        renderReport();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "LOAD REPORT ERROR:",
+            err
+        );
+
+
+        APP.result = [];
+
+
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load reports."
+            ) +
+            "</p>";
+
+
+        renderReportSummary([]);
+
+    }
+
+}
+
+
+/* ==========================================================
+REFRESH REPORT
+========================================================== */
+
+async function refreshReports() {
+
+    await loadReports();
+
+}
+
+
+/* ==========================================================
+REPORT CLASS OPTIONS
+========================================================== */
+
+function updateReportClassOptions() {
+
+    const select =
+        document.getElementById(
+            "reportClassFilter"
+        );
+
+
+    if (!select) {
+
+        return;
+
+    }
+
+
+    const currentValue =
+        STATE.reportClass || "";
+
+
+    const classes =
+        APP.result
+
+            .map(
+                item =>
+                    String(
+                        item.kelas ??
+                        ""
+                    ).trim()
+            )
+
+            .filter(
+                value =>
+                    value !== ""
+            );
+
+
+    const uniqueClasses =
+        [
+            ...new Set(classes)
+        ]
+        .sort(
+            (a, b) =>
+                a.localeCompare(
+                    b,
+                    undefined,
+                    {
+                        numeric: true,
+                        sensitivity: "base"
+                    }
+                )
+        );
+
+
+    let html = `
+
+        <option value="">
+            All Classes
+        </option>
+
+    `;
+
+
+    uniqueClasses.forEach(
+        kelas => {
+
+            html += `
+
+                <option
+                    value="${escapeAttribute(kelas)}"
+                >
+
+                    ${escapeHTML(kelas)}
+
+                </option>
+
+            `;
+
+        }
+    );
+
+
+    select.innerHTML =
+        html;
+
+
+    if (
+        uniqueClasses.includes(
+            currentValue
+        )
+    ) {
+
+        select.value =
+            currentValue;
+
+    }
+
+    else {
+
+        select.value =
+            "";
+
+        STATE.reportClass =
+            "";
+
+    }
+
+}
+
+
+/* ==========================================================
+FILTER REPORT CLASS
+========================================================== */
+
+function filterReportClass() {
+
+    const select =
+        document.getElementById(
+            "reportClassFilter"
+        );
+
+
+    if (!select) {
+
+        return;
+
+    }
+
+
+    STATE.reportClass =
+        select.value || "";
+
+
+    renderReport();
+
+}
+
+
+/* ==========================================================
+GET FILTERED REPORT DATA
+========================================================== */
+
+function getFilteredReportData() {
+
+    if (
+        !Array.isArray(APP.result)
+    ) {
+
+        return [];
+
+    }
+
+
+    if (
+        !STATE.reportClass
+    ) {
+
+        return [
+            ...APP.result
+        ];
+
+    }
+
+
+    return APP.result.filter(
+        item => {
+
+            return (
+                String(
+                    item.kelas ??
+                    ""
+                ).trim()
+                ===
+                String(
+                    STATE.reportClass
+                ).trim()
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+RENDER REPORT
+========================================================== */
+
+function renderReport() {
+
+    const table =
+        document.getElementById(
+            "reportTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
+    const data =
+        getFilteredReportData();
+
+
+    renderReportSummary(
+        data
+    );
+
+
+    if (
+        data.length === 0
+    ) {
+
+        table.innerHTML = `
+
+            <div
+                style="
+                    padding:20px;
+                    border:1px solid #ddd;
+                    text-align:center;
+                "
+            >
+
+                <p>
+                    No result found
+                    for the selected class.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <div
+            style="
+                overflow-x:auto;
+            "
+        >
+
+            <table
+                border="1"
+                width="100%"
+                cellpadding="8"
+                cellspacing="0"
+            >
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            No
+                        </th>
+
+                        <th>
+                            NIS
+                        </th>
+
+                        <th>
+                            Student Name
+                        </th>
+
+                        <th>
+                            Class
+                        </th>
+
+                        <th>
+                            Question
+                        </th>
+
+                        <th>
+                            Score
+                        </th>
+
+                        <th>
+                            Accuracy
+                        </th>
+
+                        <th>
+                            Transcript
+                        </th>
+
+                        <th>
+                            Feedback
+                        </th>
+
+                        <th>
+                            Date
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+    `;
+
+
+    data.forEach(
+        (r, index) => {
+
+            const score =
+                getResultScore(r);
+
+
+            const accuracy =
+                getResultAccuracy(r);
+
+
+            const transcript =
+                r.transcript ??
+                r.recognizedText ??
+                r.text ??
+                "-";
+
+
+            const feedback =
+                r.feedback ??
+                r.comment ??
+                r.message ??
+                "-";
+
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${index + 1}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            r.nis
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            r.nama
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            r.kelas
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            r.question
+                        )}
+                    </td>
+
+                    <td>
+                        <b>
+                            ${escapeHTML(
+                                score
+                            )}
+                        </b>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            accuracy
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            transcript
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            feedback
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatDate(
+                            r.createdAt
+                        )}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+    html += `
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    `;
+
+
+    table.innerHTML =
+        html;
+
+}
+
+
+/* ==========================================================
+REPORT SUMMARY
+========================================================== */
+
+function renderReportSummary(data) {
+
+    const summary =
+        document.getElementById(
+            "reportSummary"
+        );
+
+
+    if (!summary) {
+
+        return;
+
+    }
+
+
+    if (
+        !Array.isArray(data)
+    ) {
+
+        data = [];
+
+    }
+
+
+    const totalResults =
+        data.length;
+
+
+    const studentSet =
+        new Set();
+
+
+    let scoreTotal = 0;
+
+    let scoreCount = 0;
+
+
+    let accuracyTotal = 0;
+
+    let accuracyCount = 0;
+
+
+    data.forEach(
+        result => {
+
+            const nis =
+                String(
+                    result.nis ??
+                    ""
+                ).trim();
+
+
+            const nama =
+                String(
+                    result.nama ??
+                    ""
+                ).trim();
+
+
+            if (
+                nis ||
+                nama
+            ) {
+
+                studentSet.add(
+                    nis ||
+                    nama
+                );
+
+            }
+
+
+            const score =
+                parseNumericValue(
+                    getResultScore(
+                        result
+                    )
+                );
+
+
+            if (
+                score !== null
+            ) {
+
+                scoreTotal +=
+                    score;
+
+                scoreCount++;
+
+            }
+
+
+            const accuracy =
+                parseNumericValue(
+                    getResultAccuracy(
+                        result
+                    )
+                );
+
+
+            if (
+                accuracy !== null
+            ) {
+
+                accuracyTotal +=
+                    accuracy;
+
+                accuracyCount++;
+
+            }
+
+        }
+    );
+
+
+    const totalStudents =
+        studentSet.size;
+
+
+    const averageScore =
+        scoreCount > 0
+
+            ? (
+                scoreTotal /
+                scoreCount
+            ).toFixed(2)
+
+            : "-";
+
+
+    const averageAccuracy =
+        accuracyCount > 0
+
+            ? (
+                accuracyTotal /
+                accuracyCount
+            ).toFixed(2)
+
+            : "-";
+
+
+    const selectedClass =
+        STATE.reportClass
+            ? escapeHTML(
+                STATE.reportClass
+            )
+            : "All Classes";
+
+
+    summary.innerHTML = `
+
+        <div
+            style="
+                display:grid;
+                grid-template-columns:
+                    repeat(
+                        auto-fit,
+                        minmax(180px, 1fr)
+                    );
+                gap:12px;
+            "
+        >
+
+            <div
+                style="
+                    border:1px solid #ddd;
+                    padding:15px;
+                    border-radius:8px;
+                "
+            >
+
+                <div>
+                    Class
+                </div>
+
+                <strong>
+                    ${selectedClass}
+                </strong>
+
+            </div>
+
+
+            <div
+                style="
+                    border:1px solid #ddd;
+                    padding:15px;
+                    border-radius:8px;
+                "
+            >
+
+                <div>
+                    Total Students
+                </div>
+
+                <strong>
+                    ${totalStudents}
+                </strong>
+
+            </div>
+
+
+            <div
+                style="
+                    border:1px solid #ddd;
+                    padding:15px;
+                    border-radius:8px;
+                "
+            >
+
+                <div>
+                    Total Results
+                </div>
+
+                <strong>
+                    ${totalResults}
+                </strong>
+
+            </div>
+
+
+            <div
+                style="
+                    border:1px solid #ddd;
+                    padding:15px;
+                    border-radius:8px;
+                "
+            >
+
+                <div>
+                    Average Score
+                </div>
+
+                <strong>
+                    ${averageScore}
+                </strong>
+
+            </div>
+
+
+            <div
+                style="
+                    border:1px solid #ddd;
+                    padding:15px;
+                    border-radius:8px;
+                "
+            >
+
+                <div>
+                    Average Accuracy
+                </div>
+
+                <strong>
+                    ${averageAccuracy}
+                </strong>
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* ==========================================================
+GET RESULT SCORE
+========================================================== */
+
+function getResultScore(result) {
+
+    if (!result) {
+
+        return "-";
+
+    }
+
+
+    return (
+        result.score ??
+        result.totalScore ??
+        result.nilai ??
+        result.value ??
+        "-"
+    );
+
+}
+
+
+/* ==========================================================
+GET RESULT ACCURACY
+========================================================== */
+
+function getResultAccuracy(result) {
+
+    if (!result) {
+
+        return "-";
+
+    }
+
+
+    return (
+        result.accuracy ??
+        result.accuracyScore ??
+        result.pronunciationAccuracy ??
+        result.accuracyPercent ??
+        "-"
+    );
+
+}
+
+
+/* ==========================================================
+PARSE NUMERIC VALUE
+========================================================== */
+
+function parseNumericValue(value) {
+
+    if (
+        value === null ||
+        typeof value === "undefined" ||
+        value === ""
+    ) {
+
+        return null;
+
+    }
+
+
+    const number =
+        Number(
+            String(value)
+                .replace(
+                    "%",
+                    ""
+                )
+                .trim()
+        );
+
+
+    if (
+        Number.isNaN(number)
+    ) {
+
+        return null;
+
+    }
+
+
+    return number;
+
+}
+
+
+/* ==========================================================
+LOAD XLSX LIBRARY
+========================================================== */
+
+function ensureXLSX() {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            if (
+                typeof XLSX !==
+                "undefined"
+            ) {
+
+                resolve(
+                    XLSX
+                );
+
+                return;
+
+            }
+
+
+            const existing =
+                document.querySelector(
+                    'script[data-saf-xlsx="true"]'
+                );
+
+
+            if (existing) {
+
+                existing.addEventListener(
+                    "load",
+                    () => {
+
+                        if (
+                            typeof XLSX !==
+                            "undefined"
+                        ) {
+
+                            resolve(
+                                XLSX
+                            );
+
+                        }
+
+                        else {
+
+                            reject(
+                                new Error(
+                                    "Excel library failed to load."
+                                )
+                            );
+
+                        }
+
+                    }
+                );
+
+
+                existing.addEventListener(
+                    "error",
+                    () => {
+
+                        reject(
+                            new Error(
+                                "Unable to load Excel library."
+                            )
+                        );
+
+                    }
+                );
+
+
+                return;
+
+            }
+
+
+            const script =
+                document.createElement(
+                    "script"
+                );
+
+
+            script.src =
+                "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+
+
+            script.async =
+                true;
+
+
+            script.dataset.safXlsx =
+                "true";
+
+
+            script.onload =
+                function () {
+
+                    if (
+                        typeof XLSX !==
+                        "undefined"
+                    ) {
+
+                        resolve(
+                            XLSX
+                        );
+
+                    }
+
+                    else {
+
+                        reject(
+                            new Error(
+                                "Excel library is not available."
+                            )
+                        );
+
+                    }
+
+                };
+
+
+            script.onerror =
+                function () {
+
+                    reject(
+                        new Error(
+                            "Unable to load Excel library."
+                        )
+                    );
+
+                };
+
+
+            document.head.appendChild(
+                script
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+EXPORT REPORT EXCEL
+========================================================== */
+
+async function exportReportExcel() {
+
+    const data =
+        getFilteredReportData();
+
+
+    if (
+        data.length === 0
+    ) {
+
+        alert(
+            "Tidak ada data report untuk diekspor."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const excel =
+            await ensureXLSX();
+
+
+        const rows =
+            data.map(
+                (r, index) => {
+
+                    return {
+
+                        No:
+                            index + 1,
+
+                        NIS:
+                            r.nis ?? "",
+
+                        "Student Name":
+                            r.nama ?? "",
+
+                        Class:
+                            r.kelas ?? "",
+
+                        Question:
+                            r.question ?? "",
+
+                        Score:
+                            getResultScore(r),
+
+                        Accuracy:
+                            getResultAccuracy(r),
+
+                        Transcript:
+                            r.transcript ??
+                            r.recognizedText ??
+                            r.text ??
+                            "",
+
+                        Feedback:
+                            r.feedback ??
+                            r.comment ??
+                            r.message ??
+                            "",
+
+                        "Result ID":
+                            r.id ??
+                            r.resultId ??
+                            "",
+
+                        Token:
+                            r.token ?? "",
+
+                        Created:
+                            formatDateForExcel(
+                                r.createdAt
+                            )
+
+                    };
+
+                }
+            );
+
+
+        const worksheet =
+            excel.utils.json_to_sheet(
+                rows
+            );
+
+
+        worksheet["!cols"] = [
+
+            {
+                wch: 6
+            },
+
+            {
+                wch: 12
+            },
+
+            {
+                wch: 25
+            },
+
+            {
+                wch: 10
+            },
+
+            {
+                wch: 30
+            },
+
+            {
+                wch: 10
+            },
+
+            {
+                wch: 12
+            },
+
+            {
+                wch: 40
+            },
+
+            {
+                wch: 50
+            },
+
+            {
+                wch: 38
+            },
+
+            {
+                wch: 14
+            },
+
+            {
+                wch: 22
+            }
+
+        ];
+
+
+        const workbook =
+            excel.utils.book_new();
+
+
+        excel.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            "Speaking Results"
+        );
+
+
+        const className =
+            STATE.reportClass
+                ? sanitizeFileName(
+                    STATE.reportClass
+                )
+                : "All_Classes";
+
+
+        const date =
+            new Date()
+                .toISOString()
+                .slice(
+                    0,
+                    10
+                );
+
+
+        const fileName =
+            "SAF_Speaking_Report_" +
+            className +
+            "_" +
+            date +
+            ".xlsx";
+
+
+        excel.writeFile(
+            workbook,
+            fileName
+        );
+
+
+        alert(
+            "Excel report berhasil dibuat."
+        );
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "EXPORT EXCEL ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Gagal membuat file Excel."
+        );
+
+    }
+
+}
+
+
+/* ==========================================================
+FORMAT DATE FOR EXCEL
+========================================================== */
+
+function formatDateForExcel(value) {
+
+    if (!value) {
+
+        return "";
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return String(
+            value
+        );
+
+    }
+
+
+    return date.toLocaleString(
+        "id-ID"
+    );
+
+}
+
+
+/* ==========================================================
+SANITIZE FILE NAME
+========================================================== */
+
+function sanitizeFileName(value) {
+
+    return String(
+        value || ""
+    )
+
+        .replace(
+            /[<>:"/\\|?*]+/g,
+            "_"
+        )
+
+        .replace(
+            /\s+/g,
+            "_"
+        )
+
+        .trim() ||
+
+        "Report";
+
+}
+
+
+/* ==========================================================
 DASHBOARD COUNTERS
-===================================================== */
+========================================================== */
 
 function updateQuestionCounter(total) {
 
@@ -3898,9 +4661,9 @@ function updateResultCounter(total) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 ESCAPE HTML
-===================================================== */
+========================================================== */
 
 function escapeHTML(value) {
 
@@ -3944,9 +4707,9 @@ function escapeHTML(value) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 ESCAPE ATTRIBUTE
-===================================================== */
+========================================================== */
 
 function escapeAttribute(value) {
 
@@ -3980,9 +4743,9 @@ function escapeAttribute(value) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 FORMAT DATE
-===================================================== */
+========================================================== */
 
 function formatDate(value) {
 
@@ -4017,6 +4780,6 @@ function formatDate(value) {
 }
 
 
-/* =====================================================
+/* ==========================================================
 END OF FILE
-===================================================== */
+========================================================== */
