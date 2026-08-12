@@ -3,7 +3,7 @@
  * SAF Speaking Online Test
  * Teacher Dashboard Controller
  *
- * Stable Foundation v4.2
+ * Stable Foundation v4.3
  *
  * MODULE:
  * - Dashboard
@@ -20,7 +20,7 @@
 
 
 /* =========================================================
-   GLOBAL STATE
+GLOBAL STATE
 ========================================================= */
 
 let teacherQuestions = [];
@@ -32,7 +32,7 @@ let csvStudentData = [];
 
 
 /* =========================================================
-   INITIALIZE
+INITIALIZE
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -67,7 +67,7 @@ async function initializeTeacherDashboard() {
 
 
 /* =========================================================
-   MENU
+MENU
 ========================================================= */
 
 function setupMenu() {
@@ -95,7 +95,7 @@ function setupMenu() {
 
                 if (page === "dashboard") {
 
-                    loadDashboardPage();
+                    await loadDashboardPage();
 
                 }
 
@@ -132,7 +132,7 @@ function setupMenu() {
 
 
 /* =========================================================
-   DATE
+DATE
 ========================================================= */
 
 function updateTodayDate() {
@@ -172,7 +172,7 @@ function updateTodayDate() {
 
 
 /* =========================================================
-   CONTENT HELPER
+CONTENT HELPER
 ========================================================= */
 
 function getContentElement() {
@@ -185,7 +185,148 @@ function getContentElement() {
 
 
 /* =========================================================
-   DASHBOARD
+FIELD NORMALIZATION
+========================================================= */
+
+/*
+ * IMPORTANT
+ *
+ * Questions Sheet saat ini:
+ *
+ * id
+ * title
+ * answer
+ * difficulty
+ * duration
+ * status
+ * createdBy
+ * createdAt
+ * updatedAt
+ *
+ * UI sebelumnya membaca:
+ *
+ * question
+ * answerKey
+ *
+ * Karena itu kita normalisasi di frontend.
+ *
+ * Backend dan Spreadsheet TIDAK diubah.
+ */
+
+function normalizeQuestion(item) {
+
+    item = item || {};
+
+    return {
+
+        id:
+            item.id ||
+            "",
+
+        question:
+            item.question ??
+            item.title ??
+            "",
+
+        answerKey:
+            item.answerKey ??
+            item.answer ??
+            "",
+
+        difficulty:
+            item.difficulty ??
+            "",
+
+        duration:
+            item.duration ??
+            "",
+
+        status:
+            item.status ??
+            "",
+
+        createdBy:
+            item.createdBy ??
+            "",
+
+        createdAt:
+            item.createdAt ??
+            "",
+
+        updatedAt:
+            item.updatedAt ??
+            ""
+
+    };
+
+}
+
+
+/*
+ * Normalize Result
+ *
+ * Backend/result sheet dapat menggunakan
+ * beberapa kemungkinan nama field.
+ *
+ * Kita tetap mempertahankan field asli
+ * dan hanya membuat alias untuk UI.
+ */
+
+function normalizeResult(item) {
+
+    item = item || {};
+
+    return {
+
+        ...item,
+
+        nama:
+            item.nama ??
+            item.name ??
+            item.studentName ??
+            item.student ??
+            "",
+
+        username:
+            item.username ??
+            item.userName ??
+            "",
+
+        nis:
+            item.nis ??
+            item.studentNis ??
+            "",
+
+        question:
+            item.question ??
+            item.title ??
+            item.questionText ??
+            "",
+
+        score:
+            item.score ??
+            item.totalScore ??
+            item.finalScore ??
+            item.nilai ??
+            "",
+
+        answer:
+            item.answer ??
+            item.studentAnswer ??
+            "",
+
+        createdAt:
+            item.createdAt ??
+            item.timestamp ??
+            ""
+
+    };
+
+}
+
+
+/* =========================================================
+DASHBOARD
 ========================================================= */
 
 async function loadDashboardPage() {
@@ -273,7 +414,7 @@ async function loadDashboardPage() {
 
 
 /* =========================================================
-   DASHBOARD COUNTERS
+DASHBOARD COUNTERS
 ========================================================= */
 
 async function refreshDashboardCounters() {
@@ -404,7 +545,7 @@ async function refreshDashboardCounters() {
 
 
 /* =========================================================
-   QUESTION PAGE
+QUESTION PAGE
 ========================================================= */
 
 async function loadQuestionPage() {
@@ -467,7 +608,7 @@ async function loadQuestionPage() {
 
 
 /* =========================================================
-   QUESTION FORM
+QUESTION FORM
 ========================================================= */
 
 function showQuestionForm(question = null) {
@@ -489,9 +630,11 @@ function showQuestionForm(question = null) {
         <div class="card-box">
 
             <h3>
-                ${editing
+                ${
+                    editing
                     ? "Edit Speaking Question"
-                    : "Add Speaking Question"}
+                    : "Add Speaking Question"
+                }
             </h3>
 
             <br>
@@ -512,11 +655,13 @@ function showQuestionForm(question = null) {
                     resize:vertical;
                 "
                 placeholder="Enter speaking question..."
-            >${editing
+            >${
+                editing
                 ? escapeHtml(
                     question.question || ""
                 )
-                : ""}</textarea>
+                : ""
+            }</textarea>
 
             <br><br>
 
@@ -536,11 +681,13 @@ function showQuestionForm(question = null) {
                     resize:vertical;
                 "
                 placeholder="Enter answer key..."
-            >${editing
+            >${
+                editing
                 ? escapeHtml(
                     question.answerKey || ""
                 )
-                : ""}</textarea>
+                : ""
+            }</textarea>
 
             <br><br>
 
@@ -585,7 +732,7 @@ function showQuestionForm(question = null) {
 
 
 /* =========================================================
-   INSERT QUESTION
+INSERT QUESTION
 ========================================================= */
 
 async function submitQuestionInsert() {
@@ -661,7 +808,7 @@ async function submitQuestionInsert() {
 
 
 /* =========================================================
-   UPDATE QUESTION
+UPDATE QUESTION
 ========================================================= */
 
 async function submitQuestionUpdate(id) {
@@ -716,6 +863,7 @@ async function submitQuestionUpdate(id) {
             "Question berhasil diupdate."
         );
 
+
         await renderQuestionList();
 
         await refreshDashboardCounters();
@@ -737,7 +885,7 @@ async function submitQuestionUpdate(id) {
 
 
 /* =========================================================
-   QUESTION LIST
+QUESTION LIST
 ========================================================= */
 
 async function renderQuestionList() {
@@ -785,8 +933,21 @@ async function renderQuestionList() {
     }
 
 
+    /*
+     * NORMALIZATION FIX
+     *
+     * Sheet:
+     * title / answer
+     *
+     * UI:
+     * question / answerKey
+     */
+
     teacherQuestions =
-        response.data || [];
+        (response.data || [])
+        .map(
+            normalizeQuestion
+        );
 
 
     if (
@@ -925,7 +1086,7 @@ async function renderQuestionList() {
 
 
 /* =========================================================
-   EDIT QUESTION
+EDIT QUESTION
 ========================================================= */
 
 function editQuestion(index) {
@@ -935,6 +1096,7 @@ function editQuestion(index) {
 
     if (!question) return;
 
+
     showQuestionForm(
         question
     );
@@ -943,7 +1105,7 @@ function editQuestion(index) {
 
 
 /* =========================================================
-   DELETE QUESTION
+DELETE QUESTION
 ========================================================= */
 
 async function deleteQuestionByIndex(index) {
@@ -1002,7 +1164,7 @@ async function deleteQuestionByIndex(index) {
 
 
 /* =========================================================
-   STUDENT PAGE
+STUDENT PAGE
 ========================================================= */
 
 async function loadStudentPage() {
@@ -1084,7 +1246,7 @@ async function loadStudentPage() {
 
 
 /* =========================================================
-   STUDENT FORM
+STUDENT FORM
 ========================================================= */
 
 function showStudentForm(student = null) {
@@ -1106,9 +1268,11 @@ function showStudentForm(student = null) {
         <div class="card-box">
 
             <h3>
-                ${editing
+                ${
+                    editing
                     ? "Edit Student"
-                    : "Add Student"}
+                    : "Add Student"
+                }
             </h3>
 
             <br>
@@ -1120,9 +1284,13 @@ function showStudentForm(student = null) {
             <input
                 id="studentNis"
                 type="text"
-                value="${editing
-                    ? escapeAttribute(student.nis || "")
-                    : ""}"
+                value="${
+                    editing
+                    ? escapeAttribute(
+                        student.nis || ""
+                    )
+                    : ""
+                }"
                 ${editing ? "readonly" : ""}
                 placeholder="NIS"
                 style="${inputStyle}"
@@ -1137,9 +1305,13 @@ function showStudentForm(student = null) {
             <input
                 id="studentNama"
                 type="text"
-                value="${editing
-                    ? escapeAttribute(student.nama || "")
-                    : ""}"
+                value="${
+                    editing
+                    ? escapeAttribute(
+                        student.nama || ""
+                    )
+                    : ""
+                }"
                 placeholder="Nama siswa"
                 style="${inputStyle}"
             >
@@ -1153,9 +1325,13 @@ function showStudentForm(student = null) {
             <input
                 id="studentKelas"
                 type="text"
-                value="${editing
-                    ? escapeAttribute(student.kelas || "")
-                    : ""}"
+                value="${
+                    editing
+                    ? escapeAttribute(
+                        student.kelas || ""
+                    )
+                    : ""
+                }"
                 placeholder="Contoh: 7A"
                 style="${inputStyle}"
             >
@@ -1169,9 +1345,13 @@ function showStudentForm(student = null) {
             <input
                 id="studentUsername"
                 type="text"
-                value="${editing
-                    ? escapeAttribute(student.username || "")
-                    : ""}"
+                value="${
+                    editing
+                    ? escapeAttribute(
+                        student.username || ""
+                    )
+                    : ""
+                }"
                 placeholder="Username"
                 style="${inputStyle}"
             >
@@ -1185,9 +1365,13 @@ function showStudentForm(student = null) {
             <input
                 id="studentPassword"
                 type="text"
-                value="${editing
-                    ? escapeAttribute(student.password || "")
-                    : ""}"
+                value="${
+                    editing
+                    ? escapeAttribute(
+                        student.password || ""
+                    )
+                    : ""
+                }"
                 placeholder="Password"
                 style="${inputStyle}"
             >
@@ -1204,12 +1388,14 @@ function showStudentForm(student = null) {
 
                 <option
                     value="ACTIVE"
-                    ${(
-                        !editing ||
-                        student.status === "ACTIVE"
-                    )
-                    ? "selected"
-                    : ""}>
+                    ${
+                        (
+                            !editing ||
+                            student.status === "ACTIVE"
+                        )
+                        ? "selected"
+                        : ""
+                    }>
 
                     ACTIVE
 
@@ -1217,12 +1403,14 @@ function showStudentForm(student = null) {
 
                 <option
                     value="INACTIVE"
-                    ${(
-                        editing &&
-                        student.status === "INACTIVE"
-                    )
-                    ? "selected"
-                    : ""}>
+                    ${
+                        (
+                            editing &&
+                            student.status === "INACTIVE"
+                        )
+                        ? "selected"
+                        : ""
+                    }>
 
                     INACTIVE
 
@@ -1273,7 +1461,7 @@ function showStudentForm(student = null) {
 
 
 /* =========================================================
-   INSERT STUDENT
+INSERT STUDENT
 ========================================================= */
 
 async function submitStudentInsert() {
@@ -1346,7 +1534,7 @@ async function submitStudentInsert() {
 
 
 /* =========================================================
-   GET STUDENT FORM DATA
+GET STUDENT FORM DATA
 ========================================================= */
 
 function getStudentFormData() {
@@ -1406,12 +1594,10 @@ function getStudentFormData() {
 
 
 /* =========================================================
-   UPDATE STUDENT
+UPDATE STUDENT
 ========================================================= */
 
-async function submitStudentUpdate(
-    nis
-) {
+async function submitStudentUpdate(nis) {
 
     const data =
         getStudentFormData();
@@ -1472,7 +1658,7 @@ async function submitStudentUpdate(
 
 
 /* =========================================================
-   STUDENT LIST
+STUDENT LIST
 ========================================================= */
 
 async function renderStudentList() {
@@ -1733,7 +1919,7 @@ async function renderStudentList() {
 
 
 /* =========================================================
-   EDIT STUDENT
+EDIT STUDENT
 ========================================================= */
 
 function editStudent(index) {
@@ -1752,12 +1938,10 @@ function editStudent(index) {
 
 
 /* =========================================================
-   DELETE STUDENT
+DELETE STUDENT
 ========================================================= */
 
-async function deleteStudentByIndex(
-    index
-) {
+async function deleteStudentByIndex(index) {
 
     const student =
         teacherStudents[index];
@@ -1821,7 +2005,7 @@ async function deleteStudentByIndex(
 
 
 /* =========================================================
-   CSV IMPORT UI
+CSV IMPORT UI
 ========================================================= */
 
 function showCSVImport() {
@@ -1958,7 +2142,7 @@ function showCSVImport() {
 
 
 /* =========================================================
-   PREVIEW CSV
+PREVIEW CSV
 ========================================================= */
 
 function previewStudentCSV() {
@@ -2077,7 +2261,7 @@ function previewStudentCSV() {
 
 
 /* =========================================================
-   CSV PARSER
+CSV PARSER
 ========================================================= */
 
 function parseStudentCSV(text) {
@@ -2096,10 +2280,6 @@ function parseStudentCSV(text) {
 
     }
 
-
-    /*
-     * Remove UTF-8 BOM
-     */
 
     text =
         text.replace(
@@ -2209,10 +2389,6 @@ function parseStudentCSV(text) {
             rows[i];
 
 
-        /*
-         * Ignore completely empty rows
-         */
-
         if (
             row.every(
                 function (cell) {
@@ -2277,10 +2453,6 @@ function parseStudentCSV(text) {
 
         };
 
-
-        /*
-         * Validate required fields
-         */
 
         if (!item.nis) {
 
@@ -2349,12 +2521,7 @@ function parseStudentCSV(text) {
 
 
 /* =========================================================
-   CSV ROW PARSER
-   Supports:
-   - comma
-   - quoted text
-   - commas inside quotes
-   - new line inside quotes
+CSV ROW PARSER
 ========================================================= */
 
 function parseCSVRows(text) {
@@ -2381,10 +2548,6 @@ function parseCSVRows(text) {
         const nextChar =
             text[i + 1];
 
-
-        /*
-         * Double quote
-         */
 
         if (
             char === '"'
@@ -2413,10 +2576,6 @@ function parseCSVRows(text) {
         }
 
 
-        /*
-         * Comma
-         */
-
         if (
             char === "," &&
             !insideQuotes
@@ -2432,10 +2591,6 @@ function parseCSVRows(text) {
 
         }
 
-
-        /*
-         * New line
-         */
 
         if (
             (
@@ -2478,10 +2633,6 @@ function parseCSVRows(text) {
     }
 
 
-    /*
-     * Last cell
-     */
-
     if (
         cell !== "" ||
         row.length > 0
@@ -2504,7 +2655,7 @@ function parseCSVRows(text) {
 
 
 /* =========================================================
-   GET CSV VALUE
+GET CSV VALUE
 ========================================================= */
 
 function getCSVValue(
@@ -2536,7 +2687,7 @@ function getCSVValue(
 
 
 /* =========================================================
-   CSV PREVIEW
+CSV PREVIEW
 ========================================================= */
 
 function renderCSVPreview() {
@@ -2721,7 +2872,7 @@ function renderCSVPreview() {
 
 
 /* =========================================================
-   START CSV IMPORT
+START CSV IMPORT
 ========================================================= */
 
 async function startStudentCSVImport() {
@@ -2947,10 +3098,6 @@ async function startStudentCSVImport() {
     `;
 
 
-    /*
-     * Failed rows
-     */
-
     if (
         failedRows.length > 0
     ) {
@@ -3061,12 +3208,10 @@ async function startStudentCSVImport() {
 
 
 /* =========================================================
-   CSV ERROR
+CSV ERROR
 ========================================================= */
 
-function showCSVError(
-    message
-) {
+function showCSVError(message) {
 
     const preview =
         document.getElementById(
@@ -3104,7 +3249,7 @@ function showCSVError(
 
 
 /* =========================================================
-   TOKEN PAGE
+TOKEN PAGE
 ========================================================= */
 
 async function loadTokenPage() {
@@ -3168,7 +3313,7 @@ async function loadTokenPage() {
 
 
 /* =========================================================
-   TOKEN FORM
+TOKEN FORM
 ========================================================= */
 
 function showTokenForm() {
@@ -3233,7 +3378,7 @@ function showTokenForm() {
 
 
 /* =========================================================
-   CREATE TOKEN
+CREATE TOKEN
 ========================================================= */
 
 async function submitTokenCreate() {
@@ -3301,7 +3446,7 @@ async function submitTokenCreate() {
 
 
 /* =========================================================
-   TOKEN LIST
+TOKEN LIST
 ========================================================= */
 
 async function renderTokenList() {
@@ -3461,7 +3606,7 @@ async function renderTokenList() {
 
 
 /* =========================================================
-   RESULT PAGE
+RESULT PAGE
 ========================================================= */
 
 async function loadResultPage() {
@@ -3508,7 +3653,7 @@ async function loadResultPage() {
 
 
 /* =========================================================
-   RESULT LIST
+RESULT LIST
 ========================================================= */
 
 async function renderResultList() {
@@ -3525,168 +3670,272 @@ async function renderResultList() {
         "Loading results...";
 
 
-    const response =
-        await apiGetResult();
+    try {
+
+        const response =
+            await apiGetResult();
 
 
-    if (
-        !response ||
-        !response.success
-    ) {
+        console.log(
+            "Teacher Result Response:",
+            response
+        );
+
+
+        if (
+            !response ||
+            !response.success
+        ) {
+
+            area.innerHTML = `
+
+                <div style="
+                    color:#b00020;
+                    padding:15px;
+                    background:#ffebee;
+                    border-radius:8px;
+                ">
+
+                    Gagal mengambil result.
+
+                    <br><br>
+
+                    ${escapeHtml(
+                        response?.message ||
+                        "Unknown error."
+                    )}
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        /*
+         * Normalize result data
+         */
+
+        teacherResults =
+            (response.data || [])
+            .map(
+                normalizeResult
+            );
+
+
+        console.log(
+            "Teacher Results:",
+            teacherResults
+        );
+
+
+        if (
+            teacherResults.length === 0
+        ) {
+
+            area.innerHTML = `
+
+                <div class="card-box">
+
+                    <h3>
+                        No Results
+                    </h3>
+
+                    <br>
+
+                    <p>
+                        Belum ada speaking result.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        let html = `
+
+            <div style="
+                margin-bottom:20px;
+            ">
+
+                <strong>
+                    Total Results:
+                    ${teacherResults.length}
+                </strong>
+
+            </div>
+
+            <div style="
+                overflow-x:auto;
+            ">
+
+                <table style="
+                    width:100%;
+                    border-collapse:collapse;
+                    min-width:850px;
+                ">
+
+                    <thead>
+
+                        <tr>
+
+                            <th style="${tableHeadStyle}">
+                                #
+                            </th>
+
+                            <th style="${tableHeadStyle}">
+                                Student
+                            </th>
+
+                            <th style="${tableHeadStyle}">
+                                NIS
+                            </th>
+
+                            <th style="${tableHeadStyle}">
+                                Question
+                            </th>
+
+                            <th style="${tableHeadStyle}">
+                                Score
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+        `;
+
+
+        teacherResults.forEach(
+            function (item, index) {
+
+                const studentName =
+                    item.nama ||
+                    item.username ||
+                    item.nis ||
+                    "-";
+
+
+                const question =
+                    item.question ||
+                    "-";
+
+
+                const score =
+                    (
+                        item.score !== "" &&
+                        item.score !== null &&
+                        item.score !== undefined
+                    )
+                    ? item.score
+                    : "-";
+
+
+                html += `
+
+                    <tr>
+
+                        <td style="${tableCellStyle}">
+                            ${index + 1}
+                        </td>
+
+                        <td style="${tableCellStyle}">
+                            ${escapeHtml(
+                                studentName
+                            )}
+                        </td>
+
+                        <td style="${tableCellStyle}">
+                            ${escapeHtml(
+                                String(
+                                    item.nis || "-"
+                                )
+                            )}
+                        </td>
+
+                        <td style="${tableCellStyle}">
+                            ${escapeHtml(
+                                question
+                            )}
+                        </td>
+
+                        <td style="${tableCellStyle}">
+                            <strong>
+                                ${escapeHtml(
+                                    String(score)
+                                )}
+                            </strong>
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
+
+        html += `
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        `;
+
+
+        area.innerHTML =
+            html;
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "Render Result Error:",
+            err
+        );
+
 
         area.innerHTML = `
 
-            <div style="color:#b00020;">
+            <div style="
+                color:#b00020;
+                padding:15px;
+                background:#ffebee;
+                border-radius:8px;
+            ">
+
+                Gagal menampilkan speaking results.
+
+                <br><br>
 
                 ${escapeHtml(
-                    response?.message ||
-                    "Gagal mengambil result."
+                    err?.message ||
+                    "Unknown error."
                 )}
 
             </div>
 
         `;
 
-        return;
-
     }
-
-
-    teacherResults =
-        response.data || [];
-
-
-    if (
-        teacherResults.length === 0
-    ) {
-
-        area.innerHTML = `
-
-            <div class="card-box">
-
-                <h3>
-                    No Results
-                </h3>
-
-                <br>
-
-                <p>
-                    Belum ada speaking result.
-                </p>
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    let html = `
-
-        <div style="
-            overflow-x:auto;
-        ">
-
-            <table style="
-                width:100%;
-                border-collapse:collapse;
-                min-width:700px;
-            ">
-
-                <thead>
-
-                    <tr>
-
-                        <th style="${tableHeadStyle}">
-                            #
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Student
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Question
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Score
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-    `;
-
-
-    teacherResults.forEach(
-        function (item, index) {
-
-            html += `
-
-                <tr>
-
-                    <td style="${tableCellStyle}">
-                        ${index + 1}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            item.nama ||
-                            item.username ||
-                            item.nis ||
-                            ""
-                        )}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            item.question ||
-                            ""
-                        )}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            String(
-                                item.score ??
-                                ""
-                            )
-                        )}
-                    </td>
-
-                </tr>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    `;
-
-
-    area.innerHTML =
-        html;
 
 }
 
 
 /* =========================================================
-   MESSAGE
+MESSAGE
 ========================================================= */
 
 function showMessage(
@@ -3757,7 +4006,7 @@ function showMessage(
 
 
 /* =========================================================
-   ESCAPE HTML
+ESCAPE HTML
 ========================================================= */
 
 function escapeHtml(value) {
@@ -3790,7 +4039,7 @@ function escapeHtml(value) {
 
 
 /* =========================================================
-   ESCAPE ATTRIBUTE
+ESCAPE ATTRIBUTE
 ========================================================= */
 
 function escapeAttribute(value) {
@@ -3803,7 +4052,7 @@ function escapeAttribute(value) {
 
 
 /* =========================================================
-   UI STYLES
+UI STYLES
 ========================================================= */
 
 const inputStyle = `
@@ -3815,12 +4064,14 @@ const inputStyle = `
     margin-top:8px;
 `;
 
+
 const tableHeadStyle = `
     text-align:left;
     padding:12px;
     border-bottom:2px solid #ddd;
     background:#f5f7fa;
 `;
+
 
 const tableCellStyle = `
     padding:12px;
@@ -3830,5 +4081,5 @@ const tableCellStyle = `
 
 
 /* =========================================================
-   END OF TEACHER.JS
+END OF TEACHER.JS
 ========================================================= */
