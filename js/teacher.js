@@ -17,7 +17,13 @@
  * api.js
  *
  * IMPORTANT:
- * Do not change API architecture from this file.
+ * - Do not change API architecture from this file.
+ * - Existing API helper functions are preserved.
+ * - Teacher login remains unchanged.
+ * - Question insert/update/delete routes remain unchanged.
+ * - Student routes remain unchanged.
+ * - Token routes remain unchanged.
+ * - Result routes remain unchanged.
  * =========================================================
  */
 
@@ -53,7 +59,11 @@ async function initializeTeacherDashboard() {
 
         updateTodayDate();
 
-        await refreshDashboardCounters();
+        /*
+         * Do not block the dashboard rendering.
+         * Counter loading runs asynchronously.
+         */
+        refreshDashboardCounters();
 
     }
 
@@ -80,6 +90,7 @@ function setupMenu() {
             ".menu a[data-page]"
         );
 
+
     menuLinks.forEach(function (link) {
 
         link.addEventListener(
@@ -92,6 +103,7 @@ function setupMenu() {
                     this.getAttribute(
                         "data-page"
                     );
+
 
                 if (!page) return;
 
@@ -145,6 +157,7 @@ function updateTodayDate() {
             "todayDate"
         );
 
+
     if (!el) return;
 
 
@@ -192,6 +205,7 @@ async function loadDashboardPage() {
 
     const content =
         getContentElement();
+
 
     if (!content) return;
 
@@ -271,7 +285,10 @@ async function loadDashboardPage() {
     `;
 
 
-    await refreshDashboardCounters();
+    /*
+     * Refresh counters in background.
+     */
+    refreshDashboardCounters();
 
 }
 
@@ -282,112 +299,36 @@ DASHBOARD COUNTERS
 
 async function refreshDashboardCounters() {
 
+    /*
+     * Each request is handled independently.
+     * One failed API will not prevent other counters.
+     */
+
     try {
 
-        const [
-            questionResponse,
-            studentResponse,
-            tokenResponse,
-            resultResponse
-        ] = await Promise.all([
-
-            apiGetQuestion(),
-
-            apiGetStudent(),
-
-            apiGetToken(),
-
-            apiGetResult()
-
-        ]);
+        const response =
+            await apiGetQuestion();
 
 
         if (
-            questionResponse &&
-            questionResponse.success
+            response &&
+            response.success
         ) {
 
-            const data =
-                questionResponse.data || [];
+            teacherQuestions =
+                response.data || [];
+
 
             const el =
                 document.getElementById(
                     "totalQuestion"
                 );
 
-            if (el) {
-
-                el.textContent =
-                    data.length;
-
-            }
-
-        }
-
-
-        if (
-            studentResponse &&
-            studentResponse.success
-        ) {
-
-            const data =
-                studentResponse.data || [];
-
-            const el =
-                document.getElementById(
-                    "totalStudent"
-                );
 
             if (el) {
 
                 el.textContent =
-                    data.length;
-
-            }
-
-        }
-
-
-        if (
-            tokenResponse &&
-            tokenResponse.success
-        ) {
-
-            const data =
-                tokenResponse.data || [];
-
-            const el =
-                document.getElementById(
-                    "totalToken"
-                );
-
-            if (el) {
-
-                el.textContent =
-                    data.length;
-
-            }
-
-        }
-
-
-        if (
-            resultResponse &&
-            resultResponse.success
-        ) {
-
-            const data =
-                resultResponse.data || [];
-
-            const el =
-                document.getElementById(
-                    "totalResult"
-                );
-
-            if (el) {
-
-                el.textContent =
-                    data.length;
+                    teacherQuestions.length;
 
             }
 
@@ -398,9 +339,215 @@ async function refreshDashboardCounters() {
     catch (err) {
 
         console.error(
-            "Counter Error:",
+            "Question Counter Error:",
             err
         );
+
+    }
+
+
+    try {
+
+        const response =
+            await apiGetStudent();
+
+
+        if (
+            response &&
+            response.success
+        ) {
+
+            teacherStudents =
+                response.data || [];
+
+
+            const el =
+                document.getElementById(
+                    "totalStudent"
+                );
+
+
+            if (el) {
+
+                el.textContent =
+                    teacherStudents.length;
+
+            }
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "Student Counter Error:",
+            err
+        );
+
+    }
+
+
+    try {
+
+        const response =
+            await apiGetToken();
+
+
+        if (
+            response &&
+            response.success
+        ) {
+
+            teacherTokens =
+                response.data || [];
+
+
+            const el =
+                document.getElementById(
+                    "totalToken"
+                );
+
+
+            if (el) {
+
+                el.textContent =
+                    teacherTokens.length;
+
+            }
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "Token Counter Error:",
+            err
+        );
+
+    }
+
+
+    try {
+
+        const response =
+            await apiGetResult();
+
+
+        if (
+            response &&
+            response.success
+        ) {
+
+            teacherResults =
+                response.data || [];
+
+
+            const el =
+                document.getElementById(
+                    "totalResult"
+                );
+
+
+            if (el) {
+
+                el.textContent =
+                    teacherResults.length;
+
+            }
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "Result Counter Error:",
+            err
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+QUESTION DATA CACHE
+========================================================= */
+
+/**
+ * Make sure Questions are available.
+ *
+ * Important:
+ * Token page uses this function so the Question ID
+ * dropdown will work even when Teacher opens Token page
+ * directly without opening Question page first.
+ */
+async function ensureTeacherQuestionsLoaded() {
+
+    /*
+     * If cache already contains questions,
+     * use the existing data.
+     */
+    if (
+        Array.isArray(teacherQuestions) &&
+        teacherQuestions.length > 0
+    ) {
+
+        return teacherQuestions;
+
+    }
+
+
+    try {
+
+        const response =
+            await apiGetQuestion();
+
+
+        if (
+            response &&
+            response.success
+        ) {
+
+            teacherQuestions =
+                response.data || [];
+
+
+            return teacherQuestions;
+
+        }
+
+
+        console.error(
+            "Question Load Error:",
+            response?.message ||
+            "Unknown error."
+        );
+
+
+        teacherQuestions = [];
+
+
+        return [];
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "Question Load Exception:",
+            err
+        );
+
+
+        teacherQuestions = [];
+
+
+        return [];
 
     }
 
@@ -415,6 +562,7 @@ async function loadQuestionPage() {
 
     const content =
         getContentElement();
+
 
     if (!content) return;
 
@@ -482,6 +630,7 @@ function showQuestionForm(question = null) {
         document.getElementById(
             "questionArea"
         );
+
 
     if (!area) return;
 
@@ -718,7 +867,8 @@ function getQuestionFormData() {
                 .getElementById(
                     "questionDifficulty"
                 )
-                ?.value || "Easy",
+                ?.value ||
+                "Easy",
 
         duration:
             Number(
@@ -800,9 +950,12 @@ async function submitQuestionInsert() {
         );
 
 
+        /*
+         * Reload question cache.
+         */
         await renderQuestionList();
 
-        await refreshDashboardCounters();
+        refreshDashboardCounters();
 
     }
 
@@ -892,7 +1045,7 @@ async function submitQuestionUpdate(id) {
 
         await renderQuestionList();
 
-        await refreshDashboardCounters();
+        refreshDashboardCounters();
 
     }
 
@@ -920,6 +1073,7 @@ async function renderQuestionList() {
         document.getElementById(
             "questionArea"
         );
+
 
     if (!area) return;
 
@@ -954,6 +1108,7 @@ async function renderQuestionList() {
 
         `;
 
+
         return;
 
     }
@@ -985,6 +1140,7 @@ async function renderQuestionList() {
 
         `;
 
+
         return;
 
     }
@@ -1008,6 +1164,10 @@ async function renderQuestionList() {
 
                         <th style="${tableHeadStyle}">
                             #
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            ID
                         </th>
 
                         <th style="${tableHeadStyle}">
@@ -1042,6 +1202,13 @@ async function renderQuestionList() {
     teacherQuestions.forEach(
         function (item, index) {
 
+            const questionId =
+                item.id ||
+                item.questionId ||
+                item.questionID ||
+                "";
+
+
             const title =
                 item.title ||
                 item.questionTitle ||
@@ -1070,6 +1237,12 @@ async function renderQuestionList() {
 
                     <td style="${tableCellStyle}">
                         ${index + 1}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            questionId
+                        )}
                     </td>
 
                     <td style="${tableCellStyle}">
@@ -1146,6 +1319,7 @@ function editQuestion(index) {
     const question =
         teacherQuestions[index];
 
+
     if (!question) return;
 
 
@@ -1165,6 +1339,7 @@ async function deleteQuestionByIndex(index) {
     const question =
         teacherQuestions[index];
 
+
     if (!question) return;
 
 
@@ -1177,11 +1352,18 @@ async function deleteQuestionByIndex(index) {
     if (!confirmed) return;
 
 
+    const questionId =
+        question.id ||
+        question.questionId ||
+        question.questionID ||
+        "";
+
+
     const result =
         await apiDeleteQuestion({
 
             id:
-                question.id
+                questionId
 
         });
 
@@ -1199,7 +1381,7 @@ async function deleteQuestionByIndex(index) {
 
         await renderQuestionList();
 
-        await refreshDashboardCounters();
+        refreshDashboardCounters();
 
     }
 
@@ -1223,6 +1405,7 @@ async function loadStudentPage() {
 
     const content =
         getContentElement();
+
 
     if (!content) return;
 
@@ -1308,6 +1491,7 @@ function showStudentForm(student = null) {
             "studentArea"
         );
 
+
     if (!area) return;
 
 
@@ -1329,7 +1513,9 @@ function showStudentForm(student = null) {
 
             <br>
 
-            <label>NIS</label>
+            <label>
+                NIS
+            </label>
 
             <input
                 id="studentNis"
@@ -1350,7 +1536,9 @@ function showStudentForm(student = null) {
 
             <br><br>
 
-            <label>Nama</label>
+            <label>
+                Nama
+            </label>
 
             <input
                 id="studentNama"
@@ -1366,7 +1554,9 @@ function showStudentForm(student = null) {
 
             <br><br>
 
-            <label>Kelas</label>
+            <label>
+                Kelas
+            </label>
 
             <input
                 id="studentKelas"
@@ -1382,7 +1572,9 @@ function showStudentForm(student = null) {
 
             <br><br>
 
-            <label>Username</label>
+            <label>
+                Username
+            </label>
 
             <input
                 id="studentUsername"
@@ -1398,7 +1590,9 @@ function showStudentForm(student = null) {
 
             <br><br>
 
-            <label>Password</label>
+            <label>
+                Password
+            </label>
 
             <input
                 id="studentPassword"
@@ -1414,7 +1608,9 @@ function showStudentForm(student = null) {
 
             <br><br>
 
-            <label>Status</label>
+            <label>
+                Status
+            </label>
 
             <select
                 id="studentStatus"
@@ -1602,7 +1798,7 @@ async function submitStudentInsert() {
 
         await renderStudentList();
 
-        await refreshDashboardCounters();
+        refreshDashboardCounters();
 
     }
 
@@ -1666,7 +1862,7 @@ async function submitStudentUpdate(nis) {
 
         await renderStudentList();
 
-        await refreshDashboardCounters();
+        refreshDashboardCounters();
 
     }
 
@@ -1694,6 +1890,7 @@ async function renderStudentList() {
         document.getElementById(
             "studentArea"
         );
+
 
     if (!area) return;
 
@@ -1727,6 +1924,7 @@ async function renderStudentList() {
             </div>
 
         `;
+
 
         return;
 
@@ -1768,6 +1966,7 @@ async function renderStudentList() {
             </div>
 
         `;
+
 
         return;
 
@@ -1951,6 +2150,7 @@ function editStudent(index) {
     const student =
         teacherStudents[index];
 
+
     if (!student) return;
 
 
@@ -1969,6 +2169,7 @@ async function deleteStudentByIndex(index) {
 
     const student =
         teacherStudents[index];
+
 
     if (!student) return;
 
@@ -2010,7 +2211,7 @@ async function deleteStudentByIndex(index) {
 
         await renderStudentList();
 
-        await refreshDashboardCounters();
+        refreshDashboardCounters();
 
     }
 
@@ -2036,6 +2237,7 @@ function showCSVImport() {
         document.getElementById(
             "studentArea"
         );
+
 
     if (!area) return;
 
@@ -2466,6 +2668,7 @@ function parseCSVRows(text) {
         const char =
             text[i];
 
+
         const nextChar =
             text[i + 1];
 
@@ -2600,6 +2803,7 @@ function renderCSVPreview() {
         document.getElementById(
             "csvPreview"
         );
+
 
     if (!preview) return;
 
@@ -2738,7 +2942,7 @@ async function startStudentCSVImport() {
 
     await renderStudentList();
 
-    await refreshDashboardCounters();
+    refreshDashboardCounters();
 
 }
 
@@ -2752,9 +2956,14 @@ async function loadTokenPage() {
     const content =
         getContentElement();
 
+
     if (!content) return;
 
 
+    /*
+     * Render page immediately.
+     * Question data will be loaded afterwards.
+     */
     content.innerHTML = `
 
         <div style="
@@ -2802,7 +3011,101 @@ async function loadTokenPage() {
     `;
 
 
+    /*
+     * Load existing tokens.
+     */
     await renderTokenList();
+
+}
+
+
+/* =========================================================
+TOKEN GENERATOR
+========================================================= */
+
+/**
+ * Generate automatic exam token.
+ *
+ * Example:
+ * SAF-2026-A8K3P7
+ */
+function generateExamToken() {
+
+    const year =
+        new Date()
+            .getFullYear();
+
+
+    const characters =
+        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+
+    let randomPart = "";
+
+
+    /*
+     * Use crypto API when available.
+     */
+    if (
+        window.crypto &&
+        window.crypto.getRandomValues
+    ) {
+
+        const values =
+            new Uint32Array(6);
+
+
+        window.crypto.getRandomValues(
+            values
+        );
+
+
+        for (
+            let i = 0;
+            i < values.length;
+            i++
+        ) {
+
+            randomPart +=
+                characters[
+                    values[i] %
+                    characters.length
+                ];
+
+        }
+
+    }
+
+    else {
+
+        /*
+         * Fallback for older browsers.
+         */
+        for (
+            let i = 0;
+            i < 6;
+            i++
+        ) {
+
+            randomPart +=
+                characters[
+                    Math.floor(
+                        Math.random() *
+                        characters.length
+                    )
+                ];
+
+        }
+
+    }
+
+
+    return (
+        "SAF-" +
+        year +
+        "-" +
+        randomPart
+    );
 
 }
 
@@ -2811,16 +3114,54 @@ async function loadTokenPage() {
 TOKEN FORM
 ========================================================= */
 
-function showTokenForm() {
+async function showTokenForm() {
 
     const area =
         document.getElementById(
             "tokenArea"
         );
 
+
     if (!area) return;
 
 
+    /*
+     * IMPORTANT:
+     * Always make sure Questions are loaded.
+     *
+     * This fixes the problem where Question ID
+     * was empty when teacher opened Token page directly.
+     */
+    area.innerHTML = `
+
+        <div class="card-box">
+
+            <h3>
+                Create Exam Token
+            </h3>
+
+            <br>
+
+            <p style="
+                color:#666;
+            ">
+
+                Loading speaking questions...
+
+            </p>
+
+        </div>
+
+    `;
+
+
+    const questions =
+        await ensureTeacherQuestionsLoaded();
+
+
+    /*
+     * Build Question dropdown.
+     */
     let questionOptions = `
 
         <option value="">
@@ -2830,29 +3171,61 @@ function showTokenForm() {
     `;
 
 
-    teacherQuestions.forEach(
-        function (question) {
+    if (
+        questions.length > 0
+    ) {
 
-            const title =
-                question.title ||
-                question.questionTitle ||
-                question.question ||
-                "Untitled";
+        questions.forEach(
+            function (question) {
+
+                const questionId =
+                    question.id ||
+                    question.questionId ||
+                    question.questionID ||
+                    "";
 
 
-            questionOptions += `
+                const title =
+                    question.title ||
+                    question.questionTitle ||
+                    question.question ||
+                    "Untitled Question";
 
-                <option
-                    value="${escapeAttribute(question.id || "")}">
 
-                    ${escapeHtml(title)}
+                /*
+                 * Skip question if it has no ID.
+                 */
+                if (!questionId) return;
 
-                </option>
 
-            `;
+                questionOptions += `
 
-        }
-    );
+                    <option
+                        value="${escapeAttribute(questionId)}">
+
+                        ${escapeHtml(
+                            questionId
+                        )}
+                        —
+                        ${escapeHtml(
+                            title
+                        )}
+
+                    </option>
+
+                `;
+
+            }
+        );
+
+    }
+
+
+    /*
+     * Generate token automatically.
+     */
+    const generatedToken =
+        generateExamToken();
 
 
     area.innerHTML = `
@@ -2869,12 +3242,50 @@ function showTokenForm() {
                 Token
             </label>
 
-            <input
-                id="tokenValue"
-                type="text"
-                placeholder="Contoh: SAF2026"
-                style="${inputStyle}"
-            >
+            <div style="
+                display:flex;
+                gap:10px;
+                align-items:center;
+                flex-wrap:wrap;
+                margin-top:8px;
+            ">
+
+                <input
+                    id="tokenValue"
+                    type="text"
+                    value="${escapeAttribute(generatedToken)}"
+                    readonly
+                    style="
+                        ${inputStyle}
+                        margin-top:0;
+                        flex:1;
+                        min-width:250px;
+                        background:#f5f7fa;
+                        font-weight:600;
+                        letter-spacing:1px;
+                    "
+                >
+
+                <button
+                    type="button"
+                    class="btn"
+                    onclick="regenerateExamToken()">
+
+                    🔄 New Token
+
+                </button>
+
+            </div>
+
+            <small style="
+                display:block;
+                margin-top:8px;
+                color:#666;
+            ">
+
+                Token dibuat otomatis oleh sistem.
+
+            </small>
 
             <br><br>
 
@@ -2890,23 +3301,55 @@ function showTokenForm() {
 
             </select>
 
+            ${
+                questions.length === 0
+                ? `
+                    <div style="
+                        margin-top:10px;
+                        padding:12px;
+                        border-radius:8px;
+                        background:#fff3cd;
+                        color:#856404;
+                    ">
+
+                        Belum ada speaking question.
+                        Silakan buat Question terlebih dahulu.
+
+                    </div>
+                `
+                : ""
+            }
+
             <br><br>
 
-            <button
-                class="btn teacher"
-                onclick="submitTokenCreate()">
+            <div style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+            ">
 
-                💾 Create Token
+                <button
+                    class="btn teacher"
+                    onclick="submitTokenCreate()"
+                    ${
+                        questions.length === 0
+                        ? "disabled"
+                        : ""
+                    }>
 
-            </button>
+                    💾 Create Token
 
-            <button
-                class="btn"
-                onclick="renderTokenList()">
+                </button>
 
-                Cancel
+                <button
+                    class="btn"
+                    onclick="renderTokenList()">
 
-            </button>
+                    Cancel
+
+                </button>
+
+            </div>
 
             <div
                 id="tokenMessage"
@@ -2921,34 +3364,61 @@ function showTokenForm() {
 
 
 /* =========================================================
+REGENERATE TOKEN
+========================================================= */
+
+function regenerateExamToken() {
+
+    const input =
+        document.getElementById(
+            "tokenValue"
+        );
+
+
+    if (!input) return;
+
+
+    input.value =
+        generateExamToken();
+
+}
+
+
+/* =========================================================
 CREATE TOKEN
 ========================================================= */
 
 async function submitTokenCreate() {
 
+    const tokenInput =
+        document.getElementById(
+            "tokenValue"
+        );
+
+
+    const questionInput =
+        document.getElementById(
+            "tokenQuestionId"
+        );
+
+
     const token =
-        document
-            .getElementById(
-                "tokenValue"
-            )
+        tokenInput
             ?.value
-            .trim();
+            .trim() || "";
 
 
     const questionId =
-        document
-            .getElementById(
-                "tokenQuestionId"
-            )
+        questionInput
             ?.value
-            .trim();
+            .trim() || "";
 
 
     if (!token) {
 
         showMessage(
             "tokenMessage",
-            "Token wajib diisi.",
+            "Token gagal dibuat.",
             "error"
         );
 
@@ -2970,6 +3440,9 @@ async function submitTokenCreate() {
     }
 
 
+    /*
+     * Preserve both field names for backend compatibility.
+     */
     const result =
         await apiCreateToken({
 
@@ -2998,7 +3471,7 @@ async function submitTokenCreate() {
 
         await renderTokenList();
 
-        await refreshDashboardCounters();
+        refreshDashboardCounters();
 
     }
 
@@ -3026,6 +3499,7 @@ async function renderTokenList() {
         document.getElementById(
             "tokenArea"
         );
+
 
     if (!area) return;
 
@@ -3055,6 +3529,7 @@ async function renderTokenList() {
             </div>
 
         `;
+
 
         return;
 
@@ -3087,6 +3562,7 @@ async function renderTokenList() {
 
         `;
 
+
         return;
 
     }
@@ -3094,12 +3570,36 @@ async function renderTokenList() {
 
     let html = `
 
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            gap:10px;
+            margin-bottom:20px;
+        ">
+
+            <strong>
+                Total Tokens:
+                ${teacherTokens.length}
+            </strong>
+
+            <button
+                class="btn teacher"
+                onclick="showTokenForm()">
+
+                ➕ Create Token
+
+            </button>
+
+        </div>
+
         <div style="overflow-x:auto;">
 
             <table style="
                 width:100%;
                 border-collapse:collapse;
-                min-width:700px;
+                min-width:800px;
             ">
 
                 <thead>
@@ -3149,9 +3649,11 @@ async function renderTokenList() {
                     </td>
 
                     <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            item.token || ""
-                        )}
+                        <strong>
+                            ${escapeHtml(
+                                item.token || ""
+                            )}
+                        </strong>
                     </td>
 
                     <td style="${tableCellStyle}">
@@ -3199,6 +3701,7 @@ async function loadResultPage() {
 
     const content =
         getContentElement();
+
 
     if (!content) return;
 
@@ -3249,6 +3752,7 @@ async function renderResultList() {
             "resultArea"
         );
 
+
     if (!area) return;
 
 
@@ -3261,7 +3765,6 @@ async function renderResultList() {
      * Keep the existing API route.
      * Do not replace apiGetResult().
      */
-
     const response =
         await apiGetResult();
 
@@ -3286,6 +3789,7 @@ async function renderResultList() {
             </div>
 
         `;
+
 
         return;
 
@@ -3317,6 +3821,7 @@ async function renderResultList() {
             </div>
 
         `;
+
 
         return;
 
@@ -3396,11 +3901,13 @@ async function renderResultList() {
                     <tr>
 
                         <th style="${tableHeadStyle}">
+
                             <input
                                 type="checkbox"
                                 id="selectAllResultsCheckbox"
                                 onchange="toggleAllResults(this.checked)"
                             >
+
                         </th>
 
                         <th style="${tableHeadStyle}">
@@ -3731,6 +4238,7 @@ async function deleteSelectedResults() {
                 err
             );
 
+
             failedCount++;
 
         }
@@ -3750,7 +4258,7 @@ async function deleteSelectedResults() {
 
     await renderResultList();
 
-    await refreshDashboardCounters();
+    refreshDashboardCounters();
 
 }
 
@@ -3794,7 +4302,6 @@ async function deleteAllResults() {
      * Use the same established delete-result API
      * one result at a time.
      */
-
     for (
         const item of teacherResults
     ) {
@@ -3849,6 +4356,7 @@ async function deleteAllResults() {
                 err
             );
 
+
             failedCount++;
 
         }
@@ -3868,7 +4376,7 @@ async function deleteAllResults() {
 
     await renderResultList();
 
-    await refreshDashboardCounters();
+    refreshDashboardCounters();
 
 }
 
@@ -3888,11 +4396,13 @@ function showMessage(
             elementId
         );
 
+
     if (!el) return;
 
 
     let background =
         "#f5f7fa";
+
 
     let color =
         "#333";
@@ -3904,6 +4414,7 @@ function showMessage(
 
         background =
             "#e8f5e9";
+
 
         color =
             "#2e7d32";
@@ -3917,6 +4428,7 @@ function showMessage(
 
         background =
             "#ffebee";
+
 
         color =
             "#c62828";
@@ -3934,6 +4446,42 @@ function showMessage(
         ">
 
             ${escapeHtml(message)}
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================================================
+CSV ERROR
+========================================================= */
+
+function showCSVError(message) {
+
+    const preview =
+        document.getElementById(
+            "csvPreview"
+        );
+
+
+    if (!preview) return;
+
+
+    preview.innerHTML = `
+
+        <div style="
+            padding:12px;
+            border-radius:8px;
+            background:#ffebee;
+            color:#c62828;
+        ">
+
+            ${escapeHtml(
+                message ||
+                "CSV tidak valid."
+            )}
 
         </div>
 
@@ -4001,6 +4549,7 @@ const inputStyle = `
     margin-top:8px;
 `;
 
+
 const textareaStyle = `
     width:100%;
     padding:12px;
@@ -4011,12 +4560,14 @@ const textareaStyle = `
     resize:vertical;
 `;
 
+
 const tableHeadStyle = `
     text-align:left;
     padding:12px;
     border-bottom:2px solid #ddd;
     background:#f5f7fa;
 `;
+
 
 const tableCellStyle = `
     padding:12px;
