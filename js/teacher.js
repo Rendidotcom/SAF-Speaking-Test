@@ -185,147 +185,6 @@ function getContentElement() {
 
 
 /* =========================================================
-FIELD NORMALIZATION
-========================================================= */
-
-/*
- * IMPORTANT
- *
- * Questions Sheet saat ini:
- *
- * id
- * title
- * answer
- * difficulty
- * duration
- * status
- * createdBy
- * createdAt
- * updatedAt
- *
- * UI sebelumnya membaca:
- *
- * question
- * answerKey
- *
- * Karena itu kita normalisasi di frontend.
- *
- * Backend dan Spreadsheet TIDAK diubah.
- */
-
-function normalizeQuestion(item) {
-
-    item = item || {};
-
-    return {
-
-        id:
-            item.id ||
-            "",
-
-        question:
-            item.question ??
-            item.title ??
-            "",
-
-        answerKey:
-            item.answerKey ??
-            item.answer ??
-            "",
-
-        difficulty:
-            item.difficulty ??
-            "",
-
-        duration:
-            item.duration ??
-            "",
-
-        status:
-            item.status ??
-            "",
-
-        createdBy:
-            item.createdBy ??
-            "",
-
-        createdAt:
-            item.createdAt ??
-            "",
-
-        updatedAt:
-            item.updatedAt ??
-            ""
-
-    };
-
-}
-
-
-/*
- * Normalize Result
- *
- * Backend/result sheet dapat menggunakan
- * beberapa kemungkinan nama field.
- *
- * Kita tetap mempertahankan field asli
- * dan hanya membuat alias untuk UI.
- */
-
-function normalizeResult(item) {
-
-    item = item || {};
-
-    return {
-
-        ...item,
-
-        nama:
-            item.nama ??
-            item.name ??
-            item.studentName ??
-            item.student ??
-            "",
-
-        username:
-            item.username ??
-            item.userName ??
-            "",
-
-        nis:
-            item.nis ??
-            item.studentNis ??
-            "",
-
-        question:
-            item.question ??
-            item.title ??
-            item.questionText ??
-            "",
-
-        score:
-            item.score ??
-            item.totalScore ??
-            item.finalScore ??
-            item.nilai ??
-            "",
-
-        answer:
-            item.answer ??
-            item.studentAnswer ??
-            "",
-
-        createdAt:
-            item.createdAt ??
-            item.timestamp ??
-            ""
-
-    };
-
-}
-
-
-/* =========================================================
 DASHBOARD
 ========================================================= */
 
@@ -576,7 +435,9 @@ async function loadQuestionPage() {
                     margin-top:8px;
                     color:#666;
                 ">
+
                     Manage speaking questions.
+
                 </p>
 
             </div>
@@ -625,19 +486,61 @@ function showQuestionForm(question = null) {
         question !== null;
 
 
+    /*
+     * Support both new schema:
+     * title / answer
+     *
+     * and old data:
+     * question / answerKey
+     */
+
+    const titleValue =
+        editing
+            ? (
+                question.title ||
+                question.question ||
+                ""
+            )
+            : "";
+
+
+    const answerValue =
+        editing
+            ? (
+                question.answer ||
+                question.answerKey ||
+                ""
+            )
+            : "";
+
+
     area.innerHTML = `
 
         <div class="card-box">
 
             <h3>
-                ${
-                    editing
+                ${editing
                     ? "Edit Speaking Question"
-                    : "Add Speaking Question"
-                }
+                    : "Add Speaking Question"}
             </h3>
 
             <br>
+
+            <label>
+                Title
+            </label>
+
+            <input
+                id="questionTitle"
+                type="text"
+                value="${escapeAttribute(
+                    titleValue
+                )}"
+                placeholder="Enter question title..."
+                style="${inputStyle}"
+            >
+
+            <br><br>
 
             <label>
                 Question
@@ -655,18 +558,16 @@ function showQuestionForm(question = null) {
                     resize:vertical;
                 "
                 placeholder="Enter speaking question..."
-            >${
-                editing
+            >${editing
                 ? escapeHtml(
                     question.question || ""
                 )
-                : ""
-            }</textarea>
+                : ""}</textarea>
 
             <br><br>
 
             <label>
-                Answer Key
+                Answer
             </label>
 
             <textarea
@@ -681,13 +582,9 @@ function showQuestionForm(question = null) {
                     resize:vertical;
                 "
                 placeholder="Enter answer key..."
-            >${
-                editing
-                ? escapeHtml(
-                    question.answerKey || ""
-                )
-                : ""
-            }</textarea>
+            >${escapeHtml(
+                answerValue
+            )}</textarea>
 
             <br><br>
 
@@ -732,24 +629,66 @@ function showQuestionForm(question = null) {
 
 
 /* =========================================================
+GET QUESTION FORM DATA
+========================================================= */
+
+function getQuestionFormData() {
+
+    return {
+
+        title:
+            document
+                .getElementById(
+                    "questionTitle"
+                )
+                ?.value
+                .trim() || "",
+
+        question:
+            document
+                .getElementById(
+                    "questionText"
+                )
+                ?.value
+                .trim() || "",
+
+        answer:
+            document
+                .getElementById(
+                    "answerKey"
+                )
+                ?.value
+                .trim() || ""
+
+    };
+
+}
+
+
+/* =========================================================
 INSERT QUESTION
 ========================================================= */
 
 async function submitQuestionInsert() {
 
-    const question =
-        document.getElementById(
-            "questionText"
-        )?.value.trim();
+    const data =
+        getQuestionFormData();
 
 
-    const answerKey =
-        document.getElementById(
-            "answerKey"
-        )?.value.trim();
+    if (!data.title) {
+
+        showMessage(
+            "questionMessage",
+            "Title wajib diisi.",
+            "error"
+        );
+
+        return;
+
+    }
 
 
-    if (!question) {
+    if (!data.question) {
 
         showMessage(
             "questionMessage",
@@ -765,11 +704,22 @@ async function submitQuestionInsert() {
     const result =
         await apiInsertQuestion({
 
+            title:
+                data.title,
+
             question:
-                question,
+                data.question,
+
+            answer:
+                data.answer,
+
+            /*
+             * Compatibility with previous
+             * teacher.js / API naming.
+             */
 
             answerKey:
-                answerKey
+                data.answer
 
         });
 
@@ -813,19 +763,24 @@ UPDATE QUESTION
 
 async function submitQuestionUpdate(id) {
 
-    const question =
-        document.getElementById(
-            "questionText"
-        )?.value.trim();
+    const data =
+        getQuestionFormData();
 
 
-    const answerKey =
-        document.getElementById(
-            "answerKey"
-        )?.value.trim();
+    if (!data.title) {
+
+        showMessage(
+            "questionMessage",
+            "Title wajib diisi.",
+            "error"
+        );
+
+        return;
+
+    }
 
 
-    if (!question) {
+    if (!data.question) {
 
         showMessage(
             "questionMessage",
@@ -844,11 +799,22 @@ async function submitQuestionUpdate(id) {
             id:
                 id,
 
+            title:
+                data.title,
+
             question:
-                question,
+                data.question,
+
+            answer:
+                data.answer,
+
+            /*
+             * Compatibility with previous
+             * teacher.js / API naming.
+             */
 
             answerKey:
-                answerKey
+                data.answer
 
         });
 
@@ -933,21 +899,8 @@ async function renderQuestionList() {
     }
 
 
-    /*
-     * NORMALIZATION FIX
-     *
-     * Sheet:
-     * title / answer
-     *
-     * UI:
-     * question / answerKey
-     */
-
     teacherQuestions =
-        (response.data || [])
-        .map(
-            normalizeQuestion
-        );
+        response.data || [];
 
 
     if (
@@ -986,6 +939,7 @@ async function renderQuestionList() {
             <table style="
                 width:100%;
                 border-collapse:collapse;
+                min-width:900px;
             ">
 
                 <thead>
@@ -997,11 +951,23 @@ async function renderQuestionList() {
                         </th>
 
                         <th style="${tableHeadStyle}">
+                            Title
+                        </th>
+
+                        <th style="${tableHeadStyle}">
                             Question
                         </th>
 
                         <th style="${tableHeadStyle}">
-                            Answer Key
+                            Answer
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Difficulty
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Duration
                         </th>
 
                         <th style="${tableHeadStyle}">
@@ -1020,6 +986,40 @@ async function renderQuestionList() {
     teacherQuestions.forEach(
         function (item, index) {
 
+            /*
+             * New schema:
+             * title / answer
+             *
+             * Legacy fallback:
+             * question / answerKey
+             */
+
+            const title =
+                item.title ||
+                "";
+
+
+            const question =
+                item.question ||
+                "";
+
+
+            const answer =
+                item.answer ||
+                item.answerKey ||
+                "";
+
+
+            const difficulty =
+                item.difficulty ||
+                "";
+
+
+            const duration =
+                item.duration ||
+                "";
+
+
             html += `
 
                 <tr>
@@ -1030,13 +1030,33 @@ async function renderQuestionList() {
 
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
-                            item.question || ""
+                            title
                         )}
                     </td>
 
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
-                            item.answerKey || ""
+                            question
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            answer
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            difficulty
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            String(
+                                duration
+                            )
                         )}
                     </td>
 
@@ -1268,11 +1288,9 @@ function showStudentForm(student = null) {
         <div class="card-box">
 
             <h3>
-                ${
-                    editing
+                ${editing
                     ? "Edit Student"
-                    : "Add Student"
-                }
+                    : "Add Student"}
             </h3>
 
             <br>
@@ -1284,13 +1302,9 @@ function showStudentForm(student = null) {
             <input
                 id="studentNis"
                 type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(
-                        student.nis || ""
-                    )
-                    : ""
-                }"
+                value="${editing
+                    ? escapeAttribute(student.nis || "")
+                    : ""}"
                 ${editing ? "readonly" : ""}
                 placeholder="NIS"
                 style="${inputStyle}"
@@ -1305,13 +1319,9 @@ function showStudentForm(student = null) {
             <input
                 id="studentNama"
                 type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(
-                        student.nama || ""
-                    )
-                    : ""
-                }"
+                value="${editing
+                    ? escapeAttribute(student.nama || "")
+                    : ""}"
                 placeholder="Nama siswa"
                 style="${inputStyle}"
             >
@@ -1325,13 +1335,9 @@ function showStudentForm(student = null) {
             <input
                 id="studentKelas"
                 type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(
-                        student.kelas || ""
-                    )
-                    : ""
-                }"
+                value="${editing
+                    ? escapeAttribute(student.kelas || "")
+                    : ""}"
                 placeholder="Contoh: 7A"
                 style="${inputStyle}"
             >
@@ -1345,13 +1351,9 @@ function showStudentForm(student = null) {
             <input
                 id="studentUsername"
                 type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(
-                        student.username || ""
-                    )
-                    : ""
-                }"
+                value="${editing
+                    ? escapeAttribute(student.username || "")
+                    : ""}"
                 placeholder="Username"
                 style="${inputStyle}"
             >
@@ -1365,13 +1367,9 @@ function showStudentForm(student = null) {
             <input
                 id="studentPassword"
                 type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(
-                        student.password || ""
-                    )
-                    : ""
-                }"
+                value="${editing
+                    ? escapeAttribute(student.password || "")
+                    : ""}"
                 placeholder="Password"
                 style="${inputStyle}"
             >
@@ -1388,14 +1386,12 @@ function showStudentForm(student = null) {
 
                 <option
                     value="ACTIVE"
-                    ${
-                        (
-                            !editing ||
-                            student.status === "ACTIVE"
-                        )
-                        ? "selected"
-                        : ""
-                    }>
+                    ${(
+                        !editing ||
+                        student.status === "ACTIVE"
+                    )
+                    ? "selected"
+                    : ""}>
 
                     ACTIVE
 
@@ -1403,14 +1399,12 @@ function showStudentForm(student = null) {
 
                 <option
                     value="INACTIVE"
-                    ${
-                        (
-                            editing &&
-                            student.status === "INACTIVE"
-                        )
-                        ? "selected"
-                        : ""
-                    }>
+                    ${(
+                        editing &&
+                        student.status === "INACTIVE"
+                    )
+                    ? "selected"
+                    : ""}>
 
                     INACTIVE
 
@@ -1597,7 +1591,9 @@ function getStudentFormData() {
 UPDATE STUDENT
 ========================================================= */
 
-async function submitStudentUpdate(nis) {
+async function submitStudentUpdate(
+    nis
+) {
 
     const data =
         getStudentFormData();
@@ -1941,7 +1937,9 @@ function editStudent(index) {
 DELETE STUDENT
 ========================================================= */
 
-async function deleteStudentByIndex(index) {
+async function deleteStudentByIndex(
+    index
+) {
 
     const student =
         teacherStudents[index];
@@ -3211,7 +3209,9 @@ async function startStudentCSVImport() {
 CSV ERROR
 ========================================================= */
 
-function showCSVError(message) {
+function showCSVError(
+    message
+) {
 
     const preview =
         document.getElementById(
@@ -3670,258 +3670,25 @@ async function renderResultList() {
         "Loading results...";
 
 
-    try {
+    const response =
+        await apiGetResult();
 
-        const response =
-            await apiGetResult();
 
-
-        console.log(
-            "Teacher Result Response:",
-            response
-        );
-
-
-        if (
-            !response ||
-            !response.success
-        ) {
-
-            area.innerHTML = `
-
-                <div style="
-                    color:#b00020;
-                    padding:15px;
-                    background:#ffebee;
-                    border-radius:8px;
-                ">
-
-                    Gagal mengambil result.
-
-                    <br><br>
-
-                    ${escapeHtml(
-                        response?.message ||
-                        "Unknown error."
-                    )}
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        /*
-         * Normalize result data
-         */
-
-        teacherResults =
-            (response.data || [])
-            .map(
-                normalizeResult
-            );
-
-
-        console.log(
-            "Teacher Results:",
-            teacherResults
-        );
-
-
-        if (
-            teacherResults.length === 0
-        ) {
-
-            area.innerHTML = `
-
-                <div class="card-box">
-
-                    <h3>
-                        No Results
-                    </h3>
-
-                    <br>
-
-                    <p>
-                        Belum ada speaking result.
-                    </p>
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        let html = `
-
-            <div style="
-                margin-bottom:20px;
-            ">
-
-                <strong>
-                    Total Results:
-                    ${teacherResults.length}
-                </strong>
-
-            </div>
-
-            <div style="
-                overflow-x:auto;
-            ">
-
-                <table style="
-                    width:100%;
-                    border-collapse:collapse;
-                    min-width:850px;
-                ">
-
-                    <thead>
-
-                        <tr>
-
-                            <th style="${tableHeadStyle}">
-                                #
-                            </th>
-
-                            <th style="${tableHeadStyle}">
-                                Student
-                            </th>
-
-                            <th style="${tableHeadStyle}">
-                                NIS
-                            </th>
-
-                            <th style="${tableHeadStyle}">
-                                Question
-                            </th>
-
-                            <th style="${tableHeadStyle}">
-                                Score
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-        `;
-
-
-        teacherResults.forEach(
-            function (item, index) {
-
-                const studentName =
-                    item.nama ||
-                    item.username ||
-                    item.nis ||
-                    "-";
-
-
-                const question =
-                    item.question ||
-                    "-";
-
-
-                const score =
-                    (
-                        item.score !== "" &&
-                        item.score !== null &&
-                        item.score !== undefined
-                    )
-                    ? item.score
-                    : "-";
-
-
-                html += `
-
-                    <tr>
-
-                        <td style="${tableCellStyle}">
-                            ${index + 1}
-                        </td>
-
-                        <td style="${tableCellStyle}">
-                            ${escapeHtml(
-                                studentName
-                            )}
-                        </td>
-
-                        <td style="${tableCellStyle}">
-                            ${escapeHtml(
-                                String(
-                                    item.nis || "-"
-                                )
-                            )}
-                        </td>
-
-                        <td style="${tableCellStyle}">
-                            ${escapeHtml(
-                                question
-                            )}
-                        </td>
-
-                        <td style="${tableCellStyle}">
-                            <strong>
-                                ${escapeHtml(
-                                    String(score)
-                                )}
-                            </strong>
-                        </td>
-
-                    </tr>
-
-                `;
-
-            }
-        );
-
-
-        html += `
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        `;
-
-
-        area.innerHTML =
-            html;
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "Render Result Error:",
-            err
-        );
-
+    if (
+        !response ||
+        !response.success
+    ) {
 
         area.innerHTML = `
 
-            <div style="
-                color:#b00020;
-                padding:15px;
-                background:#ffebee;
-                border-radius:8px;
-            ">
+            <div style="color:#b00020;">
 
-                Gagal menampilkan speaking results.
+                Gagal mengambil result.
 
-                <br><br>
+                <br>
 
                 ${escapeHtml(
-                    err?.message ||
+                    response?.message ||
                     "Unknown error."
                 )}
 
@@ -3929,7 +3696,164 @@ async function renderResultList() {
 
         `;
 
+        return;
+
     }
+
+
+    teacherResults =
+        response.data || [];
+
+
+    if (
+        teacherResults.length === 0
+    ) {
+
+        area.innerHTML = `
+
+            <div class="card-box">
+
+                <h3>
+                    No Results
+                </h3>
+
+                <br>
+
+                <p>
+                    Belum ada speaking result.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <div style="
+            margin-bottom:15px;
+        ">
+
+            <strong>
+                Total Results:
+                ${teacherResults.length}
+            </strong>
+
+        </div>
+
+        <div style="
+            overflow-x:auto;
+        ">
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                min-width:800px;
+            ">
+
+                <thead>
+
+                    <tr>
+
+                        <th style="${tableHeadStyle}">
+                            #
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Student
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Question
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Score
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+    `;
+
+
+    teacherResults.forEach(
+        function (item, index) {
+
+            const studentName =
+                item.nama ||
+                item.username ||
+                item.nis ||
+                "";
+
+
+            const question =
+                item.question ||
+                item.title ||
+                "";
+
+
+            const score =
+                item.score ??
+                "";
+
+
+            html += `
+
+                <tr>
+
+                    <td style="${tableCellStyle}">
+                        ${index + 1}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            studentName
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            question
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            String(
+                                score
+                            )
+                        )}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+    html += `
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    `;
+
+
+    area.innerHTML =
+        html;
 
 }
 
