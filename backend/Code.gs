@@ -1,315 +1,421 @@
-/******************************************************
- * SAF SPEAKING ONLINE TEST
- * MAIN API ROUTER
- *
- * File:
- * backend/Code.gs
+/**
+ * ==========================================
+ * SAF Speaking Online Test
+ * Main Router
+ * Stable Foundation v4.2
+ * ==========================================
  *
  * ROLE:
+ *
  * - Satu-satunya doGet()
  * - Satu-satunya doPost()
- * - Routing API
- * - Business logic tetap berada di file masing-masing
+ * - API Router
  *
- * STABLE FOUNDATION
- ******************************************************/
+ * BUSINESS LOGIC:
+ *
+ * - Auth.gs
+ * - Question.gs
+ * - Student.gs
+ * - Token.gs
+ * - Score.gs
+ * - Result.gs
+ *
+ * NEW:
+ *
+ * - importStudents
+ *
+ * ==========================================
+ */
 
 
-/******************************************************
- * GET API
- ******************************************************/
+/* =====================================================
+GET
+===================================================== */
 
 function doGet(e) {
 
-  try {
+    try {
 
-    return json({
+        return json({
 
-      success: true,
+            success:
+                true,
 
-      app: CONFIG.APP_NAME,
+            app:
+                APP_NAME,
 
-      version: CONFIG.VERSION,
+            version:
+                VERSION,
 
-      message:
-        "SAF Speaking Online Test API is running."
+            message:
+                "SAF Speaking Online Test API is running."
 
-    });
+        });
 
-  }
+    }
 
-  catch (err) {
+    catch (err) {
 
-    Logger.log(err);
+        return json({
 
-    return json({
+            success:
+                false,
 
-      success: false,
+            message:
+                err.toString()
 
-      message: err.toString()
+        });
 
-    });
-
-  }
+    }
 
 }
 
 
-/******************************************************
- * POST API ROUTER
- ******************************************************/
+/* =====================================================
+POST
+===================================================== */
 
 function doPost(e) {
 
-  try {
+    try {
 
-    /**************************************************
-     * VALIDATE REQUEST
-     **************************************************/
+        /* ================================================
+           VALIDATE REQUEST
+        ================================================ */
 
-    if (
-      !e ||
-      !e.postData ||
-      !e.postData.contents
-    ) {
+        if (
+            !e ||
+            !e.postData ||
+            !e.postData.contents
+        ) {
 
-      return json(
-        failed(
-          "Request body tidak ditemukan."
-        )
-      );
+            return json(
+                failed(
+                    "Request body tidak ditemukan."
+                )
+            );
+
+        }
+
+
+        /* ================================================
+           PARSE REQUEST
+        ================================================ */
+
+        const request =
+            JSON.parse(
+                e.postData.contents
+            );
+
+
+        const action =
+            request.action || "";
+
+
+        const data =
+            request.data || {};
+
+
+        /* ================================================
+           VALIDATE ACTION
+        ================================================ */
+
+        if (!action) {
+
+            return json(
+                failed(
+                    "Action tidak ditemukan."
+                )
+            );
+
+        }
+
+
+        let result;
+
+
+        /* ================================================
+           ROUTER
+        ================================================ */
+
+        switch (action) {
+
+
+            /* ==========================================
+               AUTH
+            ========================================== */
+
+            case "login":
+
+                result =
+                    login(data);
+
+                break;
+
+
+            /* ==========================================
+               QUESTION
+            ========================================== */
+
+            case "insertQuestion":
+
+                result =
+                    insertQuestion(data);
+
+                break;
+
+
+            case "getQuestion":
+
+                result =
+                    getQuestion();
+
+                break;
+
+
+            case "updateQuestion":
+
+                result =
+                    updateQuestion(data);
+
+                break;
+
+
+            case "deleteQuestion":
+
+                result =
+                    deleteQuestion(data);
+
+                break;
+
+
+            /* ==========================================
+               STUDENT
+            ========================================== */
+
+            case "insertStudent":
+
+                result =
+                    insertStudent(data);
+
+                break;
+
+
+            case "getStudent":
+
+                result =
+                    getStudent();
+
+                break;
+
+
+            case "updateStudent":
+
+                result =
+                    updateStudent(data);
+
+                break;
+
+
+            case "deleteStudent":
+
+                result =
+                    deleteStudent(data);
+
+                break;
+
+
+            /* ==========================================
+               STUDENT IMPORT
+            ========================================== */
+
+            case "importStudents":
+
+                result =
+                    importStudents(data);
+
+                break;
+
+
+            /* ==========================================
+               TOKEN
+            ========================================== */
+
+            case "createToken":
+
+                result =
+                    createToken(data);
+
+                break;
+
+
+            case "getToken":
+
+                result =
+                    getToken();
+
+                break;
+
+
+            case "validateToken":
+
+                result =
+                    validateToken(data);
+
+                break;
+
+
+            case "disableToken":
+
+                result =
+                    disableToken(data);
+
+                break;
+
+
+            case "deleteToken":
+
+                result =
+                    deleteToken(data);
+
+                break;
+
+
+            /* ==========================================
+               SCORE
+            ========================================== */
+
+            case "saveScore":
+
+                result =
+                    saveScore(data);
+
+                break;
+
+
+            /* ==========================================
+               RESULT
+            ========================================== */
+
+            case "saveResult":
+
+                result =
+                    saveResult(data);
+
+                break;
+
+
+            case "getResult":
+
+                result =
+                    getResult();
+
+                break;
+
+
+            case "getStudentResult":
+
+                result =
+                    getStudentResult(data);
+
+                break;
+
+
+            case "updateResultScore":
+
+                result =
+                    updateResultScore(data);
+
+                break;
+
+
+            case "deleteResult":
+
+                result =
+                    deleteResult(data);
+
+                break;
+
+
+            case "deleteResults":
+
+                result =
+                    deleteResults(data);
+
+                break;
+
+
+            /* ==========================================
+               UNKNOWN ACTION
+            ========================================== */
+
+            default:
+
+                result =
+                    failed(
+                        "Unknown action : " +
+                        action
+                    );
+
+                break;
+
+        }
+
+
+        /* ================================================
+           RETURN JSON
+        ================================================ */
+
+        return json(
+            result
+        );
 
     }
 
+    catch (err) {
 
-    /**************************************************
-     * PARSE REQUEST BODY
-     **************************************************/
-
-    const body =
-      JSON.parse(
-        e.postData.contents
-      );
-
-    const action =
-      body.action;
-
-    const data =
-      body.data || {};
+        Logger.log(
+            err
+        );
 
 
-    /**************************************************
-     * VALIDATE ACTION
-     **************************************************/
+        return json({
 
-    if (!action) {
+            success:
+                false,
 
-      return json(
-        failed(
-          "Action tidak ditemukan."
-        )
-      );
+            message:
+                err.toString(),
+
+            stack:
+                err.stack || ""
+
+        });
 
     }
-
-
-    /**************************************************
-     * ROUTER
-     **************************************************/
-
-    switch (action) {
-
-
-      /**********************************************
-       * AUTH
-       **********************************************/
-
-      case "login":
-
-        return json(
-          login(data)
-        );
-
-
-      /**********************************************
-       * QUESTION
-       **********************************************/
-
-      case "insertQuestion":
-
-        return json(
-          insertQuestion(data)
-        );
-
-
-      case "getQuestion":
-
-        return json(
-          getQuestion()
-        );
-
-
-      case "updateQuestion":
-
-        return json(
-          updateQuestion(data)
-        );
-
-
-      case "deleteQuestion":
-
-        return json(
-          deleteQuestion(data)
-        );
-
-
-      /**********************************************
-       * STUDENT
-       **********************************************/
-
-      case "insertStudent":
-
-        return json(
-          insertStudent(data)
-        );
-
-
-      case "getStudent":
-
-        return json(
-          getStudent()
-        );
-
-
-      case "updateStudent":
-
-        return json(
-          updateStudent(data)
-        );
-
-
-      case "deleteStudent":
-
-        return json(
-          deleteStudent(data)
-        );
-
-
-      /**********************************************
-       * TOKEN
-       **********************************************/
-
-      case "createToken":
-
-        return json(
-          createToken(data)
-        );
-
-
-      case "getToken":
-
-        return json(
-          getToken()
-        );
-
-
-      case "validateToken":
-
-        return json(
-          validateToken(data)
-        );
-
-
-      case "disableToken":
-
-        return json(
-          disableToken(data)
-        );
-
-
-      case "deleteToken":
-
-        return json(
-          deleteToken(data)
-        );
-
-
-      /**********************************************
-       * SCORE / RESULT
-       **********************************************/
-
-      case "saveScore":
-
-        return json(
-          saveScore(data)
-        );
-
-
-      case "saveResult":
-
-        return json(
-          saveResult(data)
-        );
-
-
-      case "getStudentResult":
-
-        return json(
-          getStudentResult(data)
-        );
-
-
-      /**********************************************
-       * UNKNOWN ACTION
-       **********************************************/
-
-      default:
-
-        return json(
-          failed(
-            "Unknown action : " + action
-          )
-        );
-
-    }
-
-  }
-
-  catch (err) {
-
-    Logger.log(err);
-
-    return json({
-
-      success: false,
-
-      message:
-        err.toString(),
-
-      stack:
-        err.stack || ""
-
-    });
-
-  }
 
 }
 
 
-/******************************************************
- * JSON OUTPUT
- ******************************************************/
+/* =====================================================
+JSON OUTPUT
+===================================================== */
 
 function json(obj) {
 
-  return ContentService
+    return ContentService
 
-    .createTextOutput(
-      JSON.stringify(obj)
-    )
+        .createTextOutput(
+            JSON.stringify(obj)
+        )
 
-    .setMimeType(
-      ContentService.MimeType.JSON
-    );
+        .setMimeType(
+            ContentService.MimeType.JSON
+        );
 
 }
+
+
+/* =====================================================
+END OF FILE
+===================================================== */

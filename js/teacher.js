@@ -1,311 +1,290 @@
 /**
  * =========================================================
  * SAF Speaking Online Test
- * Teacher Dashboard
+ * Teacher Dashboard Controller
  *
- * File:
- * js/teacher.js
+ * Stable Foundation v4.2
  *
- * Stable Foundation v7.3
- *
- * FIX:
- * - Result response normalization
- * - Result numeric-key response support
- * - Result Select All
- * - Result Delete Selected
- * - Result Delete All
- * - Result individual delete
- *
- * PRESERVED:
+ * MODULE:
  * - Dashboard
- * - Question management
- * - Student management
- * - Token management
- * - Session / Logout
- * - Existing API functions
+ * - Question Management
+ * - Student Management
+ * - CSV Student Import
+ * - Token Management
+ * - Result Management
  *
- * NO BACKEND CHANGE REQUIRED
+ * Backend:
+ * api.js
  * =========================================================
  */
-
-
-/* =========================================================
-   INITIALIZE
-========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    init
-);
 
 
 /* =========================================================
    GLOBAL STATE
 ========================================================= */
 
-const APP = {
+let teacherQuestions = [];
+let teacherStudents = [];
+let teacherTokens = [];
+let teacherResults = [];
 
-    question: [],
-
-    student: [],
-
-    token: [],
-
-    result: []
-
-};
-
-
-const STATE = {
-
-    questionEdit: false,
-
-    questionId: null,
-
-    studentEdit: false,
-
-    studentId: null
-
-};
-
-
-/* =========================================================
-   RESULT SELECTION STATE
-========================================================= */
-
-const RESULT_SELECTION = new Set();
+let csvStudentData = [];
 
 
 /* =========================================================
    INITIALIZE
 ========================================================= */
 
-async function init() {
+document.addEventListener("DOMContentLoaded", function () {
 
-    checkSession();
+    initializeTeacherDashboard();
 
-    bindMenu();
-
-    bindLogout();
-
-    await refreshDashboard();
-
-    loadDashboard();
-
-}
+});
 
 
-/* =========================================================
-   SESSION
-========================================================= */
-
-function checkSession() {
-
-    const session =
-        sessionStorage.getItem(
-            CONFIG.SESSION_KEY
-        );
-
-
-    if (!session) {
-
-        window.location.href =
-            "login.html?role=teacher";
-
-        return;
-
-    }
-
+async function initializeTeacherDashboard() {
 
     try {
 
-        const user =
-            JSON.parse(session);
+        setupMenu();
 
+        updateTodayDate();
 
-        if (
-            !user ||
-            user.role !== "teacher"
-        ) {
-
-            logout();
-
-        }
+        await refreshDashboardCounters();
 
     }
 
     catch (err) {
 
         console.error(
-            "SESSION ERROR:",
+            "Teacher Dashboard Init Error:",
             err
         );
 
-        logout();
-
     }
 
 }
 
 
 /* =========================================================
-   LOGOUT
+   MENU
 ========================================================= */
 
-function logout() {
+function setupMenu() {
 
-    sessionStorage.removeItem(
-        CONFIG.SESSION_KEY
-    );
+    const menuLinks =
+        document.querySelectorAll(
+            ".menu a[data-page]"
+        );
 
-    sessionStorage.removeItem(
-        CONFIG.TOKEN_KEY
-    );
+    menuLinks.forEach(function (link) {
 
-    window.location.href =
-        "index.html";
+        link.addEventListener(
+            "click",
+            async function (event) {
 
-}
+                event.preventDefault();
+
+                const page =
+                    this.getAttribute(
+                        "data-page"
+                    );
+
+                if (!page) return;
 
 
-/* =========================================================
-   LOGOUT BINDING
-========================================================= */
+                if (page === "dashboard") {
 
-function bindLogout() {
+                    loadDashboardPage();
 
-    document
-        .querySelectorAll("a")
-        .forEach(link => {
+                }
 
-            if (
-                link.textContent
-                    .trim()
-                    .includes("Logout")
-            ) {
+                else if (page === "question") {
 
-                link.onclick =
-                    function (e) {
+                    await loadQuestionPage();
 
-                        e.preventDefault();
+                }
 
-                        logout();
+                else if (page === "student") {
 
-                    };
+                    await loadStudentPage();
+
+                }
+
+                else if (page === "token") {
+
+                    await loadTokenPage();
+
+                }
+
+                else if (page === "result") {
+
+                    await loadResultPage();
+
+                }
 
             }
+        );
 
-        });
-
-}
-
-
-/* =========================================================
-   SIDEBAR MENU
-========================================================= */
-
-function bindMenu() {
-
-    document
-        .querySelectorAll("[data-page]")
-        .forEach(menu => {
-
-            menu.onclick =
-                function (e) {
-
-                    e.preventDefault();
-
-                    const page =
-                        this.dataset.page;
-
-
-                    switch (page) {
-
-                        case "dashboard":
-
-                            loadDashboard();
-
-                            break;
-
-
-                        case "question":
-
-                            loadQuestionPage();
-
-                            break;
-
-
-                        case "student":
-
-                            loadStudentPage();
-
-                            break;
-
-
-                        case "token":
-
-                            loadTokenPage();
-
-                            break;
-
-
-                        case "result":
-
-                            loadResultPage();
-
-                            break;
-
-                    }
-
-                };
-
-        });
+    });
 
 }
 
 
 /* =========================================================
-   CONTENT
+   DATE
 ========================================================= */
 
-function setContent(html) {
+function updateTodayDate() {
+
+    const el =
+        document.getElementById(
+            "todayDate"
+        );
+
+    if (!el) return;
+
+
+    const today =
+        new Date();
+
+
+    const options = {
+
+        weekday: "long",
+
+        year: "numeric",
+
+        month: "long",
+
+        day: "numeric"
+
+    };
+
+
+    el.textContent =
+        today.toLocaleDateString(
+            "en-US",
+            options
+        );
+
+}
+
+
+/* =========================================================
+   CONTENT HELPER
+========================================================= */
+
+function getContentElement() {
+
+    return document.getElementById(
+        "content"
+    );
+
+}
+
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+async function loadDashboardPage() {
 
     const content =
-        document.getElementById(
-            "content"
-        );
+        getContentElement();
+
+    if (!content) return;
 
 
-    if (!content) {
+    content.innerHTML = `
 
-        console.error(
-            "Teacher dashboard: #content not found."
-        );
+        <h2>Dashboard Ready</h2>
 
-        return;
+        <br>
 
-    }
+        <p>
+            Welcome to the SAF Speaking Online Test
+            Teacher Dashboard.
+        </p>
+
+        <br>
+
+        <p>
+            Manage speaking questions, students,
+            exam tokens, and speaking results.
+        </p>
+
+        <br>
+
+        <hr>
+
+        <br>
+
+        <h3>Quick Actions</h3>
+
+        <br>
+
+        <div style="
+            display:flex;
+            flex-wrap:wrap;
+            gap:12px;
+        ">
+
+            <button
+                class="btn teacher"
+                onclick="loadQuestionPage()">
+
+                🎤 Add Speaking Question
+
+            </button>
+
+            <button
+                class="btn teacher"
+                onclick="loadStudentPage()">
+
+                👨‍🎓 Manage Students
+
+            </button>
+
+            <button
+                class="btn teacher"
+                onclick="loadTokenPage()">
+
+                🔑 Exam Token
+
+            </button>
+
+            <button
+                class="btn teacher"
+                onclick="loadResultPage()">
+
+                📊 Speaking Results
+
+            </button>
+
+        </div>
+
+    `;
 
 
-    content.innerHTML =
-        html;
+    await refreshDashboardCounters();
 
 }
 
 
 /* =========================================================
-   DASHBOARD DATA
+   DASHBOARD COUNTERS
 ========================================================= */
 
-async function refreshDashboard() {
+async function refreshDashboardCounters() {
 
     try {
 
         const [
-            questionResult,
-            studentResult,
-            tokenResult,
-            resultResult
+            questionResponse,
+            studentResponse,
+            tokenResponse,
+            resultResponse
         ] = await Promise.all([
 
             apiGetQuestion(),
@@ -319,177 +298,107 @@ async function refreshDashboard() {
         ]);
 
 
-        APP.question =
-            questionResult &&
-            questionResult.success === true
-                ? (
-                    Array.isArray(
-                        questionResult.data
-                    )
-                        ? questionResult.data
-                        : []
-                )
-                : [];
+        if (
+            questionResponse &&
+            questionResponse.success
+        ) {
+
+            const data =
+                questionResponse.data || [];
+
+            const el =
+                document.getElementById(
+                    "totalQuestion"
+                );
+
+            if (el) {
+
+                el.textContent =
+                    data.length;
+
+            }
+
+        }
 
 
-        APP.student =
-            studentResult &&
-            studentResult.success === true
-                ? (
-                    Array.isArray(
-                        studentResult.data
-                    )
-                        ? studentResult.data
-                        : []
-                )
-                : [];
+        if (
+            studentResponse &&
+            studentResponse.success
+        ) {
+
+            const data =
+                studentResponse.data || [];
+
+            const el =
+                document.getElementById(
+                    "totalStudent"
+                );
+
+            if (el) {
+
+                el.textContent =
+                    data.length;
+
+            }
+
+        }
 
 
-        APP.token =
-            tokenResult &&
-            tokenResult.success === true
-                ? (
-                    Array.isArray(
-                        tokenResult.data
-                    )
-                        ? tokenResult.data
-                        : []
-                )
-                : [];
+        if (
+            tokenResponse &&
+            tokenResponse.success
+        ) {
+
+            const data =
+                tokenResponse.data || [];
+
+            const el =
+                document.getElementById(
+                    "totalToken"
+                );
+
+            if (el) {
+
+                el.textContent =
+                    data.length;
+
+            }
+
+        }
 
 
-        /*
-         * IMPORTANT:
-         * Result tidak boleh hanya membaca:
-         *
-         * resultResult.data
-         *
-         * karena backend saat ini dapat mengembalikan
-         * object dengan numeric keys.
-         */
+        if (
+            resultResponse &&
+            resultResponse.success
+        ) {
 
-        APP.result =
-            resultResult &&
-            resultResult.success === true
-                ? normalizeResultResponse(
-                    resultResult
-                )
-                : [];
+            const data =
+                resultResponse.data || [];
 
+            const el =
+                document.getElementById(
+                    "totalResult"
+                );
 
-        updateQuestionCounter(
-            APP.question.length
-        );
+            if (el) {
 
-        updateStudentCounter(
-            APP.student.length
-        );
+                el.textContent =
+                    data.length;
 
-        updateTokenCounter(
-            APP.token.length
-        );
+            }
 
-        updateResultCounter(
-            APP.result.length
-        );
-
-
-        console.log(
-            "DASHBOARD RESULT:",
-            APP.result
-        );
+        }
 
     }
 
     catch (err) {
 
         console.error(
-            "REFRESH DASHBOARD ERROR:",
+            "Counter Error:",
             err
         );
 
     }
-
-}
-
-
-/* =========================================================
-   DASHBOARD PAGE
-========================================================= */
-
-function loadDashboard() {
-
-    setContent(`
-
-        <h2>
-            Dashboard
-        </h2>
-
-        <br>
-
-        <p>
-            Welcome to SAF Speaking Online Test
-            Teacher Dashboard.
-        </p>
-
-        <br>
-
-        <p>
-            Use the left menu to manage
-            Questions, Students, Exam Tokens
-            and Results.
-        </p>
-
-        <br>
-
-        <table
-            width="100%"
-            cellpadding="8"
-            border="1">
-
-            <tr>
-
-                <th>
-                    Total Questions
-                </th>
-
-                <th>
-                    Total Students
-                </th>
-
-                <th>
-                    Total Token
-                </th>
-
-                <th>
-                    Total Results
-                </th>
-
-            </tr>
-
-            <tr>
-
-                <td>
-                    ${APP.question.length}
-                </td>
-
-                <td>
-                    ${APP.student.length}
-                </td>
-
-                <td>
-                    ${APP.token.length}
-                </td>
-
-                <td>
-                    ${APP.result.length}
-                </td>
-
-            </tr>
-
-        </table>
-
-    `);
 
 }
 
@@ -498,27 +407,116 @@ function loadDashboard() {
    QUESTION PAGE
 ========================================================= */
 
-function loadQuestionPage() {
+async function loadQuestionPage() {
 
-    setContent(`
+    const content =
+        getContentElement();
 
-        <h2>
-            Speaking Question Database
-        </h2>
+    if (!content) return;
 
-        <br>
 
-        <form id="questionForm">
+    content.innerHTML = `
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            gap:15px;
+        ">
+
+            <div>
+
+                <h2>
+                    🎤 Speaking Questions
+                </h2>
+
+                <p style="
+                    margin-top:8px;
+                    color:#666;
+                ">
+                    Manage speaking questions.
+                </p>
+
+            </div>
+
+            <button
+                class="btn teacher"
+                onclick="showQuestionForm()">
+
+                ➕ Add Question
+
+            </button>
+
+        </div>
+
+        <div
+            id="questionArea"
+            style="margin-top:25px;">
+
+            Loading...
+
+        </div>
+
+    `;
+
+
+    await renderQuestionList();
+
+}
+
+
+/* =========================================================
+   QUESTION FORM
+========================================================= */
+
+function showQuestionForm(question = null) {
+
+    const area =
+        document.getElementById(
+            "questionArea"
+        );
+
+    if (!area) return;
+
+
+    const editing =
+        question !== null;
+
+
+    area.innerHTML = `
+
+        <div class="card-box">
+
+            <h3>
+                ${editing
+                    ? "Edit Speaking Question"
+                    : "Add Speaking Question"}
+            </h3>
+
+            <br>
 
             <label>
-                Title
+                Question
             </label>
 
-            <input
-                id="title"
-                type="text"
-                required
-            >
+            <textarea
+                id="questionText"
+                rows="5"
+                style="
+                    width:100%;
+                    padding:12px;
+                    margin-top:8px;
+                    border:1px solid #ddd;
+                    border-radius:8px;
+                    resize:vertical;
+                "
+                placeholder="Enter speaking question..."
+            >${editing
+                ? escapeHtml(
+                    question.question || ""
+                )
+                : ""}</textarea>
 
             <br><br>
 
@@ -527,282 +525,134 @@ function loadQuestionPage() {
             </label>
 
             <textarea
-                id="answer"
+                id="answerKey"
                 rows="5"
-                required
-            ></textarea>
+                style="
+                    width:100%;
+                    padding:12px;
+                    margin-top:8px;
+                    border:1px solid #ddd;
+                    border-radius:8px;
+                    resize:vertical;
+                "
+                placeholder="Enter answer key..."
+            >${editing
+                ? escapeHtml(
+                    question.answerKey || ""
+                )
+                : ""}</textarea>
 
             <br><br>
 
-            <label>
-                Difficulty
-            </label>
+            <div style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+            ">
 
-            <select id="difficulty">
+                <button
+                    class="btn teacher"
+                    onclick="${
+                        editing
+                        ? `submitQuestionUpdate('${escapeAttribute(question.id)}')`
+                        : "submitQuestionInsert()"
+                    }">
 
-                <option value="Easy">
-                    Easy
-                </option>
+                    💾 Save
 
-                <option value="Medium">
-                    Medium
-                </option>
+                </button>
 
-                <option value="Hard">
-                    Hard
-                </option>
+                <button
+                    class="btn"
+                    onclick="renderQuestionList()">
 
-            </select>
+                    Cancel
 
-            <br><br>
+                </button>
 
-            <label>
-                Duration (Second)
-            </label>
+            </div>
 
-            <input
-                id="duration"
-                type="number"
-                value="30"
-                min="10"
-                required
-            >
-
-            <br><br>
-
-            <button
-                id="btnSaveQuestion"
-                type="submit"
-                class="btn teacher">
-
-                Save Question
-
-            </button>
-
-            <button
-                type="button"
-                onclick="resetQuestionForm()">
-
-                Cancel
-
-            </button>
-
-        </form>
-
-        <br>
-
-        <input
-            id="searchQuestion"
-            type="text"
-            placeholder="Search question..."
-            onkeyup="filterQuestion()"
-        >
-
-        <br><br>
-
-        <div id="questionTable">
-
-            Loading...
+            <div
+                id="questionMessage"
+                style="margin-top:15px;">
+            </div>
 
         </div>
 
-    `);
-
-
-    const form =
-        document.getElementById(
-            "questionForm"
-        );
-
-
-    if (form) {
-
-        form.addEventListener(
-            "submit",
-            saveQuestion
-        );
-
-    }
-
-
-    loadQuestions();
+    `;
 
 }
 
 
 /* =========================================================
-   SAVE QUESTION
+   INSERT QUESTION
 ========================================================= */
 
-async function saveQuestion(e) {
+async function submitQuestionInsert() {
 
-    e.preventDefault();
+    const question =
+        document.getElementById(
+            "questionText"
+        )?.value.trim();
 
 
-    const titleElement =
-        document.getElementById("title");
+    const answerKey =
+        document.getElementById(
+            "answerKey"
+        )?.value.trim();
 
-    const answerElement =
-        document.getElementById("answer");
 
-    const difficultyElement =
-        document.getElementById("difficulty");
+    if (!question) {
 
-    const durationElement =
-        document.getElementById("duration");
+        showMessage(
+            "questionMessage",
+            "Question wajib diisi.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const result =
+        await apiInsertQuestion({
+
+            question:
+                question,
+
+            answerKey:
+                answerKey
+
+        });
 
 
     if (
-        !titleElement ||
-        !answerElement ||
-        !difficultyElement ||
-        !durationElement
+        result &&
+        result.success
     ) {
 
-        alert(
-            "Question form is not available."
+        showMessage(
+            "questionMessage",
+            result.message ||
+            "Question berhasil ditambahkan.",
+            "success"
         );
 
-        return;
+
+        await renderQuestionList();
+
+        await refreshDashboardCounters();
 
     }
 
+    else {
 
-    const data = {
-
-        title:
-            titleElement.value.trim(),
-
-        answer:
-            answerElement.value.trim(),
-
-        difficulty:
-            difficultyElement.value,
-
-        duration:
-            Number(
-                durationElement.value
-            ),
-
-        status:
-            "ACTIVE",
-
-        createdBy:
-            "Teacher"
-
-    };
-
-
-    if (!data.title) {
-
-        alert(
-            "Title wajib diisi."
-        );
-
-        return;
-
-    }
-
-
-    if (!data.answer) {
-
-        alert(
-            "Answer Key wajib diisi."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !data.duration ||
-        data.duration <= 0
-    ) {
-
-        alert(
-            "Duration tidak valid."
-        );
-
-        return;
-
-    }
-
-
-    let res;
-
-
-    try {
-
-        if (
-            STATE.questionEdit === true &&
-            STATE.questionId
-        ) {
-
-            data.id =
-                STATE.questionId;
-
-
-            res =
-                await apiUpdateQuestion(
-                    data
-                );
-
-        }
-
-        else {
-
-            res =
-                await apiInsertQuestion(
-                    data
-                );
-
-        }
-
-
-        console.log(
-            "QUESTION SAVE RESPONSE:",
-            res
-        );
-
-
-        alert(
-            res &&
-            res.message
-                ? res.message
-                : "Question saved."
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            return;
-
-        }
-
-
-        resetQuestionForm();
-
-        await loadQuestions();
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "SAVE QUESTION ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to save question."
+        showMessage(
+            "questionMessage",
+            result?.message ||
+            "Gagal menambahkan question.",
+            "error"
         );
 
     }
@@ -811,105 +661,189 @@ async function saveQuestion(e) {
 
 
 /* =========================================================
-   LOAD QUESTIONS
+   UPDATE QUESTION
 ========================================================= */
 
-async function loadQuestions() {
+async function submitQuestionUpdate(id) {
 
-    const table =
+    const question =
         document.getElementById(
-            "questionTable"
+            "questionText"
+        )?.value.trim();
+
+
+    const answerKey =
+        document.getElementById(
+            "answerKey"
+        )?.value.trim();
+
+
+    if (!question) {
+
+        showMessage(
+            "questionMessage",
+            "Question wajib diisi.",
+            "error"
         );
-
-
-    if (!table) {
 
         return;
 
     }
 
 
-    try {
+    const result =
+        await apiUpdateQuestion({
 
-        const res =
-            await apiGetQuestion();
+            id:
+                id,
 
+            question:
+                question,
 
-        if (
-            !res ||
-            res.success !== true
-        ) {
+            answerKey:
+                answerKey
 
-            table.innerHTML =
-                "<p style='color:red'>" +
-                escapeHTML(
-                    res &&
-                    res.message
-                        ? res.message
-                        : "Failed to load questions."
-                ) +
-                "</p>";
-
-            return;
-
-        }
+        });
 
 
-        APP.question =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
+    if (
+        result &&
+        result.success
+    ) {
 
-
-        updateQuestionCounter(
-            APP.question.length
+        alert(
+            result.message ||
+            "Question berhasil diupdate."
         );
 
+        await renderQuestionList();
 
-        if (
-            APP.question.length === 0
-        ) {
+        await refreshDashboardCounters();
 
-            table.innerHTML =
-                "<p>No question found.</p>";
+    }
 
-            return;
+    else {
 
-        }
+        showMessage(
+            "questionMessage",
+            result?.message ||
+            "Gagal update question.",
+            "error"
+        );
+
+    }
+
+}
 
 
-        let html = `
+/* =========================================================
+   QUESTION LIST
+========================================================= */
 
-            <table
-                border="1"
-                width="100%"
-                cellpadding="8">
+async function renderQuestionList() {
+
+    const area =
+        document.getElementById(
+            "questionArea"
+        );
+
+    if (!area) return;
+
+
+    area.innerHTML =
+        "Loading questions...";
+
+
+    const response =
+        await apiGetQuestion();
+
+
+    if (
+        !response ||
+        !response.success
+    ) {
+
+        area.innerHTML = `
+
+            <div style="color:#b00020;">
+
+                Gagal mengambil questions.
+
+                <br>
+
+                ${escapeHtml(
+                    response?.message ||
+                    "Unknown error."
+                )}
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    teacherQuestions =
+        response.data || [];
+
+
+    if (
+        teacherQuestions.length === 0
+    ) {
+
+        area.innerHTML = `
+
+            <div class="card-box">
+
+                <h3>
+                    No Questions
+                </h3>
+
+                <br>
+
+                <p>
+                    Belum ada speaking question.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <div style="
+            overflow-x:auto;
+        ">
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+            ">
 
                 <thead>
 
                     <tr>
 
-                        <th>
-                            No
+                        <th style="${tableHeadStyle}">
+                            #
                         </th>
 
-                        <th>
-                            Title
+                        <th style="${tableHeadStyle}">
+                            Question
                         </th>
 
-                        <th>
-                            Difficulty
+                        <th style="${tableHeadStyle}">
+                            Answer Key
                         </th>
 
-                        <th>
-                            Duration
-                        </th>
-
-                        <th>
-                            Status
-                        </th>
-
-                        <th>
+                        <th style="${tableHeadStyle}">
                             Action
                         </th>
 
@@ -919,97 +853,73 @@ async function loadQuestions() {
 
                 <tbody>
 
-        `;
+    `;
 
 
-        APP.question.forEach(
-            (q, i) => {
+    teacherQuestions.forEach(
+        function (item, index) {
 
-                html += `
+            html += `
 
-                    <tr>
+                <tr>
 
-                        <td>
-                            ${i + 1}
-                        </td>
+                    <td style="${tableCellStyle}">
+                        ${index + 1}
+                    </td>
 
-                        <td>
-                            ${escapeHTML(q.title)}
-                        </td>
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            item.question || ""
+                        )}
+                    </td>
 
-                        <td>
-                            ${escapeHTML(q.difficulty)}
-                        </td>
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            item.answerKey || ""
+                        )}
+                    </td>
 
-                        <td>
-                            ${escapeHTML(q.duration)}s
-                        </td>
+                    <td style="${tableCellStyle}">
 
-                        <td>
-                            ${escapeHTML(q.status)}
-                        </td>
+                        <button
+                            class="btn teacher"
+                            onclick="editQuestion(${index})">
 
-                        <td>
+                            Edit
 
-                            <button
-                                type="button"
-                                class="btn edit"
-                                onclick="editQuestion('${escapeAttribute(q.id)}')">
+                        </button>
 
-                                Edit
+                        <button
+                            class="btn"
+                            onclick="deleteQuestionByIndex(${index})">
 
-                            </button>
+                            Delete
 
-                            <button
-                                type="button"
-                                class="btn delete"
-                                onclick="deleteQuestion('${escapeAttribute(q.id)}')">
+                        </button>
 
-                                Delete
+                    </td>
 
-                            </button>
+                </tr>
 
-                        </td>
+            `;
 
-                    </tr>
-
-                `;
-
-            }
-        );
+        }
+    );
 
 
-        html += `
+    html += `
 
                 </tbody>
 
             </table>
 
-        `;
+        </div>
+
+    `;
 
 
-        table.innerHTML =
-            html;
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "LOAD QUESTIONS ERROR:",
-            err
-        );
-
-
-        table.innerHTML =
-            "<p style='color:red'>" +
-            escapeHTML(
-                err.message ||
-                "Unable to load questions."
-            ) +
-            "</p>";
-
-    }
+    area.innerHTML =
+        html;
 
 }
 
@@ -1018,90 +928,16 @@ async function loadQuestions() {
    EDIT QUESTION
 ========================================================= */
 
-function editQuestion(id) {
+function editQuestion(index) {
 
     const question =
-        APP.question.find(
-            item =>
-                String(item.id) ===
-                String(id)
-        );
+        teacherQuestions[index];
 
+    if (!question) return;
 
-    if (!question) {
-
-        alert(
-            "Question not found."
-        );
-
-        return;
-
-    }
-
-
-    STATE.questionEdit =
-        true;
-
-    STATE.questionId =
-        question.id;
-
-
-    const title =
-        document.getElementById("title");
-
-    const answer =
-        document.getElementById("answer");
-
-    const difficulty =
-        document.getElementById("difficulty");
-
-    const duration =
-        document.getElementById("duration");
-
-    const button =
-        document.getElementById(
-            "btnSaveQuestion"
-        );
-
-
-    if (title) {
-
-        title.value =
-            question.title || "";
-
-    }
-
-
-    if (answer) {
-
-        answer.value =
-            question.answer || "";
-
-    }
-
-
-    if (difficulty) {
-
-        difficulty.value =
-            question.difficulty || "Easy";
-
-    }
-
-
-    if (duration) {
-
-        duration.value =
-            question.duration || 30;
-
-    }
-
-
-    if (button) {
-
-        button.innerText =
-            "Update Question";
-
-    }
+    showQuestionForm(
+        question
+    );
 
 }
 
@@ -1110,177 +946,57 @@ function editQuestion(id) {
    DELETE QUESTION
 ========================================================= */
 
-async function deleteQuestion(id) {
+async function deleteQuestionByIndex(index) {
 
-    if (!id) {
+    const question =
+        teacherQuestions[index];
 
-        alert(
-            "Question ID is required."
+    if (!question) return;
+
+
+    const confirmed =
+        confirm(
+            "Hapus speaking question ini?"
         );
 
-        return;
 
-    }
+    if (!confirmed) return;
+
+
+    const result =
+        await apiDeleteQuestion({
+
+            id:
+                question.id
+
+        });
 
 
     if (
-        !confirm(
-            "Delete this question?"
-        )
+        result &&
+        result.success
     ) {
 
-        return;
+        alert(
+            result.message ||
+            "Question berhasil dihapus."
+        );
+
+
+        await renderQuestionList();
+
+        await refreshDashboardCounters();
 
     }
 
-
-    try {
-
-        const res =
-            await apiDeleteQuestion({
-
-                id: id
-
-            });
-
+    else {
 
         alert(
-            res &&
-            res.message
-                ? res.message
-                : "Question deleted."
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            return;
-
-        }
-
-
-        await loadQuestions();
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE QUESTION ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to delete question."
+            result?.message ||
+            "Gagal menghapus question."
         );
 
     }
-
-}
-
-
-/* =========================================================
-   RESET QUESTION FORM
-========================================================= */
-
-function resetQuestionForm() {
-
-    STATE.questionEdit =
-        false;
-
-    STATE.questionId =
-        null;
-
-
-    const form =
-        document.getElementById(
-            "questionForm"
-        );
-
-
-    if (form) {
-
-        form.reset();
-
-    }
-
-
-    const duration =
-        document.getElementById(
-            "duration"
-        );
-
-
-    if (duration) {
-
-        duration.value =
-            30;
-
-    }
-
-
-    const button =
-        document.getElementById(
-            "btnSaveQuestion"
-        );
-
-
-    if (button) {
-
-        button.innerText =
-            "Save Question";
-
-    }
-
-}
-
-
-/* =========================================================
-   SEARCH QUESTION
-========================================================= */
-
-function filterQuestion() {
-
-    const input =
-        document.getElementById(
-            "searchQuestion"
-        );
-
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    const keyword =
-        input.value
-            .toLowerCase()
-            .trim();
-
-
-    document
-        .querySelectorAll(
-            "#questionTable tbody tr"
-        )
-        .forEach(row => {
-
-            row.style.display =
-                row.innerText
-                    .toLowerCase()
-                    .includes(keyword)
-                        ? ""
-                        : "none";
-
-        });
 
 }
 
@@ -1289,47 +1005,159 @@ function filterQuestion() {
    STUDENT PAGE
 ========================================================= */
 
-function loadStudentPage() {
+async function loadStudentPage() {
 
-    setContent(`
+    const content =
+        getContentElement();
 
-        <h2>
-            Student Database
-        </h2>
+    if (!content) return;
 
-        <br>
 
-        <form id="studentForm">
+    content.innerHTML = `
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            gap:15px;
+        ">
+
+            <div>
+
+                <h2>
+                    👨‍🎓 Student Management
+                </h2>
+
+                <p style="
+                    margin-top:8px;
+                    color:#666;
+                ">
+
+                    Manage student accounts
+                    for the speaking test.
+
+                </p>
+
+            </div>
+
+            <div style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+            ">
+
+                <button
+                    class="btn teacher"
+                    onclick="showStudentForm()">
+
+                    ➕ Add Student
+
+                </button>
+
+                <button
+                    class="btn teacher"
+                    onclick="showCSVImport()">
+
+                    📥 Import CSV
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <div
+            id="studentArea"
+            style="margin-top:25px;">
+
+            Loading...
+
+        </div>
+
+    `;
+
+
+    await renderStudentList();
+
+}
+
+
+/* =========================================================
+   STUDENT FORM
+========================================================= */
+
+function showStudentForm(student = null) {
+
+    const area =
+        document.getElementById(
+            "studentArea"
+        );
+
+    if (!area) return;
+
+
+    const editing =
+        student !== null;
+
+
+    area.innerHTML = `
+
+        <div class="card-box">
+
+            <h3>
+                ${editing
+                    ? "Edit Student"
+                    : "Add Student"}
+            </h3>
+
+            <br>
 
             <label>
                 NIS
             </label>
 
             <input
-                id="nis"
-                required
+                id="studentNis"
+                type="text"
+                value="${editing
+                    ? escapeAttribute(student.nis || "")
+                    : ""}"
+                ${editing ? "readonly" : ""}
+                placeholder="NIS"
+                style="${inputStyle}"
             >
 
             <br><br>
 
             <label>
-                Student Name
+                Nama
             </label>
 
             <input
-                id="nama"
-                required
+                id="studentNama"
+                type="text"
+                value="${editing
+                    ? escapeAttribute(student.nama || "")
+                    : ""}"
+                placeholder="Nama siswa"
+                style="${inputStyle}"
             >
 
             <br><br>
 
             <label>
-                Class
+                Kelas
             </label>
 
             <input
-                id="kelas"
-                required
+                id="studentKelas"
+                type="text"
+                value="${editing
+                    ? escapeAttribute(student.kelas || "")
+                    : ""}"
+                placeholder="Contoh: 7A"
+                style="${inputStyle}"
             >
 
             <br><br>
@@ -1339,8 +1167,13 @@ function loadStudentPage() {
             </label>
 
             <input
-                id="username"
-                required
+                id="studentUsername"
+                type="text"
+                value="${editing
+                    ? escapeAttribute(student.username || "")
+                    : ""}"
+                placeholder="Username"
+                style="${inputStyle}"
             >
 
             <br><br>
@@ -1350,206 +1183,161 @@ function loadStudentPage() {
             </label>
 
             <input
-                id="password"
-                type="password"
-                required
+                id="studentPassword"
+                type="text"
+                value="${editing
+                    ? escapeAttribute(student.password || "")
+                    : ""}"
+                placeholder="Password"
+                style="${inputStyle}"
             >
 
             <br><br>
 
-            <button
-                id="btnSaveStudent"
-                type="submit"
-                class="btn teacher">
+            <label>
+                Status
+            </label>
 
-                Save Student
+            <select
+                id="studentStatus"
+                style="${inputStyle}">
 
-            </button>
+                <option
+                    value="ACTIVE"
+                    ${(
+                        !editing ||
+                        student.status === "ACTIVE"
+                    )
+                    ? "selected"
+                    : ""}>
 
-            <button
-                type="button"
-                onclick="resetStudentForm()">
+                    ACTIVE
 
-                Cancel
+                </option>
 
-            </button>
+                <option
+                    value="INACTIVE"
+                    ${(
+                        editing &&
+                        student.status === "INACTIVE"
+                    )
+                    ? "selected"
+                    : ""}>
 
-        </form>
+                    INACTIVE
 
-        <br>
+                </option>
 
-        <input
-            id="searchStudent"
-            type="text"
-            placeholder="Search Student..."
-            onkeyup="filterStudent()"
-        >
+            </select>
 
-        <br><br>
+            <br><br>
 
-        <div id="studentTable">
+            <div style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+            ">
 
-            Loading...
+                <button
+                    class="btn teacher"
+                    onclick="${
+                        editing
+                        ? `submitStudentUpdate('${escapeAttribute(student.nis)}')`
+                        : "submitStudentInsert()"
+                    }">
+
+                    💾 Save
+
+                </button>
+
+                <button
+                    class="btn"
+                    onclick="renderStudentList()">
+
+                    Cancel
+
+                </button>
+
+            </div>
+
+            <div
+                id="studentMessage"
+                style="margin-top:15px;">
+            </div>
 
         </div>
 
-    `);
-
-
-    const form =
-        document.getElementById(
-            "studentForm"
-        );
-
-
-    if (form) {
-
-        form.addEventListener(
-            "submit",
-            saveStudent
-        );
-
-    }
-
-
-    loadStudents();
+    `;
 
 }
 
 
 /* =========================================================
-   SAVE STUDENT
+   INSERT STUDENT
 ========================================================= */
 
-async function saveStudent(e) {
+async function submitStudentInsert() {
 
-    e.preventDefault();
+    const data =
+        getStudentFormData();
 
 
-    const nis =
-        document.getElementById("nis");
+    if (!data.nis) {
 
-    const nama =
-        document.getElementById("nama");
+        showMessage(
+            "studentMessage",
+            "NIS wajib diisi.",
+            "error"
+        );
 
-    const kelas =
-        document.getElementById("kelas");
+        return;
 
-    const username =
-        document.getElementById("username");
+    }
 
-    const password =
-        document.getElementById("password");
+
+    if (!data.nama) {
+
+        showMessage(
+            "studentMessage",
+            "Nama wajib diisi.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const result =
+        await apiInsertStudent(
+            data
+        );
 
 
     if (
-        !nis ||
-        !nama ||
-        !kelas ||
-        !username ||
-        !password
+        result &&
+        result.success
     ) {
 
         alert(
-            "Student form is not available."
+            result.message ||
+            "Student berhasil ditambahkan."
         );
 
-        return;
+
+        await renderStudentList();
+
+        await refreshDashboardCounters();
 
     }
 
+    else {
 
-    const data = {
-
-        nis:
-            nis.value.trim(),
-
-        nama:
-            nama.value.trim(),
-
-        kelas:
-            kelas.value.trim(),
-
-        username:
-            username.value.trim(),
-
-        password:
-            password.value.trim(),
-
-        status:
-            "Active"
-
-    };
-
-
-    let res;
-
-
-    try {
-
-        if (
-            STATE.studentEdit === true &&
-            STATE.studentId
-        ) {
-
-            data.nis =
-                STATE.studentId;
-
-
-            res =
-                await apiUpdateStudent(
-                    data
-                );
-
-        }
-
-        else {
-
-            res =
-                await apiInsertStudent(
-                    data
-                );
-
-        }
-
-
-        alert(
-            res &&
-            res.message
-                ? res.message
-                : "Student saved."
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            return;
-
-        }
-
-
-        resetStudentForm();
-
-        await loadStudents();
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "SAVE STUDENT ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to save student."
+        showMessage(
+            "studentMessage",
+            result?.message ||
+            "Gagal menambahkan student.",
+            "error"
         );
 
     }
@@ -1558,109 +1346,286 @@ async function saveStudent(e) {
 
 
 /* =========================================================
-   LOAD STUDENTS
+   GET STUDENT FORM DATA
 ========================================================= */
 
-async function loadStudents() {
+function getStudentFormData() {
 
-    const table =
-        document.getElementById(
-            "studentTable"
+    return {
+
+        nis:
+            document
+                .getElementById(
+                    "studentNis"
+                )
+                ?.value
+                .trim() || "",
+
+        nama:
+            document
+                .getElementById(
+                    "studentNama"
+                )
+                ?.value
+                .trim() || "",
+
+        kelas:
+            document
+                .getElementById(
+                    "studentKelas"
+                )
+                ?.value
+                .trim() || "",
+
+        username:
+            document
+                .getElementById(
+                    "studentUsername"
+                )
+                ?.value
+                .trim() || "",
+
+        password:
+            document
+                .getElementById(
+                    "studentPassword"
+                )
+                ?.value
+                .trim() || "",
+
+        status:
+            document
+                .getElementById(
+                    "studentStatus"
+                )
+                ?.value || "ACTIVE"
+
+    };
+
+}
+
+
+/* =========================================================
+   UPDATE STUDENT
+========================================================= */
+
+async function submitStudentUpdate(
+    nis
+) {
+
+    const data =
+        getStudentFormData();
+
+
+    data.nis =
+        nis;
+
+
+    if (!data.nama) {
+
+        showMessage(
+            "studentMessage",
+            "Nama wajib diisi.",
+            "error"
         );
-
-
-    if (!table) {
 
         return;
 
     }
 
 
-    try {
-
-        const res =
-            await apiGetStudent();
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            table.innerHTML =
-                "<p style='color:red'>" +
-                escapeHTML(
-                    res &&
-                    res.message
-                        ? res.message
-                        : "Failed to load students."
-                ) +
-                "</p>";
-
-            return;
-
-        }
-
-
-        APP.student =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
-
-
-        updateStudentCounter(
-            APP.student.length
+    const result =
+        await apiUpdateStudent(
+            data
         );
 
 
-        if (
-            APP.student.length === 0
-        ) {
+    if (
+        result &&
+        result.success
+    ) {
 
-            table.innerHTML =
-                "<p>No student found.</p>";
-
-            return;
-
-        }
+        alert(
+            result.message ||
+            "Student berhasil diupdate."
+        );
 
 
-        let html = `
+        await renderStudentList();
 
-            <table
-                border="1"
-                width="100%"
-                cellpadding="8">
+        await refreshDashboardCounters();
+
+    }
+
+    else {
+
+        showMessage(
+            "studentMessage",
+            result?.message ||
+            "Gagal update student.",
+            "error"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   STUDENT LIST
+========================================================= */
+
+async function renderStudentList() {
+
+    const area =
+        document.getElementById(
+            "studentArea"
+        );
+
+    if (!area) return;
+
+
+    area.innerHTML =
+        "Loading students...";
+
+
+    const response =
+        await apiGetStudent();
+
+
+    if (
+        !response ||
+        !response.success
+    ) {
+
+        area.innerHTML = `
+
+            <div style="color:#b00020;">
+
+                Gagal mengambil data student.
+
+                <br>
+
+                ${escapeHtml(
+                    response?.message ||
+                    "Unknown error."
+                )}
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    teacherStudents =
+        response.data || [];
+
+
+    if (
+        teacherStudents.length === 0
+    ) {
+
+        area.innerHTML = `
+
+            <div class="card-box">
+
+                <h3>
+                    No Students
+                </h3>
+
+                <br>
+
+                <p>
+                    Belum ada student.
+                </p>
+
+                <br>
+
+                <button
+                    class="btn teacher"
+                    onclick="showCSVImport()">
+
+                    📥 Import CSV
+
+                </button>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <div style="
+            margin-bottom:20px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            gap:10px;
+        ">
+
+            <strong>
+                Total Students:
+                ${teacherStudents.length}
+            </strong>
+
+            <button
+                class="btn teacher"
+                onclick="showCSVImport()">
+
+                📥 Import CSV
+
+            </button>
+
+        </div>
+
+        <div style="
+            overflow-x:auto;
+        ">
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                min-width:850px;
+            ">
 
                 <thead>
 
                     <tr>
 
-                        <th>
-                            No
+                        <th style="${tableHeadStyle}">
+                            #
                         </th>
 
-                        <th>
+                        <th style="${tableHeadStyle}">
                             NIS
                         </th>
 
-                        <th>
-                            Name
+                        <th style="${tableHeadStyle}">
+                            Nama
                         </th>
 
-                        <th>
-                            Class
+                        <th style="${tableHeadStyle}">
+                            Kelas
                         </th>
 
-                        <th>
+                        <th style="${tableHeadStyle}">
                             Username
                         </th>
 
-                        <th>
+                        <th style="${tableHeadStyle}">
                             Status
                         </th>
 
-                        <th>
+                        <th style="${tableHeadStyle}">
                             Action
                         </th>
 
@@ -1670,101 +1635,99 @@ async function loadStudents() {
 
                 <tbody>
 
-        `;
+    `;
 
 
-        APP.student.forEach(
-            (s, i) => {
+    teacherStudents.forEach(
+        function (student, index) {
 
-                html += `
-
-                    <tr>
-
-                        <td>
-                            ${i + 1}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(s.nis)}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(s.nama)}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(s.kelas)}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(s.username)}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(s.status)}
-                        </td>
-
-                        <td>
-
-                            <button
-                                type="button"
-                                class="btn edit"
-                                onclick="editStudent('${escapeAttribute(s.nis)}')">
-
-                                Edit
-
-                            </button>
-
-                            <button
-                                type="button"
-                                class="btn delete"
-                                onclick="deleteStudent('${escapeAttribute(s.nis)}')">
-
-                                Delete
-
-                            </button>
-
-                        </td>
-
-                    </tr>
-
-                `;
-
-            }
-        );
+            const status =
+                String(
+                    student.status || "ACTIVE"
+                ).toUpperCase();
 
 
-        html += `
+            html += `
+
+                <tr>
+
+                    <td style="${tableCellStyle}">
+                        ${index + 1}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            String(
+                                student.nis || ""
+                            )
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            student.nama || ""
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            student.kelas || ""
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            student.username || ""
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            status
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+
+                        <button
+                            class="btn teacher"
+                            onclick="editStudent(${index})">
+
+                            Edit
+
+                        </button>
+
+                        <button
+                            class="btn"
+                            onclick="deleteStudentByIndex(${index})">
+
+                            Delete
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+    html += `
 
                 </tbody>
 
             </table>
 
-        `;
+        </div>
+
+    `;
 
 
-        table.innerHTML =
-            html;
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "LOAD STUDENTS ERROR:",
-            err
-        );
-
-
-        table.innerHTML =
-            "<p style='color:red'>" +
-            escapeHTML(
-                err.message ||
-                "Unable to load students."
-            ) +
-            "</p>";
-
-    }
+    area.innerHTML =
+        html;
 
 }
 
@@ -1773,101 +1736,17 @@ async function loadStudents() {
    EDIT STUDENT
 ========================================================= */
 
-function editStudent(nis) {
+function editStudent(index) {
 
     const student =
-        APP.student.find(
-            item =>
-                String(item.nis) ===
-                String(nis)
-        );
+        teacherStudents[index];
+
+    if (!student) return;
 
 
-    if (!student) {
-
-        alert(
-            "Student not found."
-        );
-
-        return;
-
-    }
-
-
-    STATE.studentEdit =
-        true;
-
-    STATE.studentId =
-        student.nis;
-
-
-    const nisElement =
-        document.getElementById("nis");
-
-    const namaElement =
-        document.getElementById("nama");
-
-    const kelasElement =
-        document.getElementById("kelas");
-
-    const usernameElement =
-        document.getElementById("username");
-
-    const passwordElement =
-        document.getElementById("password");
-
-    const button =
-        document.getElementById(
-            "btnSaveStudent"
-        );
-
-
-    if (nisElement) {
-
-        nisElement.value =
-            student.nis || "";
-
-    }
-
-
-    if (namaElement) {
-
-        namaElement.value =
-            student.nama || "";
-
-    }
-
-
-    if (kelasElement) {
-
-        kelasElement.value =
-            student.kelas || "";
-
-    }
-
-
-    if (usernameElement) {
-
-        usernameElement.value =
-            student.username || "";
-
-    }
-
-
-    if (passwordElement) {
-
-        passwordElement.value =
-            student.password || "";
-
-    }
-
-
-    if (button) {
-
-        button.innerText =
-            "Update Student";
-
-    }
+    showStudentForm(
+        student
+    );
 
 }
 
@@ -1876,312 +1755,228 @@ function editStudent(nis) {
    DELETE STUDENT
 ========================================================= */
 
-async function deleteStudent(nis) {
+async function deleteStudentByIndex(
+    index
+) {
 
-    if (!nis) {
+    const student =
+        teacherStudents[index];
 
-        alert(
-            "NIS is required."
-        );
-
-        return;
-
-    }
+    if (!student) return;
 
 
-    if (
-        !confirm(
-            "Delete this student?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const res =
-            await apiDeleteStudent({
-
-                nis: nis
-
-            });
-
-
-        alert(
-            res &&
-            res.message
-                ? res.message
-                : "Student deleted."
+    const nis =
+        String(
+            student.nis || ""
         );
 
 
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            return;
-
-        }
-
-
-        if (
-            String(STATE.studentId) ===
-            String(nis)
-        ) {
-
-            resetStudentForm();
-
-        }
-
-
-        await loadStudents();
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE STUDENT ERROR:",
-            err
+    const confirmed =
+        confirm(
+            "Hapus student dengan NIS " +
+            nis +
+            "?"
         );
 
 
-        alert(
-            err.message ||
-            "Unable to delete student."
-        );
-
-    }
-
-}
+    if (!confirmed) return;
 
 
-/* =========================================================
-   RESET STUDENT FORM
-========================================================= */
+    const result =
+        await apiDeleteStudent({
 
-function resetStudentForm() {
-
-    STATE.studentEdit =
-        false;
-
-    STATE.studentId =
-        null;
-
-
-    const form =
-        document.getElementById(
-            "studentForm"
-        );
-
-
-    if (form) {
-
-        form.reset();
-
-    }
-
-
-    const button =
-        document.getElementById(
-            "btnSaveStudent"
-        );
-
-
-    if (button) {
-
-        button.innerText =
-            "Save Student";
-
-    }
-
-}
-
-
-/* =========================================================
-   SEARCH STUDENT
-========================================================= */
-
-function filterStudent() {
-
-    const input =
-        document.getElementById(
-            "searchStudent"
-        );
-
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    const keyword =
-        input.value
-            .toLowerCase()
-            .trim();
-
-
-    document
-        .querySelectorAll(
-            "#studentTable tbody tr"
-        )
-        .forEach(row => {
-
-            row.style.display =
-                row.innerText
-                    .toLowerCase()
-                    .includes(keyword)
-                        ? ""
-                        : "none";
+            nis:
+                nis
 
         });
 
+
+    if (
+        result &&
+        result.success
+    ) {
+
+        alert(
+            result.message ||
+            "Student berhasil dihapus."
+        );
+
+
+        await renderStudentList();
+
+        await refreshDashboardCounters();
+
+    }
+
+    else {
+
+        alert(
+            result?.message ||
+            "Gagal menghapus student."
+        );
+
+    }
+
 }
 
 
 /* =========================================================
-   TOKEN PAGE
+   CSV IMPORT UI
 ========================================================= */
 
-function loadTokenPage() {
+function showCSVImport() {
 
-    setContent(`
+    const area =
+        document.getElementById(
+            "studentArea"
+        );
 
-        <h2>
-            Exam Token
-        </h2>
+    if (!area) return;
 
-        <br>
 
-        <form id="tokenForm">
+    csvStudentData = [];
 
-            <label>
-                Class
-            </label>
+
+    area.innerHTML = `
+
+        <div class="card-box">
+
+            <h2>
+                📥 Import Students from CSV
+            </h2>
+
+            <br>
+
+            <p>
+                Gunakan file CSV dengan format:
+            </p>
+
+            <br>
+
+            <div style="
+                background:#f5f7fa;
+                padding:15px;
+                border-radius:10px;
+                overflow-x:auto;
+            ">
+
+                <code>
+                    nis,nama,kelas,username,password,status
+                </code>
+
+                <br>
+
+                <code>
+                    7001,Ahmad Fauzan,7A,ahmad,123456,ACTIVE
+                </code>
+
+                <br>
+
+                <code>
+                    7002,Budi Santoso,7A,budi,123456,ACTIVE
+                </code>
+
+            </div>
+
+            <br>
+
+            <div style="
+                background:#fff8e1;
+                border-left:4px solid #f0ad00;
+                padding:12px;
+                border-radius:6px;
+            ">
+
+                <strong>Catatan:</strong>
+
+                <br>
+
+                NIS harus berada pada kolom
+                <strong>nis</strong>.
+
+                <br>
+
+                Jangan menghapus header CSV.
+
+                <br>
+
+                Password akan disimpan sesuai
+                data CSV.
+
+            </div>
+
+            <br>
 
             <input
-                id="tokenClass"
-                required
+                id="studentCSVFile"
+                type="file"
+                accept=".csv,text/csv"
+                style="
+                    width:100%;
+                    padding:12px;
+                    border:1px solid #ddd;
+                    border-radius:8px;
+                "
             >
 
             <br><br>
 
-            <label>
-                Expired (Minutes)
-            </label>
+            <div style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+            ">
 
-            <input
-                id="expired"
-                type="number"
-                value="30"
-                min="1"
-                required
-            >
+                <button
+                    class="btn teacher"
+                    onclick="previewStudentCSV()">
 
-            <br><br>
+                    🔍 Preview CSV
 
-            <label>
-                Note
-            </label>
+                </button>
 
-            <input
-                id="note"
-            >
+                <button
+                    class="btn"
+                    onclick="renderStudentList()">
 
-            <br><br>
+                    Cancel
 
-            <button
-                type="submit"
-                class="btn teacher">
+                </button>
 
-                Generate Token
+            </div>
 
-            </button>
-
-        </form>
-
-        <br>
-
-        <input
-            id="searchToken"
-            type="text"
-            placeholder="Search Token..."
-            onkeyup="filterToken()"
-        >
-
-        <br><br>
-
-        <div id="tokenTable">
-
-            Loading...
+            <div
+                id="csvPreview"
+                style="margin-top:25px;">
+            </div>
 
         </div>
 
-    `);
-
-
-    const form =
-        document.getElementById(
-            "tokenForm"
-        );
-
-
-    if (form) {
-
-        form.addEventListener(
-            "submit",
-            generateExamToken
-        );
-
-    }
-
-
-    loadTokens();
+    `;
 
 }
 
 
 /* =========================================================
-   GENERATE TOKEN
+   PREVIEW CSV
 ========================================================= */
 
-async function generateExamToken(e) {
+function previewStudentCSV() {
 
-    e.preventDefault();
-
-
-    const classElement =
+    const input =
         document.getElementById(
-            "tokenClass"
-        );
-
-    const expiredElement =
-        document.getElementById(
-            "expired"
-        );
-
-    const noteElement =
-        document.getElementById(
-            "note"
+            "studentCSVFile"
         );
 
 
     if (
-        !classElement ||
-        !expiredElement ||
-        !noteElement
+        !input ||
+        !input.files ||
+        !input.files[0]
     ) {
 
         alert(
-            "Token form is not available."
+            "Silakan pilih file CSV terlebih dahulu."
         );
 
         return;
@@ -2189,234 +1984,645 @@ async function generateExamToken(e) {
     }
 
 
-    const data = {
+    const file =
+        input.files[0];
 
-        kelas:
-            classElement.value.trim(),
 
-        expired:
-            Number(
-                expiredElement.value
-            ),
+    if (
+        !file.name
+            .toLowerCase()
+            .endsWith(".csv")
+    ) {
 
-        note:
-            noteElement.value.trim(),
+        alert(
+            "File harus berformat CSV."
+        );
 
-        createdBy:
-            "Teacher"
+        return;
+
+    }
+
+
+    const reader =
+        new FileReader();
+
+
+    reader.onload =
+        function (event) {
+
+            try {
+
+                const text =
+                    event.target.result;
+
+
+                const result =
+                    parseStudentCSV(
+                        text
+                    );
+
+
+                if (!result.success) {
+
+                    showCSVError(
+                        result.message
+                    );
+
+                    return;
+
+                }
+
+
+                csvStudentData =
+                    result.data;
+
+
+                renderCSVPreview();
+
+            }
+
+            catch (err) {
+
+                console.error(
+                    "CSV Parse Error:",
+                    err
+                );
+
+
+                showCSVError(
+                    "CSV tidak dapat dibaca."
+                );
+
+            }
+
+        };
+
+
+    reader.onerror =
+        function () {
+
+            showCSVError(
+                "Gagal membaca file CSV."
+            );
+
+        };
+
+
+    reader.readAsText(
+        file,
+        "UTF-8"
+    );
+
+}
+
+
+/* =========================================================
+   CSV PARSER
+========================================================= */
+
+function parseStudentCSV(text) {
+
+    if (!text) {
+
+        return {
+
+            success:
+                false,
+
+            message:
+                "File CSV kosong."
+
+        };
+
+    }
+
+
+    /*
+     * Remove UTF-8 BOM
+     */
+
+    text =
+        text.replace(
+            /^\uFEFF/,
+            ""
+        );
+
+
+    const rows =
+        parseCSVRows(
+            text
+        );
+
+
+    if (
+        !rows ||
+        rows.length < 2
+    ) {
+
+        return {
+
+            success:
+                false,
+
+            message:
+                "CSV tidak memiliki data student."
+
+        };
+
+    }
+
+
+    const headers =
+        rows[0].map(
+            function (header) {
+
+                return String(
+                    header || ""
+                )
+                .trim()
+                .toLowerCase();
+
+            }
+        );
+
+
+    const requiredHeaders = [
+
+        "nis",
+
+        "nama",
+
+        "kelas",
+
+        "username",
+
+        "password",
+
+        "status"
+
+    ];
+
+
+    const missingHeaders =
+        requiredHeaders.filter(
+            function (header) {
+
+                return !headers.includes(
+                    header
+                );
+
+            }
+        );
+
+
+    if (
+        missingHeaders.length > 0
+    ) {
+
+        return {
+
+            success:
+                false,
+
+            message:
+                "Header CSV tidak lengkap. " +
+                "Header yang kurang: " +
+                missingHeaders.join(", ")
+
+        };
+
+    }
+
+
+    const data = [];
+
+    const errors = [];
+
+
+    for (
+        let i = 1;
+        i < rows.length;
+        i++
+    ) {
+
+        const row =
+            rows[i];
+
+
+        /*
+         * Ignore completely empty rows
+         */
+
+        if (
+            row.every(
+                function (cell) {
+
+                    return String(
+                        cell || ""
+                    ).trim() === "";
+
+                }
+            )
+        ) {
+
+            continue;
+
+        }
+
+
+        const item = {
+
+            nis:
+                getCSVValue(
+                    row,
+                    headers,
+                    "nis"
+                ),
+
+            nama:
+                getCSVValue(
+                    row,
+                    headers,
+                    "nama"
+                ),
+
+            kelas:
+                getCSVValue(
+                    row,
+                    headers,
+                    "kelas"
+                ),
+
+            username:
+                getCSVValue(
+                    row,
+                    headers,
+                    "username"
+                ),
+
+            password:
+                getCSVValue(
+                    row,
+                    headers,
+                    "password"
+                ),
+
+            status:
+                getCSVValue(
+                    row,
+                    headers,
+                    "status"
+                ) ||
+                "ACTIVE"
+
+        };
+
+
+        /*
+         * Validate required fields
+         */
+
+        if (!item.nis) {
+
+            errors.push(
+                "Baris " +
+                (i + 1) +
+                ": NIS kosong."
+            );
+
+            continue;
+
+        }
+
+
+        if (!item.nama) {
+
+            errors.push(
+                "Baris " +
+                (i + 1) +
+                ": nama kosong."
+            );
+
+            continue;
+
+        }
+
+
+        data.push(
+            item
+        );
+
+    }
+
+
+    if (
+        data.length === 0
+    ) {
+
+        return {
+
+            success:
+                false,
+
+            message:
+                "Tidak ada student valid yang ditemukan."
+
+        };
+
+    }
+
+
+    return {
+
+        success:
+            true,
+
+        data:
+            data,
+
+        errors:
+            errors
 
     };
 
-
-    if (!data.kelas) {
-
-        alert(
-            "Class wajib diisi."
-        );
-
-        return;
-
-    }
+}
 
 
-    if (
-        !data.expired ||
-        data.expired <= 0
+/* =========================================================
+   CSV ROW PARSER
+   Supports:
+   - comma
+   - quoted text
+   - commas inside quotes
+   - new line inside quotes
+========================================================= */
+
+function parseCSVRows(text) {
+
+    const rows = [];
+
+    let row = [];
+
+    let cell = "";
+
+    let insideQuotes = false;
+
+
+    for (
+        let i = 0;
+        i < text.length;
+        i++
     ) {
 
-        alert(
-            "Expiration time tidak valid."
-        );
-
-        return;
-
-    }
+        const char =
+            text[i];
 
 
-    try {
-
-        const res =
-            await apiCreateToken(
-                data
-            );
+        const nextChar =
+            text[i + 1];
 
 
-        console.log(
-            "CREATE TOKEN RESPONSE:",
-            res
-        );
-
-
-        alert(
-            res &&
-            res.message
-                ? res.message
-                : "Token created."
-        );
-
+        /*
+         * Double quote
+         */
 
         if (
-            !res ||
-            res.success !== true
+            char === '"'
         ) {
 
-            return;
+            if (
+                insideQuotes &&
+                nextChar === '"'
+            ) {
+
+                cell += '"';
+
+                i++;
+
+            }
+
+            else {
+
+                insideQuotes =
+                    !insideQuotes;
+
+            }
+
+            continue;
 
         }
 
 
-        const form =
-            document.getElementById(
-                "tokenForm"
+        /*
+         * Comma
+         */
+
+        if (
+            char === "," &&
+            !insideQuotes
+        ) {
+
+            row.push(
+                cell
+            );
+
+            cell = "";
+
+            continue;
+
+        }
+
+
+        /*
+         * New line
+         */
+
+        if (
+            (
+                char === "\n" ||
+                char === "\r"
+            ) &&
+            !insideQuotes
+        ) {
+
+            if (
+                char === "\r" &&
+                nextChar === "\n"
+            ) {
+
+                i++;
+
+            }
+
+
+            row.push(
+                cell
+            );
+
+            rows.push(
+                row
             );
 
 
-        if (form) {
+            row = [];
 
-            form.reset();
+            cell = "";
 
-        }
-
-
-        const expired =
-            document.getElementById(
-                "expired"
-            );
-
-
-        if (expired) {
-
-            expired.value =
-                30;
+            continue;
 
         }
 
 
-        await loadTokens();
-
-        await refreshDashboard();
+        cell += char;
 
     }
 
-    catch (err) {
 
-        console.error(
-            "GENERATE TOKEN ERROR:",
-            err
+    /*
+     * Last cell
+     */
+
+    if (
+        cell !== "" ||
+        row.length > 0
+    ) {
+
+        row.push(
+            cell
         );
 
-
-        alert(
-            err.message ||
-            "Unable to create token."
+        rows.push(
+            row
         );
 
     }
+
+
+    return rows;
 
 }
 
 
 /* =========================================================
-   LOAD TOKENS
+   GET CSV VALUE
 ========================================================= */
 
-async function loadTokens() {
+function getCSVValue(
+    row,
+    headers,
+    field
+) {
 
-    const table =
-        document.getElementById(
-            "tokenTable"
+    const index =
+        headers.indexOf(
+            field
         );
 
 
-    if (!table) {
+    if (
+        index < 0
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(
+        row[index] || ""
+    ).trim();
+
+}
+
+
+/* =========================================================
+   CSV PREVIEW
+========================================================= */
+
+function renderCSVPreview() {
+
+    const preview =
+        document.getElementById(
+            "csvPreview"
+        );
+
+    if (!preview) return;
+
+
+    if (
+        csvStudentData.length === 0
+    ) {
+
+        preview.innerHTML =
+            "Tidak ada data.";
 
         return;
 
     }
 
 
-    try {
+    let html = `
 
-        const res =
-            await apiGetToken();
+        <div style="
+            margin-bottom:15px;
+        ">
 
+            <h3>
+                Preview
+            </h3>
 
-        if (
-            !res ||
-            res.success !== true
-        ) {
+            <p style="
+                color:#666;
+                margin-top:5px;
+            ">
 
-            table.innerHTML =
-                "<p style='color:red'>" +
-                escapeHTML(
-                    res &&
-                    res.message
-                        ? res.message
-                        : "Failed to load tokens."
-                ) +
-                "</p>";
+                ${csvStudentData.length}
+                student siap diimport.
 
-            return;
+            </p>
 
-        }
+        </div>
 
+        <div style="
+            overflow-x:auto;
+        ">
 
-        APP.token =
-            Array.isArray(res.data)
-                ? res.data
-                : [];
-
-
-        updateTokenCounter(
-            APP.token.length
-        );
-
-
-        if (
-            APP.token.length === 0
-        ) {
-
-            table.innerHTML =
-                "<p>No token found.</p>";
-
-            return;
-
-        }
-
-
-        let html = `
-
-            <table
-                border="1"
-                width="100%"
-                cellpadding="8">
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                min-width:750px;
+            ">
 
                 <thead>
 
                     <tr>
 
-                        <th>
-                            No
+                        <th style="${tableHeadStyle}">
+                            #
                         </th>
 
-                        <th>
-                            Token
+                        <th style="${tableHeadStyle}">
+                            NIS
                         </th>
 
-                        <th>
-                            Class
+                        <th style="${tableHeadStyle}">
+                            Nama
                         </th>
 
-                        <th>
+                        <th style="${tableHeadStyle}">
+                            Kelas
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Username
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Password
+                        </th>
+
+                        <th style="${tableHeadStyle}">
                             Status
-                        </th>
-
-                        <th>
-                            Expired
-                        </th>
-
-                        <th>
-                            Action
                         </th>
 
                     </tr>
@@ -2425,61 +2631,388 @@ async function loadTokens() {
 
                 <tbody>
 
+    `;
+
+
+    csvStudentData.forEach(
+        function (student, index) {
+
+            html += `
+
+                <tr>
+
+                    <td style="${tableCellStyle}">
+                        ${index + 1}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(student.nis)}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(student.nama)}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(student.kelas)}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(student.username)}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(student.password)}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(student.status)}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+    html += `
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <br>
+
+        <div style="
+            display:flex;
+            gap:10px;
+            flex-wrap:wrap;
+        ">
+
+            <button
+                class="btn teacher"
+                id="startCSVImportButton"
+                onclick="startStudentCSVImport()">
+
+                🚀 Import
+                ${csvStudentData.length}
+                Students
+
+            </button>
+
+        </div>
+
+        <div
+            id="csvImportProgress"
+            style="margin-top:20px;">
+        </div>
+
+    `;
+
+
+    preview.innerHTML =
+        html;
+
+}
+
+
+/* =========================================================
+   START CSV IMPORT
+========================================================= */
+
+async function startStudentCSVImport() {
+
+    if (
+        !csvStudentData ||
+        csvStudentData.length === 0
+    ) {
+
+        alert(
+            "Tidak ada data CSV untuk diimport."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Import " +
+            csvStudentData.length +
+            " student sekarang?"
+        );
+
+
+    if (!confirmed) return;
+
+
+    const button =
+        document.getElementById(
+            "startCSVImportButton"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "⏳ Importing...";
+
+    }
+
+
+    const progress =
+        document.getElementById(
+            "csvImportProgress"
+        );
+
+
+    let successCount =
+        0;
+
+    let failedCount =
+        0;
+
+    const failedRows = [];
+
+
+    for (
+        let i = 0;
+        i < csvStudentData.length;
+        i++
+    ) {
+
+        const student =
+            csvStudentData[i];
+
+
+        if (progress) {
+
+            progress.innerHTML = `
+
+                <div style="
+                    padding:15px;
+                    background:#f5f7fa;
+                    border-radius:10px;
+                ">
+
+                    <strong>
+                        Importing ${i + 1}
+                        /
+                        ${csvStudentData.length}
+                    </strong>
+
+                    <br><br>
+
+                    NIS:
+                    ${escapeHtml(
+                        student.nis
+                    )}
+
+                    <br>
+
+                    Nama:
+                    ${escapeHtml(
+                        student.nama
+                    )}
+
+                </div>
+
+            `;
+
+        }
+
+
+        try {
+
+            const result =
+                await apiInsertStudent(
+                    student
+                );
+
+
+            if (
+                result &&
+                result.success
+            ) {
+
+                successCount++;
+
+            }
+
+            else {
+
+                failedCount++;
+
+                failedRows.push({
+
+                    row:
+                        i + 2,
+
+                    nis:
+                        student.nis,
+
+                    nama:
+                        student.nama,
+
+                    message:
+                        result?.message ||
+                        "Unknown error."
+
+                });
+
+            }
+
+        }
+
+        catch (err) {
+
+            failedCount++;
+
+            failedRows.push({
+
+                row:
+                    i + 2,
+
+                nis:
+                    student.nis,
+
+                nama:
+                    student.nama,
+
+                message:
+                    err.message ||
+                    "Import error."
+
+            });
+
+        }
+
+    }
+
+
+    if (button) {
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            "🚀 Import Selesai";
+
+    }
+
+
+    let resultHTML = `
+
+        <div style="
+            padding:20px;
+            background:#f5f7fa;
+            border-radius:12px;
+        ">
+
+            <h3>
+                📊 Import Result
+            </h3>
+
+            <br>
+
+            <strong>
+                Total:
+            </strong>
+            ${csvStudentData.length}
+
+            <br>
+
+            <strong>
+                Berhasil:
+            </strong>
+            ${successCount}
+
+            <br>
+
+            <strong>
+                Gagal:
+            </strong>
+            ${failedCount}
+
+        </div>
+
+    `;
+
+
+    /*
+     * Failed rows
+     */
+
+    if (
+        failedRows.length > 0
+    ) {
+
+        resultHTML += `
+
+            <br>
+
+            <div style="
+                padding:20px;
+                background:#fff3f3;
+                border-left:4px solid #d32f2f;
+                border-radius:8px;
+            ">
+
+                <h3>
+                    ⚠️ Data Gagal
+                </h3>
+
+                <br>
+
         `;
 
 
-        APP.token.forEach(
-            (t, i) => {
+        failedRows.forEach(
+            function (item) {
 
-                html += `
+                resultHTML += `
 
-                    <tr>
+                    <div style="
+                        margin-bottom:12px;
+                        padding-bottom:12px;
+                        border-bottom:1px solid #eee;
+                    ">
 
-                        <td>
-                            ${i + 1}
-                        </td>
+                        Baris:
+                        <strong>
+                            ${item.row}
+                        </strong>
 
-                        <td>
-                            <b>
-                                ${escapeHTML(t.token)}
-                            </b>
-                        </td>
+                        <br>
 
-                        <td>
-                            ${escapeHTML(t.kelas)}
-                        </td>
+                        NIS:
+                        ${escapeHtml(
+                            item.nis
+                        )}
 
-                        <td>
-                            ${escapeHTML(t.status)}
-                        </td>
+                        <br>
 
-                        <td>
-                            ${escapeHTML(t.expired)}
-                        </td>
+                        Nama:
+                        ${escapeHtml(
+                            item.nama
+                        )}
 
-                        <td>
+                        <br>
 
-                            <button
-                                type="button"
-                                class="btn edit"
-                                onclick="disableExamToken('${escapeAttribute(t.token)}')">
+                        Error:
+                        ${escapeHtml(
+                            item.message
+                        )}
 
-                                Disable
-
-                            </button>
-
-                            <button
-                                type="button"
-                                class="btn delete"
-                                onclick="deleteExamToken('${escapeAttribute(t.token)}')">
-
-                                Delete
-
-                            </button>
-
-                        </td>
-
-                    </tr>
+                    </div>
 
                 `;
 
@@ -2487,240 +3020,442 @@ async function loadTokens() {
         );
 
 
-        html += `
+        resultHTML += `
+
+            </div>
+
+        `;
+
+    }
+
+
+    resultHTML += `
+
+        <br>
+
+        <button
+            class="btn teacher"
+            onclick="renderStudentList()">
+
+            👨‍🎓 Kembali ke Student List
+
+        </button>
+
+    `;
+
+
+    if (progress) {
+
+        progress.innerHTML =
+            resultHTML;
+
+    }
+
+
+    csvStudentData = [];
+
+
+    await refreshDashboardCounters();
+
+}
+
+
+/* =========================================================
+   CSV ERROR
+========================================================= */
+
+function showCSVError(
+    message
+) {
+
+    const preview =
+        document.getElementById(
+            "csvPreview"
+        );
+
+    if (!preview) return;
+
+
+    preview.innerHTML = `
+
+        <div style="
+            padding:15px;
+            background:#fff3f3;
+            border-left:4px solid #d32f2f;
+            border-radius:8px;
+            color:#b00020;
+        ">
+
+            <strong>
+                ❌ CSV Error
+            </strong>
+
+            <br><br>
+
+            ${escapeHtml(
+                message
+            )}
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================================================
+   TOKEN PAGE
+========================================================= */
+
+async function loadTokenPage() {
+
+    const content =
+        getContentElement();
+
+    if (!content) return;
+
+
+    content.innerHTML = `
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+        ">
+
+            <div>
+
+                <h2>
+                    🔑 Exam Token
+                </h2>
+
+                <p style="
+                    margin-top:8px;
+                    color:#666;
+                ">
+
+                    Manage examination tokens.
+
+                </p>
+
+            </div>
+
+            <button
+                class="btn teacher"
+                onclick="showTokenForm()">
+
+                ➕ Create Token
+
+            </button>
+
+        </div>
+
+        <div
+            id="tokenArea"
+            style="margin-top:25px;">
+
+            Loading...
+
+        </div>
+
+    `;
+
+
+    await renderTokenList();
+
+}
+
+
+/* =========================================================
+   TOKEN FORM
+========================================================= */
+
+function showTokenForm() {
+
+    const area =
+        document.getElementById(
+            "tokenArea"
+        );
+
+    if (!area) return;
+
+
+    area.innerHTML = `
+
+        <div class="card-box">
+
+            <h3>
+                Create Exam Token
+            </h3>
+
+            <br>
+
+            <label>
+                Token
+            </label>
+
+            <input
+                id="tokenValue"
+                type="text"
+                placeholder="Contoh: SAF2026"
+                style="${inputStyle}"
+            >
+
+            <br><br>
+
+            <button
+                class="btn teacher"
+                onclick="submitTokenCreate()">
+
+                💾 Create Token
+
+            </button>
+
+            <button
+                class="btn"
+                onclick="renderTokenList()">
+
+                Cancel
+
+            </button>
+
+            <div
+                id="tokenMessage"
+                style="margin-top:15px;">
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================================================
+   CREATE TOKEN
+========================================================= */
+
+async function submitTokenCreate() {
+
+    const token =
+        document
+            .getElementById(
+                "tokenValue"
+            )
+            ?.value
+            .trim();
+
+
+    if (!token) {
+
+        showMessage(
+            "tokenMessage",
+            "Token wajib diisi.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const result =
+        await apiCreateToken({
+
+            token:
+                token
+
+        });
+
+
+    if (
+        result &&
+        result.success
+    ) {
+
+        alert(
+            result.message ||
+            "Token berhasil dibuat."
+        );
+
+
+        await renderTokenList();
+
+        await refreshDashboardCounters();
+
+    }
+
+    else {
+
+        showMessage(
+            "tokenMessage",
+            result?.message ||
+            "Gagal membuat token.",
+            "error"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   TOKEN LIST
+========================================================= */
+
+async function renderTokenList() {
+
+    const area =
+        document.getElementById(
+            "tokenArea"
+        );
+
+    if (!area) return;
+
+
+    area.innerHTML =
+        "Loading tokens...";
+
+
+    const response =
+        await apiGetToken();
+
+
+    if (
+        !response ||
+        !response.success
+    ) {
+
+        area.innerHTML = `
+
+            <div style="color:#b00020;">
+
+                ${escapeHtml(
+                    response?.message ||
+                    "Gagal mengambil token."
+                )}
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    teacherTokens =
+        response.data || [];
+
+
+    if (
+        teacherTokens.length === 0
+    ) {
+
+        area.innerHTML = `
+
+            <div class="card-box">
+
+                <h3>
+                    No Token
+                </h3>
+
+                <br>
+
+                <p>
+                    Belum ada exam token.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <div style="
+            overflow-x:auto;
+        ">
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+            ">
+
+                <thead>
+
+                    <tr>
+
+                        <th style="${tableHeadStyle}">
+                            #
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Token
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Status
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+    `;
+
+
+    teacherTokens.forEach(
+        function (item, index) {
+
+            html += `
+
+                <tr>
+
+                    <td style="${tableCellStyle}">
+                        ${index + 1}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            item.token || ""
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            item.status || ""
+                        )}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+    html += `
 
                 </tbody>
 
             </table>
 
-        `;
+        </div>
 
+    `;
 
-        table.innerHTML =
-            html;
 
-    }
-
-    catch (err) {
-
-        console.error(
-            "LOAD TOKENS ERROR:",
-            err
-        );
-
-
-        table.innerHTML =
-            "<p style='color:red'>" +
-            escapeHTML(
-                err.message ||
-                "Unable to load tokens."
-            ) +
-            "</p>";
-
-    }
-
-}
-
-
-/* =========================================================
-   DISABLE TOKEN
-========================================================= */
-
-async function disableExamToken(token) {
-
-    if (!token) {
-
-        alert(
-            "Token is required."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !confirm(
-            "Disable this token?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const res =
-            await apiDisableToken({
-
-                token: token
-
-            });
-
-
-        alert(
-            res &&
-            res.message
-                ? res.message
-                : "Token disabled."
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            return;
-
-        }
-
-
-        await loadTokens();
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DISABLE TOKEN ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to disable token."
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   DELETE TOKEN
-========================================================= */
-
-async function deleteExamToken(token) {
-
-    if (!token) {
-
-        alert(
-            "Token is required."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !confirm(
-            "Delete this token?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const res =
-            await apiDeleteToken({
-
-                token: token
-
-            });
-
-
-        alert(
-            res &&
-            res.message
-                ? res.message
-                : "Token deleted."
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            return;
-
-        }
-
-
-        await loadTokens();
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE TOKEN ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to delete token."
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   SEARCH TOKEN
-========================================================= */
-
-function filterToken() {
-
-    const input =
-        document.getElementById(
-            "searchToken"
-        );
-
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    const keyword =
-        input.value
-            .toLowerCase()
-            .trim();
-
-
-    document
-        .querySelectorAll(
-            "#tokenTable tbody tr"
-        )
-        .forEach(row => {
-
-            row.style.display =
-                row.innerText
-                    .toLowerCase()
-                    .includes(keyword)
-                        ? ""
-                        : "none";
-
-        });
+    area.innerHTML =
+        html;
 
 }
 
@@ -2729,1572 +3464,371 @@ function filterToken() {
    RESULT PAGE
 ========================================================= */
 
-function loadResultPage() {
+async function loadResultPage() {
 
-    RESULT_SELECTION.clear();
+    const content =
+        getContentElement();
 
-
-    setContent(`
-
-        <h2>
-            Speaking Results
-        </h2>
-
-        <br>
-
-        <input
-            id="searchResult"
-            type="text"
-            placeholder="Search Student..."
-            onkeyup="filterResult()"
-        >
-
-        <br><br>
-
-        <div
-            style="
-                display:flex;
-                align-items:center;
-                gap:10px;
-                flex-wrap:wrap;
-                margin-bottom:15px;
-            "
-        >
-
-            <label
-                style="
-                    display:flex;
-                    align-items:center;
-                    gap:6px;
-                    cursor:pointer;
-                "
-            >
-
-                <input
-                    id="selectAllResults"
-                    type="checkbox"
-                    onchange="toggleSelectAllResults(this.checked)"
-                >
-
-                <span>
-                    Select All
-                </span>
-
-            </label>
+    if (!content) return;
 
 
-            <button
-                type="button"
-                class="btn delete"
-                onclick="deleteSelectedResults()"
-            >
+    content.innerHTML = `
 
-                Delete Selected
+        <div>
 
-            </button>
+            <h2>
+                📊 Speaking Results
+            </h2>
 
+            <p style="
+                margin-top:8px;
+                color:#666;
+            ">
 
-            <button
-                type="button"
-                class="btn delete"
-                onclick="deleteAllResults()"
-            >
+                Student speaking test results.
 
-                Delete All
-
-            </button>
-
-
-            <span
-                id="selectedResultCount"
-            >
-
-                0 selected
-
-            </span>
+            </p>
 
         </div>
 
-
-        <div id="resultTable">
+        <div
+            id="resultArea"
+            style="margin-top:25px;">
 
             Loading...
 
         </div>
 
-    `);
+    `;
 
 
-    loadResults();
-
-}
-
-
-/* =========================================================
-   RESULT NORMALIZER
-========================================================= */
-
-function normalizeResultResponse(response) {
-
-    console.log(
-        "RESULT RESPONSE:",
-        response
-    );
-
-
-    if (!response) {
-
-        return [];
-
-    }
-
-
-    /*
-     * CASE 1
-     *
-     * Standard:
-     *
-     * {
-     *   success: true,
-     *   data: [...]
-     * }
-     */
-
-    if (
-        Array.isArray(
-            response.data
-        )
-    ) {
-
-        console.log(
-            "RESULT DATA IS ARRAY:",
-            true
-        );
-
-
-        return response.data;
-
-    }
-
-
-    /*
-     * CASE 2
-     *
-     * Some backend versions:
-     *
-     * {
-     *   success: true,
-     *   result: [...]
-     * }
-     */
-
-    if (
-        Array.isArray(
-            response.result
-        )
-    ) {
-
-        return response.result;
-
-    }
-
-
-    /*
-     * CASE 3
-     *
-     * Some backend versions:
-     *
-     * {
-     *   success: true,
-     *   results: [...]
-     * }
-     */
-
-    if (
-        Array.isArray(
-            response.results
-        )
-    ) {
-
-        return response.results;
-
-    }
-
-
-    /*
-     * CASE 4
-     *
-     * CURRENT PROBLEM
-     *
-     * Response can look like:
-     *
-     * {
-     *   0: {...},
-     *   1: {...},
-     *   2: {...},
-     *   success: true,
-     *   message: "Success"
-     * }
-     *
-     * Therefore extract numeric keys.
-     */
-
-    const numericKeys =
-        Object.keys(response)
-            .filter(
-                key =>
-                    /^\d+$/.test(key)
-            )
-            .sort(
-                (a, b) =>
-                    Number(a) -
-                    Number(b)
-            );
-
-
-    if (
-        numericKeys.length > 0
-    ) {
-
-        const normalized =
-            numericKeys.map(
-                key =>
-                    response[key]
-            );
-
-
-        console.log(
-            "NORMALIZED RESULT ARRAY:",
-            normalized
-        );
-
-
-        return normalized;
-
-    }
-
-
-    /*
-     * CASE 5
-     *
-     * Sometimes data itself is an object:
-     *
-     * {
-     *   data: {
-     *      0: {...},
-     *      1: {...}
-     *   }
-     * }
-     */
-
-    if (
-        response.data &&
-        typeof response.data ===
-            "object"
-    ) {
-
-        const dataKeys =
-            Object.keys(
-                response.data
-            )
-            .filter(
-                key =>
-                    /^\d+$/.test(key)
-            )
-            .sort(
-                (a, b) =>
-                    Number(a) -
-                    Number(b)
-            );
-
-
-        if (
-            dataKeys.length > 0
-        ) {
-
-            return dataKeys.map(
-                key =>
-                    response.data[key]
-            );
-
-        }
-
-    }
-
-
-    console.warn(
-        "RESULT RESPONSE FORMAT UNKNOWN:",
-        response
-    );
-
-
-    return [];
+    await renderResultList();
 
 }
 
 
 /* =========================================================
-   LOAD RESULTS
+   RESULT LIST
 ========================================================= */
 
-async function loadResults() {
+async function renderResultList() {
 
-    const table =
+    const area =
         document.getElementById(
-            "resultTable"
+            "resultArea"
         );
 
+    if (!area) return;
 
-    if (!table) {
 
-        return;
+    area.innerHTML =
+        "Loading results...";
 
-    }
 
+    const response =
+        await apiGetResult();
 
-    try {
 
-        console.log(
-            "================================="
-        );
+    if (
+        !response ||
+        !response.success
+    ) {
 
-        console.log(
-            "GET RESULT"
-        );
+        area.innerHTML = `
 
+            <div style="color:#b00020;">
 
-        const res =
-            await apiGetResult();
-
-
-        console.log(
-            "RESULT API RESPONSE:",
-            res
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            APP.result = [];
-
-
-            updateResultCounter(
-                0
-            );
-
-
-            updateSelectedResultCount();
-
-
-            table.innerHTML =
-                "<p style='color:red'>" +
-                escapeHTML(
-                    res &&
-                    res.message
-                        ? res.message
-                        : "Failed to load results."
-                ) +
-                "</p>";
-
-            return;
-
-        }
-
-
-        /*
-         * IMPORTANT:
-         * Use normalizer.
-         */
-
-        APP.result =
-            normalizeResultResponse(
-                res
-            );
-
-
-        console.log(
-            "RESULT SUCCESS:",
-            res.success
-        );
-
-        console.log(
-            "RESULT DATA:",
-            res.data
-        );
-
-        console.log(
-            "RESULT DATA IS ARRAY:",
-            Array.isArray(res.data)
-        );
-
-        console.log(
-            "NORMALIZED RESULT ARRAY:",
-            APP.result
-        );
-
-        console.log(
-            "NORMALIZED RESULT LENGTH:",
-            APP.result.length
-        );
-
-
-        updateResultCounter(
-            APP.result.length
-        );
-
-
-        /*
-         * Remove selected IDs
-         * that no longer exist.
-         */
-
-        const validIds =
-            new Set(
-                APP.result.map(
-                    item =>
-                        String(item.id)
-                )
-            );
-
-
-        Array
-            .from(
-                RESULT_SELECTION
-            )
-            .forEach(id => {
-
-                if (
-                    !validIds.has(
-                        String(id)
-                    )
-                ) {
-
-                    RESULT_SELECTION.delete(
-                        id
-                    );
-
-                }
-
-            });
-
-
-        updateSelectedResultCount();
-
-
-        if (
-            APP.result.length === 0
-        ) {
-
-            updateSelectAllCheckbox(
-                false
-            );
-
-
-            table.innerHTML =
-                "<p>No result found.</p>";
-
-            return;
-
-        }
-
-
-        let html = `
-
-            <div
-                style="overflow-x:auto;"
-            >
-
-                <table
-                    border="1"
-                    width="100%"
-                    cellpadding="8"
-                >
-
-                    <thead>
-
-                        <tr>
-
-                            <th>
-                                <input
-                                    id="resultHeaderCheckbox"
-                                    type="checkbox"
-                                    onchange="toggleSelectAllResults(this.checked)"
-                                >
-                            </th>
-
-                            <th>
-                                No
-                            </th>
-
-                            <th>
-                                NIS
-                            </th>
-
-                            <th>
-                                Name
-                            </th>
-
-                            <th>
-                                Class
-                            </th>
-
-                            <th>
-                                Question
-                            </th>
-
-                            <th>
-                                Score
-                            </th>
-
-                            <th>
-                                Feedback
-                            </th>
-
-                            <th>
-                                Action
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-        `;
-
-
-        APP.result.forEach(
-            (r, i) => {
-
-                const id =
-                    String(
-                        r.id || ""
-                    );
-
-
-                const checked =
-                    RESULT_SELECTION.has(
-                        id
-                    )
-                        ? "checked"
-                        : "";
-
-
-                html += `
-
-                    <tr>
-
-                        <td>
-                            <input
-                                type="checkbox"
-                                class="result-checkbox"
-                                data-result-id="${escapeAttribute(id)}"
-                                ${checked}
-                                onchange="toggleResultSelection(this)"
-                            >
-                        </td>
-
-                        <td>
-                            ${i + 1}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(r.nis)}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(r.nama)}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(r.kelas)}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(r.question)}
-                        </td>
-
-                        <td>
-                            <b>
-                                ${escapeHTML(r.score)}
-                            </b>
-                        </td>
-
-                        <td>
-                            ${escapeHTML(
-                                r.feedback || "-"
-                            )}
-                        </td>
-
-                        <td>
-
-                            <button
-                                type="button"
-                                class="btn delete"
-                                onclick="deleteResult('${escapeAttribute(id)}')"
-                            >
-
-                                Delete
-
-                            </button>
-
-                        </td>
-
-                    </tr>
-
-                `;
-
-            }
-        );
-
-
-        html += `
-
-                    </tbody>
-
-                </table>
+                ${escapeHtml(
+                    response?.message ||
+                    "Gagal mengambil result."
+                )}
 
             </div>
 
         `;
 
-
-        table.innerHTML =
-            html;
-
-
-        syncResultCheckboxes();
-
-        updateSelectedResultCount();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "LOAD RESULTS ERROR:",
-            err
-        );
-
-
-        table.innerHTML =
-            "<p style='color:red'>" +
-            escapeHTML(
-                err.message ||
-                "Unable to load results."
-            ) +
-            "</p>";
-
-    }
-
-}
-
-
-/* =========================================================
-   TOGGLE SINGLE RESULT
-========================================================= */
-
-function toggleResultSelection(
-    checkbox
-) {
-
-    if (!checkbox) {
-
         return;
 
     }
 
 
-    const id =
-        String(
-            checkbox.dataset.resultId ||
-            ""
-        );
-
-
-    if (!id) {
-
-        return;
-
-    }
+    teacherResults =
+        response.data || [];
 
 
     if (
-        checkbox.checked
+        teacherResults.length === 0
     ) {
 
-        RESULT_SELECTION.add(
-            id
-        );
+        area.innerHTML = `
+
+            <div class="card-box">
+
+                <h3>
+                    No Results
+                </h3>
+
+                <br>
+
+                <p>
+                    Belum ada speaking result.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
 
     }
 
-    else {
 
-        RESULT_SELECTION.delete(
-            id
-        );
+    let html = `
 
-    }
+        <div style="
+            overflow-x:auto;
+        ">
 
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                min-width:700px;
+            ">
 
-    updateSelectedResultCount();
+                <thead>
 
-    syncResultSelectAll();
+                    <tr>
 
-}
+                        <th style="${tableHeadStyle}">
+                            #
+                        </th>
 
+                        <th style="${tableHeadStyle}">
+                            Student
+                        </th>
 
-/* =========================================================
-   TOGGLE SELECT ALL
-========================================================= */
+                        <th style="${tableHeadStyle}">
+                            Question
+                        </th>
 
-function toggleSelectAllResults(
-    checked
-) {
+                        <th style="${tableHeadStyle}">
+                            Score
+                        </th>
 
-    const checkboxes =
-        document.querySelectorAll(
-            "#resultTable .result-checkbox"
-        );
+                    </tr>
 
+                </thead>
 
-    checkboxes.forEach(
-        checkbox => {
+                <tbody>
 
-            checkbox.checked =
-                checked;
-
-
-            const id =
-                String(
-                    checkbox.dataset.resultId ||
-                    ""
-                );
+    `;
 
 
-            if (!id) {
+    teacherResults.forEach(
+        function (item, index) {
 
-                return;
+            html += `
 
-            }
+                <tr>
 
+                    <td style="${tableCellStyle}">
+                        ${index + 1}
+                    </td>
 
-            if (checked) {
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            item.nama ||
+                            item.username ||
+                            item.nis ||
+                            ""
+                        )}
+                    </td>
 
-                RESULT_SELECTION.add(
-                    id
-                );
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            item.question ||
+                            ""
+                        )}
+                    </td>
 
-            }
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            String(
+                                item.score ??
+                                ""
+                            )
+                        )}
+                    </td>
 
-            else {
+                </tr>
 
-                RESULT_SELECTION.delete(
-                    id
-                );
-
-            }
+            `;
 
         }
     );
 
 
-    updateSelectedResultCount();
+    html += `
 
-    updateSelectAllCheckbox(
-        checked
-    );
+                </tbody>
 
-}
+            </table>
 
+        </div>
 
-/* =========================================================
-   SYNC RESULT CHECKBOXES
-========================================================= */
-
-function syncResultCheckboxes() {
-
-    const checkboxes =
-        document.querySelectorAll(
-            "#resultTable .result-checkbox"
-        );
+    `;
 
 
-    checkboxes.forEach(
-        checkbox => {
-
-            const id =
-                String(
-                    checkbox.dataset.resultId ||
-                    ""
-                );
-
-
-            checkbox.checked =
-                RESULT_SELECTION.has(
-                    id
-                );
-
-        }
-    );
-
-
-    syncResultSelectAll();
+    area.innerHTML =
+        html;
 
 }
 
 
 /* =========================================================
-   SYNC SELECT ALL
+   MESSAGE
 ========================================================= */
 
-function syncResultSelectAll() {
-
-    const checkboxes =
-        Array.from(
-            document.querySelectorAll(
-                "#resultTable .result-checkbox"
-            )
-        );
-
-
-    if (
-        checkboxes.length === 0
-    ) {
-
-        updateSelectAllCheckbox(
-            false
-        );
-
-        return;
-
-    }
-
-
-    const allChecked =
-        checkboxes.every(
-            checkbox =>
-                checkbox.checked
-        );
-
-
-    updateSelectAllCheckbox(
-        allChecked
-    );
-
-}
-
-
-/* =========================================================
-   UPDATE SELECT ALL CHECKBOX
-========================================================= */
-
-function updateSelectAllCheckbox(
-    checked
-) {
-
-    const top =
-        document.getElementById(
-            "selectAllResults"
-        );
-
-
-    if (top) {
-
-        top.checked =
-            checked;
-
-    }
-
-
-    const header =
-        document.getElementById(
-            "resultHeaderCheckbox"
-        );
-
-
-    if (header) {
-
-        header.checked =
-            checked;
-
-    }
-
-}
-
-
-/* =========================================================
-   SELECTED RESULT COUNTER
-========================================================= */
-
-function updateSelectedResultCount() {
-
-    const el =
-        document.getElementById(
-            "selectedResultCount"
-        );
-
-
-    if (el) {
-
-        el.textContent =
-            RESULT_SELECTION.size +
-            " selected";
-
-    }
-
-}
-
-
-/* =========================================================
-   DELETE INDIVIDUAL RESULT
-========================================================= */
-
-async function deleteResult(id) {
-
-    if (!id) {
-
-        alert(
-            "Result ID is required."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !confirm(
-            "Delete this result?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const res =
-            await apiDeleteResult({
-
-                id: id
-
-            });
-
-
-        alert(
-            res &&
-            res.message
-                ? res.message
-                : "Result deleted."
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            return;
-
-        }
-
-
-        RESULT_SELECTION.delete(
-            String(id)
-        );
-
-
-        await loadResults();
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE RESULT ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to delete result."
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   DELETE SELECTED RESULTS
-========================================================= */
-
-async function deleteSelectedResults() {
-
-    const selectedIds =
-        Array.from(
-            RESULT_SELECTION
-        );
-
-
-    if (
-        selectedIds.length === 0
-    ) {
-
-        alert(
-            "Please select at least one result."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !confirm(
-            "Delete " +
-            selectedIds.length +
-            " selected result(s)?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        let deleted =
-            0;
-
-        let failedCount =
-            0;
-
-
-        for (
-            const id of selectedIds
-        ) {
-
-            try {
-
-                const res =
-                    await apiDeleteResult({
-
-                        id: id
-
-                    });
-
-
-                if (
-                    res &&
-                    res.success === true
-                ) {
-
-                    deleted++;
-
-                }
-
-                else {
-
-                    failedCount++;
-
-                    console.error(
-                        "DELETE SELECTED FAILED:",
-                        id,
-                        res
-                    );
-
-                }
-
-            }
-
-            catch (err) {
-
-                failedCount++;
-
-                console.error(
-                    "DELETE SELECTED ERROR:",
-                    id,
-                    err
-                );
-
-            }
-
-        }
-
-
-        RESULT_SELECTION.clear();
-
-
-        await loadResults();
-
-        await refreshDashboard();
-
-
-        if (
-            failedCount === 0
-        ) {
-
-            alert(
-                deleted +
-                " result(s) deleted successfully."
-            );
-
-        }
-
-        else {
-
-            alert(
-                deleted +
-                " result(s) deleted.\n" +
-                failedCount +
-                " result(s) failed."
-            );
-
-        }
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE SELECTED RESULTS ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to delete selected results."
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   DELETE ALL RESULTS
-========================================================= */
-
-async function deleteAllResults() {
-
-    if (
-        APP.result.length === 0
-    ) {
-
-        alert(
-            "No result available to delete."
-        );
-
-        return;
-
-    }
-
-
-    const total =
-        APP.result.length;
-
-
-    if (
-        !confirm(
-            "WARNING\n\n" +
-            "Delete ALL " +
-            total +
-            " result(s)?\n\n" +
-            "This action cannot be undone."
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-     * Second confirmation.
-     * Prevent accidental Delete All.
-     */
-
-    if (
-        !confirm(
-            "FINAL CONFIRMATION\n\n" +
-            "Are you absolutely sure you want to delete ALL results?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        let deleted =
-            0;
-
-        let failedCount =
-            0;
-
-
-        /*
-         * Copy IDs first.
-         * Do not modify APP.result
-         * while looping.
-         */
-
-        const ids =
-            APP.result
-                .map(
-                    item =>
-                        String(
-                            item.id || ""
-                        )
-                )
-                .filter(
-                    id =>
-                        id !== ""
-                );
-
-
-        for (
-            const id of ids
-        ) {
-
-            try {
-
-                const res =
-                    await apiDeleteResult({
-
-                        id: id
-
-                    });
-
-
-                if (
-                    res &&
-                    res.success === true
-                ) {
-
-                    deleted++;
-
-                }
-
-                else {
-
-                    failedCount++;
-
-                    console.error(
-                        "DELETE ALL FAILED:",
-                        id,
-                        res
-                    );
-
-                }
-
-            }
-
-            catch (err) {
-
-                failedCount++;
-
-                console.error(
-                    "DELETE ALL ERROR:",
-                    id,
-                    err
-                );
-
-            }
-
-        }
-
-
-        RESULT_SELECTION.clear();
-
-
-        await loadResults();
-
-        await refreshDashboard();
-
-
-        if (
-            failedCount === 0
-        ) {
-
-            alert(
-                "All " +
-                deleted +
-                " result(s) deleted successfully."
-            );
-
-        }
-
-        else {
-
-            alert(
-                deleted +
-                " result(s) deleted.\n" +
-                failedCount +
-                " result(s) failed."
-            );
-
-        }
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE ALL RESULTS ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to delete all results."
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   SEARCH RESULT
-========================================================= */
-
-function filterResult() {
-
-    const input =
-        document.getElementById(
-            "searchResult"
-        );
-
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    const keyword =
-        input.value
-            .toLowerCase()
-            .trim();
-
-
-    document
-        .querySelectorAll(
-            "#resultTable tbody tr"
-        )
-        .forEach(row => {
-
-            row.style.display =
-                row.innerText
-                    .toLowerCase()
-                    .includes(keyword)
-                        ? ""
-                        : "none";
-
-        });
-
-
-    /*
-     * Selection remains based on IDs,
-     * not visual filtering.
-     */
-
-    syncResultSelectAll();
-
-}
-
-
-/* =========================================================
-   COUNTERS
-========================================================= */
-
-function updateQuestionCounter(
-    total
+function showMessage(
+    elementId,
+    message,
+    type
 ) {
 
     const el =
         document.getElementById(
-            "totalQuestion"
+            elementId
         );
 
+    if (!el) return;
 
-    if (el) {
 
-        el.textContent =
-            total;
+    let background =
+        "#f5f7fa";
+
+    let color =
+        "#333";
+
+
+    if (
+        type === "success"
+    ) {
+
+        background =
+            "#e8f5e9";
+
+        color =
+            "#2e7d32";
 
     }
 
-}
 
+    if (
+        type === "error"
+    ) {
 
-function updateStudentCounter(
-    total
-) {
+        background =
+            "#ffebee";
 
-    const el =
-        document.getElementById(
-            "totalStudent"
-        );
-
-
-    if (el) {
-
-        el.textContent =
-            total;
+        color =
+            "#c62828";
 
     }
 
-}
 
+    el.innerHTML = `
 
-function updateTokenCounter(
-    total
-) {
+        <div style="
+            padding:12px;
+            border-radius:8px;
+            background:${background};
+            color:${color};
+        ">
 
-    const el =
-        document.getElementById(
-            "totalToken"
-        );
+            ${escapeHtml(
+                message
+            )}
 
+        </div>
 
-    if (el) {
-
-        el.textContent =
-            total;
-
-    }
-
-}
-
-
-function updateResultCounter(
-    total
-) {
-
-    const el =
-        document.getElementById(
-            "totalResult"
-        );
-
-
-    if (el) {
-
-        el.textContent =
-            total;
-
-    }
+    `;
 
 }
 
 
 /* =========================================================
-   COMMON HELPERS
+   ESCAPE HTML
 ========================================================= */
 
-function escapeHTML(text) {
+function escapeHtml(value) {
 
     return String(
-        text === undefined ||
-        text === null
-            ? ""
-            : text
+        value ?? ""
     )
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-/* =========================================================
-   ATTRIBUTE ESCAPE
-========================================================= */
-
-function escapeAttribute(text) {
-
-    return escapeHTML(
-        text
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+    .replace(
+        /</g,
+        "&lt;"
+    )
+    .replace(
+        />/g,
+        "&gt;"
+    )
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+    .replace(
+        /'/g,
+        "&#039;"
     );
 
 }
 
 
 /* =========================================================
-   FORMAT DATE
+   ESCAPE ATTRIBUTE
 ========================================================= */
 
-function formatDate(value) {
+function escapeAttribute(value) {
 
-    if (!value) {
-
-        return "-";
-
-    }
-
-
-    const d =
-        new Date(value);
-
-
-    if (
-        isNaN(
-            d.getTime()
-        )
-    ) {
-
-        return String(
-            value
-        );
-
-    }
-
-
-    return d.toLocaleString();
+    return escapeHtml(
+        value
+    );
 
 }
 
 
 /* =========================================================
-   END OF FILE
+   UI STYLES
+========================================================= */
+
+const inputStyle = `
+    width:100%;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    font-size:15px;
+    margin-top:8px;
+`;
+
+const tableHeadStyle = `
+    text-align:left;
+    padding:12px;
+    border-bottom:2px solid #ddd;
+    background:#f5f7fa;
+`;
+
+const tableCellStyle = `
+    padding:12px;
+    border-bottom:1px solid #eee;
+    vertical-align:top;
+`;
+
+
+/* =========================================================
+   END OF TEACHER.JS
 ========================================================= */

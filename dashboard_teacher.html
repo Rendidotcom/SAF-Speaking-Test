@@ -5,14 +5,22 @@
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
 <title>Teacher Dashboard</title>
 
-<link rel="icon" href="images/logo.png">
+<link
+    rel="icon"
+    href="images/logo.png"
+>
 
-<link rel="stylesheet" href="css/style.css">
+<link
+    rel="stylesheet"
+    href="css/style.css"
+>
 
 <style>
 
@@ -26,7 +34,10 @@ body{
 
     background:#eef3f8;
 
-    font-family:Arial,Helvetica,sans-serif;
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
 
     color:#333;
 
@@ -54,7 +65,9 @@ SIDEBAR
 
     padding:30px;
 
-    box-shadow:4px 0 20px rgba(0,0,0,.15);
+    box-shadow:
+        4px 0 20px
+        rgba(0,0,0,.15);
 
 }
 
@@ -180,7 +193,11 @@ CARDS
 
     display:grid;
 
-    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(240px,1fr)
+        );
 
     gap:25px;
 
@@ -194,7 +211,9 @@ CARDS
 
     padding:30px;
 
-    box-shadow:0 8px 25px rgba(0,0,0,.08);
+    box-shadow:
+        0 8px 25px
+        rgba(0,0,0,.08);
 
     transition:.25s;
 
@@ -204,7 +223,9 @@ CARDS
 
     transform:translateY(-6px);
 
-    box-shadow:0 15px 35px rgba(0,0,0,.12);
+    box-shadow:
+        0 15px 35px
+        rgba(0,0,0,.12);
 
 }
 
@@ -244,7 +265,118 @@ CONTENT
 
     min-height:500px;
 
-    box-shadow:0 8px 25px rgba(0,0,0,.08);
+    box-shadow:
+        0 8px 25px
+        rgba(0,0,0,.08);
+
+}
+
+/* =====================================
+IMPORT STUDENT
+===================================== */
+
+.import-box{
+
+    border:2px dashed #0B72B9;
+
+    background:#f7fbff;
+
+    padding:25px;
+
+    border-radius:14px;
+
+    margin-bottom:25px;
+
+}
+
+.import-box h3{
+
+    color:#0B72B9;
+
+    margin-bottom:10px;
+
+}
+
+.import-box p{
+
+    color:#666;
+
+    line-height:1.6;
+
+    margin-bottom:15px;
+
+}
+
+.import-actions{
+
+    display:flex;
+
+    gap:10px;
+
+    flex-wrap:wrap;
+
+    align-items:center;
+
+}
+
+.import-actions input[type="file"]{
+
+    padding:10px;
+
+    background:white;
+
+    border:1px solid #ccc;
+
+    border-radius:8px;
+
+}
+
+.preview-box{
+
+    margin-top:20px;
+
+    overflow-x:auto;
+
+}
+
+.preview-table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+.preview-table th,
+.preview-table td{
+
+    border:1px solid #ddd;
+
+    padding:8px;
+
+    text-align:left;
+
+}
+
+.preview-table th{
+
+    background:#0B72B9;
+
+    color:white;
+
+}
+
+.import-summary{
+
+    margin-top:15px;
+
+    padding:12px;
+
+    background:#eef7ff;
+
+    border-radius:8px;
+
+    font-weight:bold;
 
 }
 
@@ -254,50 +386,52 @@ RESPONSIVE
 
 @media(max-width:900px){
 
-.dashboard{
+    .dashboard{
 
-    flex-direction:column;
+        flex-direction:column;
 
-}
+    }
 
-.sidebar{
+    .sidebar{
 
-    width:100%;
+        width:100%;
 
-}
+    }
 
-.main{
+    .main{
 
-    padding:25px;
+        padding:25px;
 
-}
+    }
 
-.cards{
+    .cards{
 
-    grid-template-columns:1fr;
+        grid-template-columns:1fr;
 
-}
+    }
 
 }
 
 </style>
 
 </head>
+
 <body>
 
 <div class="dashboard">
 
-    <!-- ===============================
-         SIDEBAR
-    ================================ -->
+    <!-- SIDEBAR -->
 
     <aside class="sidebar">
 
         <img
             src="images/logo.png"
-            alt="SAF Logo">
+            alt="SAF Logo"
+        >
 
-        <h2>SAF Teacher Panel</h2>
+        <h2>
+            SAF Teacher Panel
+        </h2>
 
         <p>
             Speaking Online Test
@@ -341,13 +475,9 @@ RESPONSIVE
 
     </aside>
 
-    <!-- ===============================
-         MAIN
-    ================================ -->
+    <!-- MAIN -->
 
     <main class="main">
-
-        <!-- HEADER -->
 
         <div class="header">
 
@@ -373,62 +503,66 @@ RESPONSIVE
 
         </div>
 
-        <!-- DASHBOARD CARD -->
+        <!-- CARDS -->
 
         <section class="cards">
 
             <div class="card-box">
 
-                <h3>Total Questions</h3>
+                <h3>
+                    Total Questions
+                </h3>
 
                 <div
                     class="number"
-                    id="totalQuestion">
-
+                    id="totalQuestion"
+                >
                     0
-
                 </div>
 
             </div>
 
             <div class="card-box">
 
-                <h3>Total Students</h3>
+                <h3>
+                    Total Students
+                </h3>
 
                 <div
                     class="number"
-                    id="totalStudent">
-
+                    id="totalStudent"
+                >
                     0
-
                 </div>
 
             </div>
 
             <div class="card-box">
 
-                <h3>Exam Token</h3>
+                <h3>
+                    Exam Token
+                </h3>
 
                 <div
                     class="number"
-                    id="totalToken">
-
+                    id="totalToken"
+                >
                     -
-
                 </div>
 
             </div>
 
             <div class="card-box">
 
-                <h3>Speaking Results</h3>
+                <h3>
+                    Speaking Results
+                </h3>
 
                 <div
                     class="number"
-                    id="totalResult">
-
+                    id="totalResult"
+                >
                     0
-
                 </div>
 
             </div>
@@ -439,43 +573,53 @@ RESPONSIVE
 
         <section
             class="content"
-            id="content">
+            id="content"
+        >
 
             <h2>
-
                 Dashboard Ready
-
             </h2>
 
             <br>
 
             <p>
-
                 Welcome to the SAF Speaking Online Test Teacher Dashboard.
-
             </p>
 
             <br>
 
             <p>
-
                 This dashboard allows teachers to manage:
-
             </p>
 
             <br>
 
-            <ul style="padding-left:25px;line-height:2;">
+            <ul
+                style="
+                    padding-left:25px;
+                    line-height:2;
+                "
+            >
 
-                <li>Speaking Question Database</li>
+                <li>
+                    Speaking Question Database
+                </li>
 
-                <li>Student Management</li>
+                <li>
+                    Student Management
+                </li>
 
-                <li>Exam Token</li>
+                <li>
+                    Exam Token
+                </li>
 
-                <li>Speaking Results</li>
+                <li>
+                    Speaking Results
+                </li>
 
-                <li>Reports</li>
+                <li>
+                    Reports
+                </li>
 
             </ul>
 
@@ -486,19 +630,16 @@ RESPONSIVE
             <br>
 
             <h3>
-
                 Quick Actions
-
             </h3>
 
             <br>
 
             <button
                 class="btn teacher"
-                onclick="loadQuestionPage()">
-
+                onclick="loadQuestionPage()"
+            >
                 ➕ Add Speaking Question
-
             </button>
 
         </section>
@@ -506,37 +647,63 @@ RESPONSIVE
     </main>
 
 </div>
+
+<!-- EXISTING CONFIG -->
+
 <script src="js/config.js"></script>
+
+<!-- EXISTING API -->
+
 <script src="js/api.js"></script>
+
+<!-- SHEETJS FOR XLSX / XLS / CSV -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+></script>
+
+<!-- TEACHER -->
+
 <script src="js/teacher.js"></script>
 
 <script>
 
-/* ==========================================
-   Dashboard UI Helper
-   Stable UI v3.0
-========================================== */
-
 (function(){
 
-    const today = new Date();
+    const today =
+        new Date();
 
     const options = {
 
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
+        weekday:
+            "long",
+
+        year:
+            "numeric",
+
+        month:
+            "long",
+
+        day:
+            "numeric"
 
     };
 
-    const dateText = today.toLocaleDateString("en-US", options);
+    const dateText =
+        today.toLocaleDateString(
+            "en-US",
+            options
+        );
 
-    const el = document.getElementById("todayDate");
+    const el =
+        document.getElementById(
+            "todayDate"
+        );
 
     if(el){
 
-        el.textContent = dateText;
+        el.textContent =
+            dateText;
 
     }
 

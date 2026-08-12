@@ -2,10 +2,10 @@
  * =========================================================
  * SAF Speaking Online Test
  * API Service
- * Stable Foundation v4.1
+ * Stable Foundation v4.2
  *
- * Backend:
- * Google Apps Script
+ * Added:
+ * - Student Spreadsheet Import
  * =========================================================
  */
 
@@ -18,7 +18,8 @@ async function callAPI(action, data = {}) {
                 CONFIG.API_URL,
                 {
 
-                    method: "POST",
+                    method:
+                        "POST",
 
                     headers: {
                         "Content-Type":
@@ -130,7 +131,6 @@ async function callAPI(action, data = {}) {
                 "REQUEST"
             );
 
-
             console.log({
 
                 action,
@@ -139,19 +139,12 @@ async function callAPI(action, data = {}) {
 
             });
 
-
             console.log(
                 "RESPONSE"
             );
 
-
             console.log(
                 result
-            );
-
-
-            console.log(
-                "================================="
             );
 
         }
@@ -225,7 +218,6 @@ async function apiInsertQuestion(data) {
 
 }
 
-
 async function apiGetQuestion() {
 
     return await callAPI(
@@ -233,7 +225,6 @@ async function apiGetQuestion() {
     );
 
 }
-
 
 async function apiUpdateQuestion(data) {
 
@@ -243,7 +234,6 @@ async function apiUpdateQuestion(data) {
     );
 
 }
-
 
 async function apiDeleteQuestion(data) {
 
@@ -268,7 +258,6 @@ async function apiInsertStudent(data) {
 
 }
 
-
 async function apiGetStudent() {
 
     return await callAPI(
@@ -276,7 +265,6 @@ async function apiGetStudent() {
     );
 
 }
-
 
 async function apiUpdateStudent(data) {
 
@@ -287,11 +275,24 @@ async function apiUpdateStudent(data) {
 
 }
 
-
 async function apiDeleteStudent(data) {
 
     return await callAPI(
         "deleteStudent",
+        data
+    );
+
+}
+
+
+/* =========================================================
+STUDENT SPREADSHEET IMPORT
+========================================================= */
+
+async function apiImportStudents(data) {
+
+    return await callAPI(
+        "importStudents",
         data
     );
 
@@ -311,7 +312,6 @@ async function apiCreateToken(data) {
 
 }
 
-
 async function apiGetToken() {
 
     return await callAPI(
@@ -319,7 +319,6 @@ async function apiGetToken() {
     );
 
 }
-
 
 async function apiValidateToken(data) {
 
@@ -330,7 +329,6 @@ async function apiValidateToken(data) {
 
 }
 
-
 async function apiDisableToken(data) {
 
     return await callAPI(
@@ -339,7 +337,6 @@ async function apiDisableToken(data) {
     );
 
 }
-
 
 async function apiDeleteToken(data) {
 
@@ -364,7 +361,6 @@ async function apiSaveResult(data) {
 
 }
 
-
 async function apiGetResult() {
 
     return await callAPI(
@@ -372,7 +368,6 @@ async function apiGetResult() {
     );
 
 }
-
 
 async function apiGetStudentResult(data) {
 
@@ -383,7 +378,6 @@ async function apiGetStudentResult(data) {
 
 }
 
-
 async function apiUpdateResultScore(data) {
 
     return await callAPI(
@@ -393,11 +387,6 @@ async function apiUpdateResultScore(data) {
 
 }
 
-
-/* ---------------------------------------------------------
-DELETE SINGLE RESULT
---------------------------------------------------------- */
-
 async function apiDeleteResult(data) {
 
     return await callAPI(
@@ -406,11 +395,6 @@ async function apiDeleteResult(data) {
     );
 
 }
-
-
-/* ---------------------------------------------------------
-DELETE MULTIPLE RESULTS
---------------------------------------------------------- */
 
 async function apiDeleteResults(data) {
 
@@ -423,7 +407,7 @@ async function apiDeleteResults(data) {
 
 
 /* =========================================================
-SCORE (Legacy)
+SCORE
 ========================================================= */
 
 async function apiSaveScore(data) {
