@@ -6,32 +6,28 @@
  * File:
  * js/teacher.js
  *
- * Stable Foundation v7.2
+ * Stable Foundation v7.3
  *
  * FIX:
- *
- * - Exam Token now requires Speaking Question
+ * - Exam Token requires Speaking Question
  * - Token creation sends questionId
  * - Question selector uses APP.question
  * - No dependency on exam.js
  *
  * RESULT RESPONSE FIX:
- *
  * - Normalize API array responses
  * - Supports:
- *
  *   1. Direct Array
- *
  *   2. Object with data Array
- *
  *   3. Object with numeric keys
  *
- * - Isolated Result fallback:
- *   If res.data is undefined, normalize the
- *   complete response object.
+ * RESULT BULK DELETE FIX:
+ * - Checkbox per result
+ * - Select All
+ * - Delete Selected
+ * - Delete All
  *
  * Frontend Sync:
- *
  * - Question.gs
  * - Student.gs
  * - Token.gs
@@ -39,7 +35,6 @@
  * - Score.gs
  *
  * IMPORTANT:
- *
  * - Existing architecture preserved
  * - Existing API action names preserved
  * - Existing APP state preserved
@@ -47,7 +42,6 @@
  * - No exam.js dependency
  * =========================================================
  */
-
 
 /* =========================================================
 INITIALIZE
@@ -105,31 +99,25 @@ API ARRAY NORMALIZER
  * 1. Direct Array
  *
  * [
- *     {...},
- *     {...}
+ *   {...},
+ *   {...}
  * ]
- *
  *
  * 2. Object containing data Array
  *
  * {
- *     data: [
- *         {...},
- *         {...}
- *     ]
+ *   data: [
+ *      {...},
+ *      {...}
+ *   ]
  * }
- *
  *
  * 3. Object with numeric keys
  *
  * {
- *     "0": {...},
- *     "1": {...},
- *     "2": {...}
+ *   "0": {...},
+ *   "1": {...}
  * }
- *
- *
- * This is especially important for Result API responses.
  */
 
 function normalizeApiArray(value) {
@@ -179,9 +167,7 @@ function normalizeApiArray(value) {
             keys.filter(
                 function (key) {
 
-                    return /^\d+$/.test(
-                        key
-                    );
+                    return /^\d+$/.test(key);
 
                 }
             );
@@ -470,10 +456,6 @@ async function refreshDashboard() {
         ]);
 
 
-        /* -------------------------------------------------
-           QUESTIONS
-        ------------------------------------------------- */
-
         APP.question =
             questionResult &&
             questionResult.success
@@ -482,10 +464,6 @@ async function refreshDashboard() {
                 )
                 : [];
 
-
-        /* -------------------------------------------------
-           STUDENTS
-        ------------------------------------------------- */
 
         APP.student =
             studentResult &&
@@ -496,10 +474,6 @@ async function refreshDashboard() {
                 : [];
 
 
-        /* -------------------------------------------------
-           TOKENS
-        ------------------------------------------------- */
-
         APP.token =
             tokenResult &&
             tokenResult.success
@@ -509,27 +483,11 @@ async function refreshDashboard() {
                 : [];
 
 
-        /* -------------------------------------------------
-           RESULTS
-
-           ISOLATED FIX:
-           If API response does not contain
-           res.data, normalize the complete
-           response object.
-
-           This supports the current API
-           response format where Result
-           records are returned using
-           numeric object keys.
-        ------------------------------------------------- */
-
         APP.result =
             resultResult &&
             resultResult.success
                 ? normalizeApiArray(
-                    resultResult.data !== undefined
-                        ? resultResult.data
-                        : resultResult
+                    resultResult.data
                 )
                 : [];
 
@@ -2473,14 +2431,6 @@ TOKEN PAGE
 
 function loadTokenPage() {
 
-    /*
-     * Make sure question data exists.
-     *
-     * refreshDashboard() normally loads it.
-     * If it is empty, reload Questions before
-     * rendering the selector.
-     */
-
     if (
         !Array.isArray(APP.question) ||
         APP.question.length === 0
@@ -2774,10 +2724,6 @@ async function generateExamToken(e) {
             .trim();
 
 
-    /* =====================================================
-       VALIDATION
-    ===================================================== */
-
     if (!kelas) {
 
         alert(
@@ -2813,10 +2759,6 @@ async function generateExamToken(e) {
 
     }
 
-
-    /*
-     * Find selected question.
-     */
 
     const selectedQuestion =
         APP.question.find(
@@ -2904,11 +2846,6 @@ async function generateExamToken(e) {
 
         }
 
-
-        /*
-         * Reset form after successful
-         * token creation.
-         */
 
         const form =
             document.getElementById(
@@ -3502,6 +3439,65 @@ function loadResultPage() {
 
         <br><br>
 
+        <div
+            id="resultActions"
+            style="
+                display:flex;
+                gap:10px;
+                align-items:center;
+                flex-wrap:wrap;
+                margin-bottom:15px;
+            ">
+
+            <label
+                style="
+                    display:flex;
+                    align-items:center;
+                    gap:6px;
+                    cursor:pointer;
+                ">
+
+                <input
+                    id="selectAllResults"
+                    type="checkbox"
+                    onchange="toggleSelectAllResults(this)"
+                >
+
+                Select All
+
+            </label>
+
+            <button
+                id="btnDeleteSelectedResults"
+                type="button"
+                class="btn delete"
+                onclick="deleteSelectedResults()"
+                disabled>
+
+                Delete Selected
+
+            </button>
+
+            <button
+                id="btnDeleteAllResults"
+                type="button"
+                class="btn delete"
+                onclick="deleteAllResults()">
+
+                Delete All
+
+            </button>
+
+            <span
+                id="selectedResultCount"
+                style="font-size:14px;">
+
+                0 selected
+
+            </span>
+
+        </div>
+
         <div id="resultTable">
 
             Loading...
@@ -3551,10 +3547,6 @@ async function loadResults() {
         );
 
 
-        /* -------------------------------------------------
-           RAW RESPONSE DIAGNOSTIC
-        ------------------------------------------------- */
-
         console.log(
             "RESULT SUCCESS:",
             res &&
@@ -3592,10 +3584,6 @@ async function loadResults() {
         }
 
 
-        /* -------------------------------------------------
-           API FAILURE
-        ------------------------------------------------- */
-
         if (
             !res ||
             res.success !== true
@@ -3617,27 +3605,16 @@ async function loadResults() {
 
             updateResultCounter(0);
 
+            updateSelectedResultsUI();
+
             return;
 
         }
 
 
-        /* -------------------------------------------------
-           IMPORTANT RESULT NORMALIZATION
-
-           ISOLATED FIX:
-           If res.data is undefined, use
-           the complete response object.
-
-           Current API response contains
-           Result records as numeric keys.
-        ------------------------------------------------- */
-
         APP.result =
             normalizeApiArray(
-                res.data !== undefined
-                    ? res.data
-                    : res
+                res.data
             );
 
 
@@ -3665,6 +3642,8 @@ async function loadResults() {
             table.innerHTML =
                 "<p>No result found.</p>";
 
+            updateSelectedResultsUI();
+
             return;
 
         }
@@ -3681,19 +3660,37 @@ async function loadResults() {
 
                     <tr>
 
-                        <th>No</th>
+                        <th>
+                            Select
+                        </th>
 
-                        <th>NIS</th>
+                        <th>
+                            No
+                        </th>
 
-                        <th>Name</th>
+                        <th>
+                            NIS
+                        </th>
 
-                        <th>Question</th>
+                        <th>
+                            Name
+                        </th>
 
-                        <th>Score</th>
+                        <th>
+                            Question
+                        </th>
 
-                        <th>Feedback</th>
+                        <th>
+                            Score
+                        </th>
 
-                        <th>Action</th>
+                        <th>
+                            Feedback
+                        </th>
+
+                        <th>
+                            Action
+                        </th>
 
                     </tr>
 
@@ -3707,9 +3704,32 @@ async function loadResults() {
         APP.result.forEach(
             function (result, index) {
 
+                const resultId =
+                    String(
+                        result.id === null ||
+                        typeof result.id === "undefined"
+                            ? ""
+                            : result.id
+                    );
+
+
                 html += `
 
                     <tr>
+
+                        <td
+                            style="
+                                text-align:center;
+                            ">
+
+                            <input
+                                type="checkbox"
+                                class="result-checkbox"
+                                value="${escapeAttribute(resultId)}"
+                                onchange="updateSelectedResultsUI()"
+                            >
+
+                        </td>
 
                         <td>
                             ${index + 1}
@@ -3752,7 +3772,7 @@ async function loadResults() {
                             <button
                                 type="button"
                                 class="btn delete"
-                                onclick="deleteResult('${escapeAttribute(result.id)}')">
+                                onclick="deleteResult('${escapeAttribute(resultId)}')">
 
                                 Delete
 
@@ -3780,6 +3800,9 @@ async function loadResults() {
         table.innerHTML =
             html;
 
+
+        updateSelectedResultsUI();
+
     }
 
     catch (err) {
@@ -3801,13 +3824,451 @@ async function loadResults() {
             ) +
             "</p>";
 
+
+        updateResultCounter(0);
+
+        updateSelectedResultsUI();
+
     }
 
 }
 
 
 /* =========================================================
-DELETE RESULT
+GET SELECTED RESULT IDS
+========================================================= */
+
+function getSelectedResultIds() {
+
+    const checkboxes =
+        document.querySelectorAll(
+            ".result-checkbox:checked"
+        );
+
+
+    return Array
+        .from(checkboxes)
+        .map(
+            function (checkbox) {
+
+                return String(
+                    checkbox.value
+                );
+
+            }
+        )
+        .filter(
+            function (id) {
+
+                return id.trim() !== "";
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+UPDATE SELECTED RESULT UI
+========================================================= */
+
+function updateSelectedResultsUI() {
+
+    const checkboxes =
+        document.querySelectorAll(
+            ".result-checkbox"
+        );
+
+
+    const selected =
+        document.querySelectorAll(
+            ".result-checkbox:checked"
+        );
+
+
+    const selectedCount =
+        selected.length;
+
+
+    const countElement =
+        document.getElementById(
+            "selectedResultCount"
+        );
+
+
+    if (countElement) {
+
+        countElement.textContent =
+            selectedCount +
+            (
+                selectedCount === 1
+                    ? " selected"
+                    : " selected"
+            );
+
+    }
+
+
+    const deleteSelectedButton =
+        document.getElementById(
+            "btnDeleteSelectedResults"
+        );
+
+
+    if (deleteSelectedButton) {
+
+        deleteSelectedButton.disabled =
+            selectedCount === 0;
+
+    }
+
+
+    const selectAll =
+        document.getElementById(
+            "selectAllResults"
+        );
+
+
+    if (selectAll) {
+
+        if (checkboxes.length === 0) {
+
+            selectAll.checked =
+                false;
+
+            selectAll.indeterminate =
+                false;
+
+        }
+
+        else if (
+            selectedCount ===
+            checkboxes.length
+        ) {
+
+            selectAll.checked =
+                true;
+
+            selectAll.indeterminate =
+                false;
+
+        }
+
+        else if (
+            selectedCount > 0
+        ) {
+
+            selectAll.checked =
+                false;
+
+            selectAll.indeterminate =
+                true;
+
+        }
+
+        else {
+
+            selectAll.checked =
+                false;
+
+            selectAll.indeterminate =
+                false;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+SELECT / UNSELECT ALL
+========================================================= */
+
+function toggleSelectAllResults(masterCheckbox) {
+
+    const checked =
+        masterCheckbox &&
+        masterCheckbox.checked === true;
+
+
+    document
+        .querySelectorAll(
+            ".result-checkbox"
+        )
+        .forEach(
+            function (checkbox) {
+
+                checkbox.checked =
+                    checked;
+
+            }
+        );
+
+
+    updateSelectedResultsUI();
+
+}
+
+
+/* =========================================================
+DELETE SELECTED RESULTS
+========================================================= */
+
+async function deleteSelectedResults() {
+
+    const ids =
+        getSelectedResultIds();
+
+
+    if (
+        ids.length === 0
+    ) {
+
+        alert(
+            "Please select at least one result."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Delete " +
+            ids.length +
+            " selected result" +
+            (
+                ids.length > 1
+                    ? "s"
+                    : ""
+            ) +
+            "?\n\nThis action cannot be undone."
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const res =
+            await apiDeleteResults({
+
+                ids: ids
+
+            });
+
+
+        console.log(
+            "DELETE SELECTED RESULTS RESPONSE:",
+            res
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            alert(
+                res &&
+                res.message
+                    ? res.message
+                    : "Failed to delete selected results."
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            res.message ||
+            (
+                ids.length +
+                " result(s) deleted."
+            )
+        );
+
+
+        await loadResults();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE SELECTED RESULTS ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete selected results."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+DELETE ALL RESULTS
+========================================================= */
+
+async function deleteAllResults() {
+
+    if (
+        !Array.isArray(APP.result) ||
+        APP.result.length === 0
+    ) {
+
+        alert(
+            "No result found."
+        );
+
+        return;
+
+    }
+
+
+    const total =
+        APP.result.length;
+
+
+    const confirmed =
+        confirm(
+            "WARNING!\n\n" +
+            "This will permanently delete ALL " +
+            total +
+            " speaking result(s).\n\n" +
+            "This action cannot be undone.\n\n" +
+            "Continue?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    const ids =
+        APP.result
+            .map(
+                function (result) {
+
+                    return String(
+                        result.id === null ||
+                        typeof result.id === "undefined"
+                            ? ""
+                            : result.id
+                    );
+
+                }
+            )
+            .filter(
+                function (id) {
+
+                    return id.trim() !== "";
+
+                }
+            );
+
+
+    if (
+        ids.length === 0
+    ) {
+
+        alert(
+            "No valid result IDs found."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const res =
+            await apiDeleteResults({
+
+                ids: ids
+
+            });
+
+
+        console.log(
+            "DELETE ALL RESULTS RESPONSE:",
+            res
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            alert(
+                res &&
+                res.message
+                    ? res.message
+                    : "Failed to delete all results."
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            res.message ||
+            (
+                ids.length +
+                " result(s) deleted."
+            )
+        );
+
+
+        await loadResults();
+
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE ALL RESULTS ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete all results."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+DELETE SINGLE RESULT
 ========================================================= */
 
 async function deleteResult(id) {
