@@ -10,438 +10,30 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Speaking Test | SAF</title>
-
-    <link
-        rel="icon"
-        href="images/logo.png"
+    <meta
+        name="description"
+        content="SAF Speaking Online Test - English Speaking Assessment"
     >
+
+    <meta
+        name="theme-color"
+        content="#0B72B9"
+    >
+
+    <title>
+        SAF Speaking Online Test
+    </title>
+
+
+    <!-- =====================================================
+         GLOBAL STYLESHEET
+    ====================================================== -->
 
     <link
         rel="stylesheet"
         href="css/style.css"
     >
 
-    <style>
-
-        /* ==========================================
-           RESET
-        ========================================== */
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-
-        /* ==========================================
-           BODY
-        ========================================== */
-
-        body {
-
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
-
-            background: #eef3f8;
-
-            color: #333;
-
-        }
-
-
-        /* ==========================================
-           CONTAINER
-        ========================================== */
-
-        .container {
-
-            max-width: 1100px;
-
-            margin: auto;
-
-            padding: 40px;
-
-        }
-
-
-        /* ==========================================
-           CARD
-        ========================================== */
-
-        .card {
-
-            background: #fff;
-
-            padding: 35px;
-
-            border-radius: 18px;
-
-            box-shadow:
-                0 8px 25px rgba(0, 0, 0, .08);
-
-            margin-bottom: 25px;
-
-        }
-
-
-        /* ==========================================
-           HEADER
-        ========================================== */
-
-        .header {
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            margin-bottom: 30px;
-
-        }
-
-
-        .header h1 {
-
-            color: #0B72B9;
-
-            margin-bottom: 8px;
-
-        }
-
-
-        .header p {
-
-            color: #555;
-
-            line-height: 1.5;
-
-        }
-
-
-        /* ==========================================
-           INFO
-        ========================================== */
-
-        .info {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(
-                    auto-fit,
-                    minmax(250px, 1fr)
-                );
-
-            gap: 20px;
-
-        }
-
-
-        /* ==========================================
-           INFO BOX
-        ========================================== */
-
-        .box {
-
-            background: #f7f9fc;
-
-            padding: 20px;
-
-            border-radius: 12px;
-
-        }
-
-
-        .box h3 {
-
-            margin-bottom: 8px;
-
-            color: #0B72B9;
-
-        }
-
-
-        .box p {
-
-            line-height: 1.6;
-
-        }
-
-
-        /* ==========================================
-           INPUT
-        ========================================== */
-
-        input {
-
-            width: 100%;
-
-            padding: 14px;
-
-            font-size: 16px;
-
-            border:
-                1px solid #ddd;
-
-            border-radius: 10px;
-
-            outline: none;
-
-        }
-
-
-        input:focus {
-
-            border-color: #0B72B9;
-
-        }
-
-
-        /* ==========================================
-           BUTTON
-        ========================================== */
-
-        button {
-
-            padding: 14px 22px;
-
-            border: none;
-
-            border-radius: 10px;
-
-            cursor: pointer;
-
-            font-size: 15px;
-
-            font-weight: bold;
-
-            margin-top: 15px;
-
-        }
-
-
-        button:disabled {
-
-            opacity: .6;
-
-            cursor: not-allowed;
-
-        }
-
-
-        /* ==========================================
-           PRIMARY
-        ========================================== */
-
-        .primary {
-
-            background: #0B72B9;
-
-            color: white;
-
-        }
-
-
-        .primary:hover {
-
-            background: #095c95;
-
-        }
-
-
-        /* ==========================================
-           SUCCESS
-        ========================================== */
-
-        .success {
-
-            background: #28a745;
-
-            color: white;
-
-        }
-
-
-        .success:hover {
-
-            background: #218838;
-
-        }
-
-
-        /* ==========================================
-           DANGER
-        ========================================== */
-
-        .danger {
-
-            background: #dc3545;
-
-            color: white;
-
-        }
-
-
-        .danger:hover {
-
-            background: #c82333;
-
-        }
-
-
-        /* ==========================================
-           QUESTION
-        ========================================== */
-
-        .question {
-
-            font-size: 24px;
-
-            line-height: 1.6;
-
-            margin-top: 20px;
-
-            padding: 20px;
-
-            background: #f7f9fc;
-
-            border-radius: 12px;
-
-        }
-
-
-        /* ==========================================
-           QUESTION META
-        ========================================== */
-
-        .question-meta {
-
-            display: flex;
-
-            flex-wrap: wrap;
-
-            gap: 15px;
-
-            margin-top: 15px;
-
-        }
-
-
-        .question-meta span {
-
-            background: #eef3f8;
-
-            padding: 8px 14px;
-
-            border-radius: 8px;
-
-            font-size: 14px;
-
-        }
-
-
-        /* ==========================================
-           TRANSCRIPT
-        ========================================== */
-
-        .transcript {
-
-            margin-top: 20px;
-
-            padding: 20px;
-
-            background: #fafafa;
-
-            border-radius: 12px;
-
-            min-height: 180px;
-
-            border:
-                2px dashed #ccc;
-
-            white-space: pre-wrap;
-
-            line-height: 1.7;
-
-        }
-
-
-        /* ==========================================
-           STATUS
-        ========================================== */
-
-        .status {
-
-            margin-top: 15px;
-
-            font-weight: bold;
-
-            color: #0B72B9;
-
-            line-height: 1.5;
-
-        }
-
-
-        /* ==========================================
-           HIDDEN
-        ========================================== */
-
-        .hidden {
-
-            display: none;
-
-        }
-
-
-        /* ==========================================
-           RESPONSIVE
-        ========================================== */
-
-        @media (max-width: 700px) {
-
-            .container {
-
-                padding: 20px;
-
-            }
-
-
-            .card {
-
-                padding: 25px;
-
-            }
-
-
-            .header {
-
-                gap: 20px;
-
-            }
-
-
-            .header img {
-
-                width: 70px;
-
-            }
-
-
-            .question {
-
-                font-size: 20px;
-
-            }
-
-        }
-
-    </style>
 
 </head>
 
@@ -449,321 +41,642 @@
 <body>
 
 
-<div class="container">
+<!-- =========================================================
+     PAGE WRAPPER
+========================================================== -->
+
+<div class="speaking-page">
 
 
-    <!-- ==========================================
-         HEADER
-    ========================================== -->
+    <!-- =====================================================
+         TOP NAVIGATION
+    ====================================================== -->
 
-    <div class="header">
+    <nav class="top-nav speaking-nav">
 
-        <div>
+        <a
+            href="dashboard_student.html"
+            class="nav-home"
+        >
+            ← Student Dashboard
+        </a>
 
-            <h1>
-                🎤 Speaking Test
-            </h1>
-
-            <p>
-                SAF Speaking Online Test
-            </p>
-
+        <div class="nav-title">
+            SAF Speaking Assessment
         </div>
 
-
-        <img
-            src="images/logo.png"
-            width="90"
-            alt="SAF Logo"
-        >
-
-    </div>
+    </nav>
 
 
-    <!-- ==========================================
-         STUDENT INFORMATION
-    ========================================== -->
 
-    <div class="card">
+    <!-- =====================================================
+         MAIN CONTAINER
+    ====================================================== -->
 
-        <div class="info">
+    <main class="container speaking-container">
 
 
-            <!-- STUDENT -->
+        <!-- =================================================
+             TEST HEADER
+        ================================================== -->
 
-            <div class="box">
+        <section class="test-header card">
 
-                <h3>
-                    Student
-                </h3>
+            <div class="test-brand">
 
-                <p id="studentName">
-                    -
-                </p>
+                <div class="brand-logo-wrapper">
+
+                    <img
+                        src="images/logo smp kotak-01.png"
+                        alt="SMP Salman Al Farisi Bandung"
+                        class="brand-logo"
+                    >
+
+                </div>
+
+
+                <div class="test-brand-text">
+
+                    <span class="eyebrow">
+                        ENGLISH SPEAKING ASSESSMENT
+                    </span>
+
+                    <h1>
+                        SAF Speaking Online Test
+                    </h1>
+
+                    <p>
+                        SMP Salman Al Farisi Bandung
+                    </p>
+
+                </div>
 
             </div>
 
 
-            <!-- CLASS -->
-
-            <div class="box">
-
-                <h3>
-                    Class
-                </h3>
-
-                <p id="studentClass">
-                    -
-                </p>
-
+            <div class="assessment-badge">
+                Speaking Test
             </div>
 
+        </section>
 
-            <!-- STATUS -->
 
-            <div class="box">
 
-                <h3>
-                    Status
-                </h3>
+        <!-- =================================================
+             STUDENT INFORMATION
+        ================================================== -->
 
-                <p id="examStatus">
+        <section class="student-panel card">
+
+            <div class="student-panel-header">
+
+                <div>
+
+                    <span class="section-label">
+                        CANDIDATE
+                    </span>
+
+                    <h2>
+                        Student Information
+                    </h2>
+
+                </div>
+
+                <div
+                    id="examStatus"
+                    class="status-pill"
+                >
                     Waiting Token
+                </div>
+
+            </div>
+
+
+            <div class="student-info-grid">
+
+
+                <div class="student-info-item">
+
+                    <span class="info-label">
+                        Name
+                    </span>
+
+                    <strong id="studentName">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="student-info-item">
+
+                    <span class="info-label">
+                        Class
+                    </span>
+
+                    <strong id="studentClass">
+                        -
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             BEFORE YOU BEGIN
+        ================================================== -->
+
+        <section class="instruction-panel card">
+
+            <div class="section-heading">
+
+                <span class="section-label">
+                    STEP 1
+                </span>
+
+                <h2>
+                    Before You Begin
+                </h2>
+
+                <p>
+                    Read the instructions carefully before starting
+                    your speaking assessment.
                 </p>
 
             </div>
 
 
-        </div>
-
-    </div>
+            <div class="instruction-grid">
 
 
-    <!-- ==========================================
-         EXAM TOKEN
-    ========================================== -->
+                <div class="instruction-item">
 
-    <div class="card">
+                    <div class="instruction-icon">
+                        🎧
+                    </div>
 
-        <h2>
-            Exam Token
-        </h2>
+                    <div>
 
-        <br>
+                        <h3>
+                            Find a quiet place
+                        </h3>
+
+                        <p>
+                            Make sure you are in a quiet environment
+                            before speaking.
+                        </p>
+
+                    </div>
+
+                </div>
 
 
-        <input
-            id="token"
-            type="text"
-            placeholder="Enter Exam Token"
-            autocomplete="off"
-            spellcheck="false"
+                <div class="instruction-item">
+
+                    <div class="instruction-icon">
+                        🎙️
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Allow microphone access
+                        </h3>
+
+                        <p>
+                            Your browser may ask permission to use
+                            the microphone.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="instruction-item">
+
+                    <div class="instruction-icon">
+                        💬
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Speak clearly
+                        </h3>
+
+                        <p>
+                            Speak naturally and clearly. Do not rush
+                            your answer.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="instruction-item">
+
+                    <div class="instruction-icon">
+                        ⏱️
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Watch the time
+                        </h3>
+
+                        <p>
+                            Complete your response within the
+                            allocated speaking time.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             TOKEN SECTION
+        ================================================== -->
+
+        <section class="token-panel card">
+
+            <div class="section-heading">
+
+                <span class="section-label">
+                    STEP 2
+                </span>
+
+                <h2>
+                    Enter Your Exam Token
+                </h2>
+
+                <p>
+                    Enter the token provided by your teacher
+                    to begin the speaking test.
+                </p>
+
+            </div>
+
+
+            <div class="token-form">
+
+
+                <label
+                    for="token"
+                    class="form-label"
+                >
+                    Exam Token
+                </label>
+
+
+                <input
+                    type="text"
+                    id="token"
+                    name="token"
+                    class="token-input"
+                    placeholder="Enter your exam token"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                >
+
+
+                <button
+                    type="button"
+                    id="validateTokenButton"
+                    class="primary token-button"
+                    onclick="validateToken()"
+                >
+                    Verify Token
+                </button>
+
+
+            </div>
+
+
+            <div
+                id="examStatus"
+                class="exam-status hidden"
+            >
+                Waiting Token
+            </div>
+
+
+            <div class="token-note">
+
+                🔒
+
+                <span>
+                    Your exam token is provided by your teacher
+                    and is required to access the speaking assessment.
+                </span>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             EXAM AREA
+             IMPORTANT:
+             ID "examArea" IS REQUIRED BY speaking.js
+        ================================================== -->
+
+        <section
+            id="examArea"
+            class="exam-area hidden"
         >
 
 
-        <button
-            id="validateTokenButton"
-            type="button"
-            class="primary"
-            onclick="validateToken()"
-        >
+            <!-- =============================================
+                 QUESTION CARD
+            ============================================== -->
 
-            Validate Token
-
-        </button>
-
-    </div>
+            <article class="question-panel card">
 
 
-    <!-- ==========================================
-         EXAM AREA
-         
-         Hidden until token is successfully
-         validated by speaking.js
-    ========================================== -->
+                <div class="question-header">
 
-    <div
-        id="examArea"
-        class="hidden"
-    >
+                    <div>
 
+                        <span class="section-label">
+                            SPEAKING PROMPT
+                        </span>
 
-        <!-- ======================================
-             SPEAKING QUESTION
-        ======================================= -->
+                        <h2>
+                            Your Question
+                        </h2>
 
-        <div class="card">
-
-            <h2>
-                Speaking Question
-            </h2>
+                    </div>
 
 
-            <div
-                class="question"
-                id="question"
-            >
+                    <div class="question-status">
+                        Ready
+                    </div>
 
-                Loading question...
-
-            </div>
+                </div>
 
 
-            <!-- ==================================
-                 QUESTION INFORMATION
-            =================================== -->
+                <!-- =========================================
+                     QUESTION TEXT
+                     ID REQUIRED BY speaking.js
+                ========================================== -->
 
-            <div class="question-meta">
+                <div
+                    id="question"
+                    class="question"
+                >
+                    Loading question...
+                </div>
 
+
+                <!-- =========================================
+                     QUESTION META
+                ========================================== -->
+
+                <div class="question-meta">
+
+
+                    <span>
+
+                        <strong>
+                            Difficulty:
+                        </strong>
+
+                        <span id="questionDifficulty">
+                            -
+                        </span>
+
+                    </span>
+
+
+                    <span>
+
+                        <strong>
+                            Duration:
+                        </strong>
+
+                        <span id="questionDuration">
+                            -
+                        </span>
+
+                    </span>
+
+
+                </div>
+
+            </article>
+
+
+
+            <!-- =============================================
+                 RECORDING CARD
+            ============================================== -->
+
+            <article class="recording-panel card">
+
+
+                <div class="section-heading">
+
+                    <span class="section-label">
+                        SPEAK YOUR ANSWER
+                    </span>
+
+                    <h2>
+                        Record Your Response
+                    </h2>
+
+                    <p>
+                        When you are ready, start recording and
+                        answer the question clearly in English.
+                    </p>
+
+                </div>
+
+
+                <!-- =========================================
+                     RECORDING CONTROLS
+                ========================================== -->
+
+                <div class="recording-controls">
+
+
+                    <button
+                        type="button"
+                        id="startRecordingButton"
+                        class="primary recording-button"
+                        onclick="startRecording()"
+                    >
+                        🎙 Start Recording
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="stopRecordingButton"
+                        class="danger recording-button"
+                        onclick="stopRecording()"
+                    >
+                        ■ Stop Recording
+                    </button>
+
+
+                </div>
+
+
+                <!-- =========================================
+                     RECORD STATUS
+                     ID REQUIRED BY speaking.js
+                ========================================== -->
+
+                <div
+                    id="recordStatus"
+                    class="record-status"
+                >
+                    Ready
+                </div>
+
+
+                <!-- =========================================
+                     TRANSCRIPT
+                     ID REQUIRED BY speaking.js
+                ========================================== -->
+
+                <div class="transcript-wrapper">
+
+
+                    <div class="transcript-label">
+
+                        <span>
+                            Your Transcript
+                        </span>
+
+                        <small>
+                            Speech recognition
+                        </small>
+
+                    </div>
+
+
+                    <div
+                        id="transcript"
+                        class="transcript"
+                    >
+                        Your transcript will appear here...
+                    </div>
+
+
+                </div>
+
+
+                <!-- =========================================
+                     SUBMIT
+                ========================================== -->
+
+                <div class="submit-area">
+
+
+                    <div class="submit-warning">
+
+                        <strong>
+                            Before submitting
+                        </strong>
+
+                        <span>
+                            Make sure your answer has been
+                            completely recorded.
+                        </span>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        id="submitAnswerButton"
+                        class="success submit-button"
+                        onclick="submitAnswer()"
+                    >
+                        Submit Answer
+                    </button>
+
+
+                </div>
+
+
+            </article>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             FOOTER INFORMATION
+        ================================================== -->
+
+        <footer class="speaking-footer">
+
+            <div class="footer-brand">
+
+                <strong>
+                    SAF Speaking Online Test
+                </strong>
 
                 <span>
-
-                    Difficulty:
-
-                    <strong id="questionDifficulty">
-                        -
-                    </strong>
-
+                    SMP Salman Al Farisi Bandung
                 </span>
 
-
-                <span>
-
-                    Duration:
-
-                    <strong id="questionDuration">
-                        -
-                    </strong>
-
-                    seconds
-
-                </span>
-
-
-            </div>
-
-        </div>
-
-
-        <!-- ======================================
-             VOICE RECORDING
-        ======================================= -->
-
-        <div class="card">
-
-            <h2>
-                Voice Recording
-            </h2>
-
-
-            <!-- ==================================
-                 START RECORDING
-            =================================== -->
-
-            <button
-                id="startRecordingButton"
-                type="button"
-                class="success"
-                onclick="startRecording()"
-            >
-
-                🎙 Start Recording
-
-            </button>
-
-
-            <!-- ==================================
-                 STOP RECORDING
-            =================================== -->
-
-            <button
-                id="stopRecordingButton"
-                type="button"
-                class="danger"
-                onclick="stopRecording()"
-            >
-
-                ⏹ Stop
-
-            </button>
-
-
-            <!-- ==================================
-                 RECORD STATUS
-            =================================== -->
-
-            <div
-                class="status"
-                id="recordStatus"
-            >
-
-                Ready
-
             </div>
 
 
-            <!-- ==================================
-                 TRANSCRIPT
-            =================================== -->
-
-            <div
-                class="transcript"
-                id="transcript"
-            >
-
-                Your transcript will appear here...
-
+            <div class="footer-note">
+                English Speaking Assessment
             </div>
 
-
-            <!-- ==================================
-                 SUBMIT ANSWER
-            =================================== -->
-
-            <button
-                id="submitAnswerButton"
-                type="button"
-                class="primary"
-                onclick="submitAnswer()"
-            >
-
-                Submit Answer
-
-            </button>
+        </footer>
 
 
-        </div>
-
-
-    </div>
+    </main>
 
 
 </div>
 
 
-<!-- ==========================================
-     CORE CONFIG
-     
-     MUST LOAD FIRST
-========================================== -->
 
-<script src="js/config.js"></script>
+<!-- =========================================================
+     JAVASCRIPT
+     ORDER IS LOCKED
+========================================================== -->
 
 
-<!-- ==========================================
-     API MODULE
-========================================== -->
-
-<script src="js/api.js"></script>
+<script
+    src="js/config.js"
+></script>
 
 
-<!-- ==========================================
-     SPEAKING MODULE
-     
-     ALL SPEAKING LOGIC IS HERE
-========================================== -->
+<script
+    src="js/api.js"
+></script>
 
-<script src="js/speaking.js"></script>
+
+<script
+    src="js/speaking.js"
+></script>
 
 
 </body>
