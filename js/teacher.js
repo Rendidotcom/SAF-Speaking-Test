@@ -19,9 +19,16 @@
  *
  * - Normalize API array responses
  * - Supports:
- *      1. Direct Array
- *      2. Object with data Array
- *      3. Object with numeric keys
+ *
+ *   1. Direct Array
+ *
+ *   2. Object with data Array
+ *
+ *   3. Object with numeric keys
+ *
+ * - Isolated Result fallback:
+ *   If res.data is undefined, normalize the
+ *   complete response object.
  *
  * Frontend Sync:
  *
@@ -504,16 +511,25 @@ async function refreshDashboard() {
 
         /* -------------------------------------------------
            RESULTS
-           
-           IMPORTANT:
-           Do not use Array.isArray() directly here.
+
+           ISOLATED FIX:
+           If API response does not contain
+           res.data, normalize the complete
+           response object.
+
+           This supports the current API
+           response format where Result
+           records are returned using
+           numeric object keys.
         ------------------------------------------------- */
 
         APP.result =
             resultResult &&
             resultResult.success
                 ? normalizeApiArray(
-                    resultResult.data
+                    resultResult.data !== undefined
+                        ? resultResult.data
+                        : resultResult
                 )
                 : [];
 
@@ -3608,11 +3624,20 @@ async function loadResults() {
 
         /* -------------------------------------------------
            IMPORTANT RESULT NORMALIZATION
+
+           ISOLATED FIX:
+           If res.data is undefined, use
+           the complete response object.
+
+           Current API response contains
+           Result records as numeric keys.
         ------------------------------------------------- */
 
         APP.result =
             normalizeApiArray(
-                res.data
+                res.data !== undefined
+                    ? res.data
+                    : res
             );
 
 
