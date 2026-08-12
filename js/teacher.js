@@ -6,12 +6,13 @@
  * File:
  * js/teacher.js
  *
- * Stable Foundation v7.0
- * Result Response Fix
+ * Stable Foundation v8.0
+ * Result Bulk Delete
  *
  * ==========================================
  *
  * Frontend Sync:
+ *
  * - Question.gs
  * - Student.gs
  * - Token.gs
@@ -27,23 +28,32 @@
  * - Token state uses APP.token
  * - Result state uses APP.result
  *
- * RESULT FIX:
+ * RESULT FEATURES:
  *
- * API Result saat ini dapat mengembalikan:
+ * - Result score display
+ * - Result search
+ * - Checkbox per result
+ * - Select All
+ * - Delete Selected
+ * - Delete All
+ *
+ * RESULT API SUPPORT:
+ *
+ * API Result dapat mengembalikan:
  *
  * {
- *     0: {...},
- *     1: {...},
- *     2: {...},
- *     success: true,
- *     message: "Success"
+ *   0: {...},
+ *   1: {...},
+ *   2: {...},
+ *   success: true,
+ *   message: "Success"
  * }
  *
  * atau:
  *
  * {
- *     success: true,
- *     data: [...]
+ *   success: true,
+ *   data: [...]
  * }
  *
  * Keduanya didukung.
@@ -53,7 +63,7 @@
 
 
 /* =====================================================
-   INITIALIZE
+INITIALIZE
 ===================================================== */
 
 document.addEventListener(
@@ -63,7 +73,7 @@ document.addEventListener(
 
 
 /* =====================================================
-   GLOBAL STATE
+GLOBAL STATE
 ===================================================== */
 
 const APP = {
@@ -95,7 +105,7 @@ const STATE = {
 
 
 /* =====================================================
-   INITIALIZE
+INITIALIZE
 ===================================================== */
 
 async function init() {
@@ -114,7 +124,7 @@ async function init() {
 
 
 /* =====================================================
-   SESSION
+SESSION
 ===================================================== */
 
 function checkSession() {
@@ -167,7 +177,7 @@ function checkSession() {
 
 
 /* =====================================================
-   LOGOUT
+LOGOUT
 ===================================================== */
 
 function logout() {
@@ -189,7 +199,7 @@ function logout() {
 
 
 /* =====================================================
-   LOGOUT BINDING
+LOGOUT BINDING
 ===================================================== */
 
 function bindLogout() {
@@ -221,7 +231,7 @@ function bindLogout() {
 
 
 /* =====================================================
-   SIDEBAR MENU
+SIDEBAR MENU
 ===================================================== */
 
 function bindMenu() {
@@ -286,7 +296,7 @@ function bindMenu() {
 
 
 /* =====================================================
-   CONTENT
+CONTENT
 ===================================================== */
 
 function setContent(html) {
@@ -315,25 +325,8 @@ function setContent(html) {
 
 
 /* =====================================================
-   API ARRAY NORMALIZER
+API ARRAY NORMALIZER
 ===================================================== */
-
-/*
- * Supports both:
- *
- * 1. response.data = [...]
- *
- * 2. response = {
- *        0: {...},
- *        1: {...},
- *        2: {...},
- *        success: true,
- *        message: "Success"
- *    }
- *
- * This is especially important
- * for the current Result API response.
- */
 
 function normalizeApiArray(value) {
 
@@ -350,15 +343,18 @@ function normalizeApiArray(value) {
     ) {
 
         return Object.keys(value)
+
             .filter(
                 key =>
                     /^\d+$/.test(key)
             )
+
             .sort(
                 (a, b) =>
                     Number(a) -
                     Number(b)
             )
+
             .map(
                 key =>
                     value[key]
@@ -373,7 +369,7 @@ function normalizeApiArray(value) {
 
 
 /* =====================================================
-   DASHBOARD DATA
+DASHBOARD DATA
 ===================================================== */
 
 async function refreshDashboard() {
@@ -432,22 +428,13 @@ async function refreshDashboard() {
 
 
         /*
-         * =================================================
-         * RESULT FIX #1
-         * =================================================
+         * RESULT FIX
          *
-         * IMPORTANT:
-         *
-         * Current Result API may return the records
-         * directly at the root response:
-         *
-         * response[0]
-         * response[1]
-         * response[2]
-         *
-         * instead of:
+         * Supports:
          *
          * response.data
+         *
+         * or direct numeric properties.
          */
 
         APP.result =
@@ -479,7 +466,7 @@ async function refreshDashboard() {
 
 
 /* =====================================================
-   DASHBOARD COUNTERS
+DASHBOARD COUNTERS
 ===================================================== */
 
 function updateDashboardCounters() {
@@ -507,7 +494,7 @@ function updateDashboardCounters() {
 
 
 /* =====================================================
-   DASHBOARD PAGE
+DASHBOARD PAGE
 ===================================================== */
 
 function loadDashboard() {
@@ -588,7 +575,7 @@ function loadDashboard() {
 
 
 /* =====================================================
-   QUESTION PAGE
+QUESTION PAGE
 ===================================================== */
 
 function loadQuestionPage() {
@@ -724,7 +711,7 @@ function loadQuestionPage() {
 
 
 /* =====================================================
-   SAVE QUESTION
+SAVE QUESTION
 ===================================================== */
 
 async function saveQuestion(e) {
@@ -823,7 +810,7 @@ async function saveQuestion(e) {
 
 
 /* =====================================================
-   LOAD QUESTIONS
+LOAD QUESTIONS
 ===================================================== */
 
 async function loadQuestions() {
@@ -938,7 +925,7 @@ async function loadQuestions() {
 
 
 /* =====================================================
-   RENDER QUESTIONS
+RENDER QUESTIONS
 ===================================================== */
 
 function renderQuestions() {
@@ -1094,7 +1081,7 @@ function renderQuestions() {
 
 
 /* =====================================================
-   EDIT QUESTION
+EDIT QUESTION
 ===================================================== */
 
 function editQuestion(id) {
@@ -1162,7 +1149,7 @@ function editQuestion(id) {
 
 
 /* =====================================================
-   DELETE QUESTION
+DELETE QUESTION
 ===================================================== */
 
 async function deleteQuestion(id) {
@@ -1212,7 +1199,7 @@ async function deleteQuestion(id) {
 
 
 /* =====================================================
-   RESET QUESTION FORM
+RESET QUESTION FORM
 ===================================================== */
 
 function resetQuestionForm() {
@@ -1268,7 +1255,7 @@ function resetQuestionForm() {
 
 
 /* =====================================================
-   SEARCH QUESTION
+SEARCH QUESTION
 ===================================================== */
 
 function filterQuestion() {
@@ -1311,7 +1298,7 @@ function filterQuestion() {
 
 
 /* =====================================================
-   STUDENT PAGE
+STUDENT PAGE
 ===================================================== */
 
 function loadStudentPage() {
@@ -1443,7 +1430,7 @@ function loadStudentPage() {
 
 
 /* =====================================================
-   SAVE STUDENT
+SAVE STUDENT
 ===================================================== */
 
 async function saveStudent(e) {
@@ -1545,7 +1532,7 @@ async function saveStudent(e) {
 
 
 /* =====================================================
-   LOAD STUDENTS
+LOAD STUDENTS
 ===================================================== */
 
 async function loadStudents() {
@@ -1757,7 +1744,7 @@ async function loadStudents() {
 
 
 /* =====================================================
-   EDIT STUDENT
+EDIT STUDENT
 ===================================================== */
 
 function editStudent(id) {
@@ -1831,7 +1818,7 @@ function editStudent(id) {
 
 
 /* =====================================================
-   DELETE STUDENT
+DELETE STUDENT
 ===================================================== */
 
 async function deleteStudent(id) {
@@ -1881,7 +1868,7 @@ async function deleteStudent(id) {
 
 
 /* =====================================================
-   RESET STUDENT FORM
+RESET STUDENT FORM
 ===================================================== */
 
 function resetStudentForm() {
@@ -1923,7 +1910,7 @@ function resetStudentForm() {
 
 
 /* =====================================================
-   SEARCH STUDENT
+SEARCH STUDENT
 ===================================================== */
 
 function filterStudent() {
@@ -1966,7 +1953,7 @@ function filterStudent() {
 
 
 /* =====================================================
-   TOKEN PAGE
+TOKEN PAGE
 ===================================================== */
 
 function loadTokenPage() {
@@ -2068,7 +2055,7 @@ function loadTokenPage() {
 
 
 /* =====================================================
-   GENERATE TOKEN
+GENERATE TOKEN
 ===================================================== */
 
 async function generateExamToken(e) {
@@ -2245,7 +2232,7 @@ async function generateExamToken(e) {
 
 
 /* =====================================================
-   LOAD TOKENS
+LOAD TOKENS
 ===================================================== */
 
 async function loadTokens() {
@@ -2489,7 +2476,7 @@ async function loadTokens() {
 
 
 /* =====================================================
-   DISABLE TOKEN
+DISABLE TOKEN
 ===================================================== */
 
 async function disableExamToken(token) {
@@ -2575,7 +2562,7 @@ async function disableExamToken(token) {
 
 
 /* =====================================================
-   DELETE TOKEN
+DELETE TOKEN
 ===================================================== */
 
 async function deleteExamToken(token) {
@@ -2661,7 +2648,7 @@ async function deleteExamToken(token) {
 
 
 /* =====================================================
-   SEARCH TOKEN
+SEARCH TOKEN
 ===================================================== */
 
 function filterToken() {
@@ -2704,7 +2691,7 @@ function filterToken() {
 
 
 /* =====================================================
-   RESULT PAGE
+RESULT PAGE
 ===================================================== */
 
 function loadResultPage() {
@@ -2726,6 +2713,55 @@ function loadResultPage() {
 
         <br><br>
 
+        <div
+            id="resultActions"
+            style="
+                display:flex;
+                gap:8px;
+                flex-wrap:wrap;
+                align-items:center;
+                margin-bottom:15px;
+            "
+        >
+
+            <button
+                type="button"
+                class="btn teacher"
+                onclick="selectAllResults()">
+
+                Select All
+
+            </button>
+
+            <button
+                type="button"
+                class="btn delete"
+                onclick="deleteSelectedResults()">
+
+                Delete Selected
+
+            </button>
+
+            <button
+                type="button"
+                class="btn delete"
+                onclick="deleteAllResults()">
+
+                Delete All
+
+            </button>
+
+            <span
+                id="selectedResultCount"
+                style="margin-left:5px;"
+            >
+                0 selected
+            </span>
+
+        </div>
+
+        <br>
+
         <div id="resultTable">
 
             Loading...
@@ -2741,7 +2777,7 @@ function loadResultPage() {
 
 
 /* =====================================================
-   LOAD RESULTS
+LOAD RESULTS
 ===================================================== */
 
 async function loadResults() {
@@ -2786,9 +2822,13 @@ async function loadResults() {
                 ) +
                 "</p>";
 
+
             APP.result = [];
 
+
             updateResultCounter(0);
+
+            updateSelectedResultCount();
 
             return;
 
@@ -2797,24 +2837,18 @@ async function loadResults() {
 
         /*
          * =================================================
-         * RESULT FIX #2
+         * RESULT FIX
          * =================================================
          *
-         * IMPORTANT:
-         *
-         * If API returns:
+         * Supports:
          *
          * response.data = [...]
          *
-         * use response.data.
-         *
-         * If API returns:
+         * OR:
          *
          * response[0]
          * response[1]
          * response[2]
-         *
-         * use the root response.
          */
 
         APP.result =
@@ -2835,6 +2869,8 @@ async function loadResults() {
 
             table.innerHTML =
                 "<p>No result found.</p>";
+
+            updateSelectedResultCount();
 
             return;
 
@@ -2859,6 +2895,9 @@ async function loadResults() {
         updateResultCounter(0);
 
 
+        updateSelectedResultCount();
+
+
         table.innerHTML =
             "<p style='color:red'>" +
             escapeHTML(
@@ -2873,7 +2912,7 @@ async function loadResults() {
 
 
 /* =====================================================
-   RENDER RESULT LIST
+RENDER RESULT LIST
 ===================================================== */
 
 function renderResultList() {
@@ -2899,6 +2938,8 @@ function renderResultList() {
         table.innerHTML =
             "<p>No result found.</p>";
 
+        updateSelectedResultCount();
+
         return;
 
     }
@@ -2914,6 +2955,14 @@ function renderResultList() {
             <thead>
 
                 <tr>
+
+                    <th>
+                        <input
+                            type="checkbox"
+                            id="selectAllResultsCheckbox"
+                            onchange="toggleAllResults(this)"
+                        >
+                    </th>
 
                     <th>
                         No
@@ -2973,13 +3022,6 @@ function renderResultList() {
 
             /*
              * Score compatibility.
-             *
-             * Current backend normally provides:
-             *
-             * score
-             *
-             * Additional aliases are supported
-             * without changing backend.
              */
 
             const score =
@@ -3018,9 +3060,32 @@ function renderResultList() {
                 "-";
 
 
+            const safeResultId =
+                escapeAttribute(
+                    resultId
+                );
+
+
             html += `
 
                 <tr>
+
+                    <td style="text-align:center;">
+
+                        ${
+                            resultId !== "-"
+                                ? `
+                                    <input
+                                        type="checkbox"
+                                        class="result-checkbox"
+                                        value="${safeResultId}"
+                                        onchange="updateSelectedResultCount()"
+                                    >
+                                  `
+                                : ""
+                        }
+
+                    </td>
 
                     <td>
                         ${i + 1}
@@ -3086,14 +3151,20 @@ function renderResultList() {
 
                     <td>
 
-                        <button
-                            type="button"
-                            class="btn delete"
-                            onclick="deleteResult('${escapeAttribute(resultId)}')">
+                        ${
+                            resultId !== "-"
+                                ? `
+                                    <button
+                                        type="button"
+                                        class="btn delete"
+                                        onclick="deleteResult('${safeResultId}')">
 
-                            Delete
+                                        Delete
 
-                        </button>
+                                    </button>
+                                  `
+                                : ""
+                        }
 
                     </td>
 
@@ -3117,16 +3188,458 @@ function renderResultList() {
     table.innerHTML =
         html;
 
+
+    updateSelectedResultCount();
+
 }
 
 
 /* =====================================================
-   DELETE RESULT
+TOGGLE ALL RESULTS
+===================================================== */
+
+function toggleAllResults(masterCheckbox) {
+
+    const checked =
+        Boolean(
+            masterCheckbox &&
+            masterCheckbox.checked
+        );
+
+
+    document
+        .querySelectorAll(
+            "#resultTable .result-checkbox"
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.checked =
+                    checked;
+
+            }
+        );
+
+
+    updateSelectedResultCount();
+
+}
+
+
+/* =====================================================
+SELECT ALL RESULTS
+===================================================== */
+
+function selectAllResults() {
+
+    const checkboxes =
+        document.querySelectorAll(
+            "#resultTable .result-checkbox"
+        );
+
+
+    if (
+        !checkboxes.length
+    ) {
+
+        alert(
+            "No result available."
+        );
+
+        return;
+
+    }
+
+
+    checkboxes.forEach(
+        checkbox => {
+
+            checkbox.checked =
+                true;
+
+        }
+    );
+
+
+    const master =
+        document.getElementById(
+            "selectAllResultsCheckbox"
+        );
+
+
+    if (master) {
+
+        master.checked =
+            true;
+
+        master.indeterminate =
+            false;
+
+    }
+
+
+    updateSelectedResultCount();
+
+}
+
+
+/* =====================================================
+GET SELECTED RESULT IDS
+===================================================== */
+
+function getSelectedResultIds() {
+
+    return Array.from(
+        document.querySelectorAll(
+            "#resultTable .result-checkbox:checked"
+        )
+    )
+
+    .map(
+        checkbox =>
+            String(
+                checkbox.value
+            ).trim()
+    )
+
+    .filter(
+        id =>
+            id !== ""
+    );
+
+}
+
+
+/* =====================================================
+UPDATE SELECTED RESULT COUNT
+===================================================== */
+
+function updateSelectedResultCount() {
+
+    const selected =
+        getSelectedResultIds();
+
+
+    const counter =
+        document.getElementById(
+            "selectedResultCount"
+        );
+
+
+    if (counter) {
+
+        counter.textContent =
+            selected.length +
+            " selected";
+
+    }
+
+
+    const checkboxes =
+        document.querySelectorAll(
+            "#resultTable .result-checkbox"
+        );
+
+
+    const master =
+        document.getElementById(
+            "selectAllResultsCheckbox"
+        );
+
+
+    if (
+        master &&
+        checkboxes.length > 0
+    ) {
+
+        const checkedCount =
+            Array.from(
+                checkboxes
+            )
+            .filter(
+                checkbox =>
+                    checkbox.checked
+            )
+            .length;
+
+
+        master.checked =
+            checkedCount ===
+            checkboxes.length;
+
+
+        master.indeterminate =
+            checkedCount > 0 &&
+            checkedCount <
+                checkboxes.length;
+
+    }
+
+}
+
+
+/* =====================================================
+DELETE SELECTED RESULTS
+===================================================== */
+
+async function deleteSelectedResults() {
+
+    const ids =
+        getSelectedResultIds();
+
+
+    if (
+        ids.length === 0
+    ) {
+
+        alert(
+            "Please select at least one result."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Delete " +
+            ids.length +
+            " selected result(s)?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        console.log(
+            "DELETE SELECTED RESULT IDS:",
+            ids
+        );
+
+
+        const res =
+            await apiDeleteResults({
+
+                ids: ids
+
+            });
+
+
+        console.log(
+            "DELETE SELECTED RESULT RESPONSE:",
+            res
+        );
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : ids.length +
+                  " result(s) deleted."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        await loadResults();
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE SELECTED RESULTS ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete selected results."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+DELETE ALL RESULTS
+===================================================== */
+
+async function deleteAllResults() {
+
+    /*
+     * Get all IDs from current APP.result.
+     *
+     * We intentionally use Result IDs,
+     * not spreadsheet row numbers.
+     */
+
+    const ids =
+        APP.result
+
+            .map(
+                result =>
+                    result.id ??
+                    result.resultId ??
+                    ""
+            )
+
+            .map(
+                id =>
+                    String(id).trim()
+            )
+
+            .filter(
+                id =>
+                    id !== ""
+            );
+
+
+    if (
+        ids.length === 0
+    ) {
+
+        alert(
+            "No result available to delete."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "WARNING!\n\n" +
+            "This will delete ALL " +
+            ids.length +
+            " speaking result(s).\n\n" +
+            "This action cannot be undone.\n\n" +
+            "Continue?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    /*
+     * Second confirmation.
+     *
+     * Delete All is intentionally protected
+     * against accidental clicks.
+     */
+
+    const finalConfirmed =
+        confirm(
+            "Are you absolutely sure you want to DELETE ALL RESULTS?"
+        );
+
+
+    if (!finalConfirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        console.log(
+            "DELETE ALL RESULT IDS:",
+            ids
+        );
+
+
+        const res =
+            await apiDeleteResults({
+
+                ids: ids
+
+            });
+
+
+        console.log(
+            "DELETE ALL RESULT RESPONSE:",
+            res
+        );
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "All results deleted."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        await loadResults();
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE ALL RESULTS ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete all results."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+DELETE SINGLE RESULT
 ===================================================== */
 
 async function deleteResult(id) {
 
-    if (!id || id === "-") {
+    if (
+        !id ||
+        id === "-"
+    ) {
 
         alert(
             "Result ID is not available."
@@ -3156,6 +3669,12 @@ async function deleteResult(id) {
                 id: id
 
             });
+
+
+        console.log(
+            "DELETE RESULT RESPONSE:",
+            res
+        );
 
 
         alert(
@@ -3201,7 +3720,7 @@ async function deleteResult(id) {
 
 
 /* =====================================================
-   SEARCH RESULT
+SEARCH RESULT
 ===================================================== */
 
 function filterResult() {
@@ -3244,7 +3763,7 @@ function filterResult() {
 
 
 /* =====================================================
-   DASHBOARD COUNTERS
+DASHBOARD COUNTERS
 ===================================================== */
 
 function updateQuestionCounter(total) {
@@ -3380,7 +3899,7 @@ function updateResultCounter(total) {
 
 
 /* =====================================================
-   ESCAPE HTML
+ESCAPE HTML
 ===================================================== */
 
 function escapeHTML(value) {
@@ -3426,7 +3945,7 @@ function escapeHTML(value) {
 
 
 /* =====================================================
-   ESCAPE ATTRIBUTE
+ESCAPE ATTRIBUTE
 ===================================================== */
 
 function escapeAttribute(value) {
@@ -3462,7 +3981,7 @@ function escapeAttribute(value) {
 
 
 /* =====================================================
-   FORMAT DATE
+FORMAT DATE
 ===================================================== */
 
 function formatDate(value) {
@@ -3499,5 +4018,5 @@ function formatDate(value) {
 
 
 /* =====================================================
-   END OF FILE
+END OF FILE
 ===================================================== */
