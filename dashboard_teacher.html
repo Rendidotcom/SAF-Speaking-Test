@@ -27,9 +27,10 @@
 /* =========================================================
    SAF SPEAKING ONLINE TEST
    TEACHER DASHBOARD
-   UI REFINEMENT ONLY
-   NO JAVASCRIPT / API / BACKEND CHANGES
+   UI REFINEMENT
+   COMPATIBLE WITH TEACHER.JS V7.2
 ========================================================= */
+
 
 /* =========================================================
    RESET
@@ -60,6 +61,7 @@ body {
 
 }
 
+
 /* =========================================================
    DASHBOARD LAYOUT
 ========================================================= */
@@ -71,6 +73,7 @@ body {
     min-height: 100vh;
 
 }
+
 
 /* =========================================================
    SIDEBAR
@@ -102,7 +105,10 @@ body {
 
 }
 
-/* LOGO */
+
+/* =========================================================
+   LOGO
+========================================================= */
 
 .sidebar img {
 
@@ -116,7 +122,10 @@ body {
 
 }
 
-/* TITLE */
+
+/* =========================================================
+   TITLE
+========================================================= */
 
 .sidebar h2 {
 
@@ -132,7 +141,10 @@ body {
 
 }
 
-/* SUBTITLE */
+
+/* =========================================================
+   SUBTITLE
+========================================================= */
 
 .sidebar p {
 
@@ -145,6 +157,7 @@ body {
     margin-bottom: 28px;
 
 }
+
 
 /* =========================================================
    MENU
@@ -187,7 +200,10 @@ body {
 
 }
 
-/* HOVER */
+
+/* =========================================================
+   MENU HOVER
+========================================================= */
 
 .menu a:hover {
 
@@ -199,7 +215,18 @@ body {
 
 }
 
-/* ACTIVE-LIKE FIRST MENU */
+
+/* =========================================================
+   ACTIVE MENU
+========================================================= */
+
+.menu a.active {
+
+    background: #edf5ff;
+
+    color: #1769aa;
+
+}
 
 .menu a[data-page="dashboard"] {
 
@@ -208,6 +235,7 @@ body {
     color: #1769aa;
 
 }
+
 
 /* =========================================================
    MAIN
@@ -222,6 +250,7 @@ body {
     padding: 34px 38px 45px 38px;
 
 }
+
 
 /* =========================================================
    HEADER
@@ -265,6 +294,7 @@ body {
 
 }
 
+
 /* =========================================================
    STATISTIC CARDS
 ========================================================= */
@@ -283,7 +313,10 @@ body {
 
 }
 
-/* CARD */
+
+/* =========================================================
+   CARD
+========================================================= */
 
 .card-box {
 
@@ -306,8 +339,6 @@ body {
 
 }
 
-/* HOVER */
-
 .card-box:hover {
 
     transform: translateY(-2px);
@@ -320,7 +351,10 @@ body {
 
 }
 
-/* CARD TITLE */
+
+/* =========================================================
+   CARD TITLE
+========================================================= */
 
 .card-box h3 {
 
@@ -334,7 +368,10 @@ body {
 
 }
 
-/* NUMBER */
+
+/* =========================================================
+   NUMBER
+========================================================= */
 
 .number {
 
@@ -347,6 +384,7 @@ body {
     color: #1769aa;
 
 }
+
 
 /* =========================================================
    CONTENT AREA
@@ -372,7 +410,10 @@ body {
 
 }
 
-/* CONTENT HEADINGS */
+
+/* =========================================================
+   CONTENT HEADINGS
+========================================================= */
 
 .content h2 {
 
@@ -390,13 +431,12 @@ body {
 
 }
 
-/* CONTENT PARAGRAPH */
-
 .content p {
 
     color: #68798a;
 
 }
+
 
 /* =========================================================
    BUTTONS
@@ -429,8 +469,6 @@ body {
 
 }
 
-/* GENERAL BUTTON HOVER */
-
 .btn:hover {
 
     background: #f4f7fa;
@@ -440,8 +478,6 @@ body {
     transform: translateY(-1px);
 
 }
-
-/* TEACHER BUTTON */
 
 .btn.teacher {
 
@@ -457,8 +493,6 @@ body {
 
 }
 
-/* TEACHER BUTTON HOVER */
-
 .btn.teacher:hover {
 
     background: #145c95;
@@ -473,8 +507,6 @@ body {
 
 }
 
-/* DISABLED */
-
 .btn:disabled {
 
     opacity: .55;
@@ -486,6 +518,232 @@ body {
     box-shadow: none;
 
 }
+
+
+/* =========================================================
+   REPORT BUTTONS
+========================================================= */
+
+.report-actions {
+
+    display: flex;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    margin-bottom: 20px;
+
+}
+
+.report-actions .btn {
+
+    min-height: 40px;
+
+}
+
+.report-filter {
+
+    display: flex;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    margin-bottom: 20px;
+
+}
+
+.report-filter select {
+
+    min-width: 190px;
+
+    padding: 10px 12px;
+
+    border:
+        1px solid #d8e0e8;
+
+    border-radius: 9px;
+
+    background: #ffffff;
+
+}
+
+.report-preview {
+
+    width: 100%;
+
+    overflow-x: auto;
+
+    margin-top: 20px;
+
+}
+
+.report-preview table {
+
+    width: 100%;
+
+    min-width: 700px;
+
+    border-collapse: collapse;
+
+}
+
+.report-preview th,
+.report-preview td {
+
+    border:
+        1px solid #e1e7ec;
+
+    padding: 10px;
+
+    text-align: left;
+
+    white-space: nowrap;
+
+}
+
+.report-preview th {
+
+    background: #edf5fa;
+
+    color: #42647d;
+
+}
+
+.report-summary {
+
+    padding: 14px 16px;
+
+    margin-bottom: 18px;
+
+    background: #f1f7fb;
+
+    border-radius: 9px;
+
+    color: #50677a;
+
+    font-weight: 600;
+
+}
+
+
+/* =========================================================
+   RESULT ACTION BAR
+========================================================= */
+
+.result-actions {
+
+    display: flex;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    margin-bottom: 18px;
+
+}
+
+.result-actions .btn {
+
+    min-height: 40px;
+
+}
+
+.result-select-all {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    color: #526477;
+
+    cursor: pointer;
+
+}
+
+.result-select-all input {
+
+    width: 17px;
+
+    height: 17px;
+
+    cursor: pointer;
+
+}
+
+
+/* =========================================================
+   RESULT TABLE CHECKBOX
+========================================================= */
+
+.result-checkbox {
+
+    width: 17px;
+
+    height: 17px;
+
+    cursor: pointer;
+
+}
+
+
+/* =========================================================
+   DELETE BUTTONS
+========================================================= */
+
+.btn-danger {
+
+    background: #ffffff;
+
+    color: #c0392b;
+
+    border-color: #e2b4ae;
+
+}
+
+.btn-danger:hover {
+
+    background: #fff4f2;
+
+    color: #a93226;
+
+    border-color: #d99b94;
+
+}
+
+.btn-danger-solid {
+
+    background: #c0392b;
+
+    color: #ffffff;
+
+    border-color: #c0392b;
+
+}
+
+.btn-danger-solid:hover {
+
+    background: #a93226;
+
+    color: #ffffff;
+
+    border-color: #a93226;
+
+}
+
 
 /* =========================================================
    FORM ELEMENTS
@@ -510,13 +768,15 @@ select:focus {
 
     outline: none;
 
-    border-color: #7fb2d8 !important;
+    border-color:
+        #7fb2d8 !important;
 
     box-shadow:
         0 0 0 3px
         rgba(23, 105, 170, 0.08);
 
 }
+
 
 /* =========================================================
    TABLE
@@ -542,13 +802,15 @@ table td {
 
 }
 
+
 /* =========================================================
    IMPORT STUDENT
 ========================================================= */
 
 .import-box {
 
-    border: 1px dashed #9dbbd3;
+    border:
+        1px dashed #9dbbd3;
 
     background: #f8fbfd;
 
@@ -596,7 +858,8 @@ table td {
 
     background: #ffffff;
 
-    border: 1px solid #d7e0e8;
+    border:
+        1px solid #d7e0e8;
 
     border-radius: 8px;
 
@@ -623,7 +886,8 @@ table td {
 .preview-table th,
 .preview-table td {
 
-    border: 1px solid #e1e7ec;
+    border:
+        1px solid #e1e7ec;
 
     padding: 9px;
 
@@ -655,6 +919,20 @@ table td {
 
 }
 
+
+/* =========================================================
+   REPORT TABLE MOBILE
+========================================================= */
+
+.report-table-wrapper {
+
+    width: 100%;
+
+    overflow-x: auto;
+
+}
+
+
 /* =========================================================
    HR
 ========================================================= */
@@ -663,9 +941,11 @@ hr {
 
     border: 0;
 
-    border-top: 1px solid #e5eaf0;
+    border-top:
+        1px solid #e5eaf0;
 
 }
+
 
 /* =========================================================
    LINKS
@@ -673,9 +953,11 @@ hr {
 
 a {
 
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color:
+        transparent;
 
 }
+
 
 /* =========================================================
    SCROLLBAR
@@ -709,6 +991,7 @@ a {
 
 }
 
+
 /* =========================================================
    RESPONSIVE
 ========================================================= */
@@ -739,6 +1022,7 @@ a {
 
 }
 
+
 @media(max-width: 900px) {
 
     .dashboard {
@@ -759,7 +1043,8 @@ a {
 
         border-right: none;
 
-        border-bottom: 1px solid #e5eaf0;
+        border-bottom:
+            1px solid #e5eaf0;
 
     }
 
@@ -825,6 +1110,7 @@ a {
 
 }
 
+
 @media(max-width: 600px) {
 
     .header {
@@ -883,23 +1169,56 @@ a {
 
     .menu a {
 
-        justify-content: flex-start;
+        justify-content:
+            flex-start;
+
+    }
+
+    .report-actions,
+    .report-filter,
+    .result-actions {
+
+        align-items:
+            stretch;
+
+        flex-direction:
+            column;
+
+    }
+
+    .report-actions .btn,
+    .report-filter .btn,
+    .result-actions .btn {
+
+        width: 100%;
+
+    }
+
+    .report-filter select {
+
+        width: 100%;
+
+        min-width: 0;
 
     }
 
 }
 
+
 /* =========================================================
-   END UI REFINEMENT
+   END
 ========================================================= */
 
 </style>
 
 </head>
 
+
 <body>
 
+
 <div class="dashboard">
+
 
     <!-- =====================================================
          SIDEBAR
@@ -907,20 +1226,25 @@ a {
 
     <aside class="sidebar">
 
+
         <img
             src="images/logo.png"
             alt="SAF Logo"
         >
 
+
         <h2>
             SAF Teacher Panel
         </h2>
+
 
         <p>
             Speaking Online Test
         </p>
 
+
         <nav class="menu">
+
 
             <a
                 href="#"
@@ -929,12 +1253,14 @@ a {
                 🏠 Dashboard
             </a>
 
+
             <a
                 href="#"
                 data-page="question"
             >
                 🎤 Speaking Questions
             </a>
+
 
             <a
                 href="#"
@@ -943,12 +1269,14 @@ a {
                 👨‍🎓 Students
             </a>
 
+
             <a
                 href="#"
                 data-page="token"
             >
                 🔑 Exam Token
             </a>
+
 
             <a
                 href="#"
@@ -957,19 +1285,38 @@ a {
                 📊 Speaking Results
             </a>
 
-            <a href="#">
+
+            <!-- =================================================
+                 REPORTS
+                 IMPORTANT:
+                 data-page="reports"
+                 ================================================= -->
+
+            <a
+                href="#"
+                data-page="reports"
+            >
                 📄 Reports
             </a>
 
-            <a href="#">
+
+            <a
+                href="#"
+                data-page="settings"
+            >
                 ⚙ Settings
             </a>
 
-            <a href="index.html">
+
+            <a
+                href="index.html"
+            >
                 🚪 Logout
             </a>
 
+
         </nav>
+
 
     </aside>
 
@@ -980,13 +1327,21 @@ a {
 
     <main class="main">
 
+
+        <!-- =================================================
+             HEADER
+        ================================================== -->
+
         <div class="header">
 
+
             <div>
+
 
                 <h1>
                     Welcome Back, Teacher 👋
                 </h1>
+
 
                 <p>
 
@@ -1000,7 +1355,9 @@ a {
 
                 </p>
 
+
             </div>
+
 
         </div>
 
@@ -1011,11 +1368,14 @@ a {
 
         <section class="cards">
 
+
             <div class="card-box">
+
 
                 <h3>
                     Total Questions
                 </h3>
+
 
                 <div
                     class="number"
@@ -1024,14 +1384,17 @@ a {
                     0
                 </div>
 
+
             </div>
 
 
             <div class="card-box">
 
+
                 <h3>
                     Total Students
                 </h3>
+
 
                 <div
                     class="number"
@@ -1040,14 +1403,17 @@ a {
                     0
                 </div>
 
+
             </div>
 
 
             <div class="card-box">
 
+
                 <h3>
                     Exam Token
                 </h3>
+
 
                 <div
                     class="number"
@@ -1056,14 +1422,17 @@ a {
                     -
                 </div>
 
+
             </div>
 
 
             <div class="card-box">
 
+
                 <h3>
                     Speaking Results
                 </h3>
+
 
                 <div
                     class="number"
@@ -1072,37 +1441,57 @@ a {
                     0
                 </div>
 
+
             </div>
+
 
         </section>
 
 
         <!-- =================================================
-             CONTENT
-        ================================================== -->
+             DYNAMIC CONTENT
+             
+             teacher.js v7.2 akan menggunakan container
+             ini untuk:
+             
+             Dashboard
+             Questions
+             Students
+             Token
+             Speaking Results
+             Reports
+             
+             ================================================== -->
 
         <section
             class="content"
             id="content"
         >
 
+
             <h2>
                 Dashboard Ready
             </h2>
 
+
             <br>
+
 
             <p>
                 Welcome to the SAF Speaking Online Test Teacher Dashboard.
             </p>
 
+
             <br>
+
 
             <p>
                 This dashboard allows teachers to manage:
             </p>
 
+
             <br>
+
 
             <ul
                 style="
@@ -1112,39 +1501,51 @@ a {
                 "
             >
 
+
                 <li>
                     Speaking Question Database
                 </li>
+
 
                 <li>
                     Student Management
                 </li>
 
+
                 <li>
                     Exam Token
                 </li>
+
 
                 <li>
                     Speaking Results
                 </li>
 
+
                 <li>
-                    Reports
+                    Reports &amp; Excel Export
                 </li>
+
 
             </ul>
 
+
             <br>
+
 
             <hr>
 
+
             <br>
+
 
             <h3>
                 Quick Actions
             </h3>
 
+
             <br>
+
 
             <button
                 class="btn teacher"
@@ -1153,29 +1554,39 @@ a {
                 ➕ Add Speaking Question
             </button>
 
+
         </section>
 
+
     </main>
+
 
 </div>
 
 
 <!-- =========================================================
-     EXISTING CONFIG
+     CONFIG
 ========================================================= -->
 
 <script src="js/config.js"></script>
 
 
 <!-- =========================================================
-     EXISTING API
+     API
 ========================================================= -->
 
 <script src="js/api.js"></script>
 
 
 <!-- =========================================================
-     SHEETJS FOR XLSX / XLS / CSV
+     SHEETJS
+     
+     Digunakan oleh teacher.js v7.2 untuk:
+     
+     - Export Excel
+     - XLSX workbook
+     - Preview/export report
+     
 ========================================================= -->
 
 <script
@@ -1184,11 +1595,33 @@ a {
 
 
 <!-- =========================================================
-     TEACHER
+     TEACHER.JS V7.2
+     
+     Semua logic:
+     
+     - Dashboard
+     - Questions
+     - Students
+     - Token
+     - Speaking Results
+     - Checkbox
+     - Select All
+     - Delete Selected
+     - Delete All
+     - Reports
+     - Filter Kelas
+     - Preview Report
+     - Export Excel
+     
+     berada di teacher.js
 ========================================================= -->
 
 <script src="js/teacher.js"></script>
 
+
+<!-- =========================================================
+     DATE
+========================================================= -->
 
 <script>
 
@@ -1234,6 +1667,7 @@ a {
 })();
 
 </script>
+
 
 </body>
 
