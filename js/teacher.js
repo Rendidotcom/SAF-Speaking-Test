@@ -3,7 +3,7 @@
  * SAF Speaking Online Test
  * Teacher Dashboard Controller
  *
- * Stable Foundation v4.3
+ * STABLE FOUNDATION
  *
  * MODULE:
  * - Dashboard
@@ -13,10 +13,14 @@
  * - Token Management
  * - Result Management
  *
- * Backend:
- * - api.js
+ * BACKEND:
+ * api.js
+ *
+ * IMPORTANT:
+ * Do not change API architecture from this file.
  * =========================================================
  */
+
 
 /* =========================================================
 GLOBAL STATE
@@ -35,7 +39,9 @@ INITIALIZE
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", function () {
+
     initializeTeacherDashboard();
+
 });
 
 
@@ -149,11 +155,8 @@ function updateTodayDate() {
     const options = {
 
         weekday: "long",
-
         year: "numeric",
-
         month: "long",
-
         day: "numeric"
 
     };
@@ -169,7 +172,7 @@ function updateTodayDate() {
 
 
 /* =========================================================
-CONTENT HELPER
+CONTENT
 ========================================================= */
 
 function getContentElement() {
@@ -195,7 +198,9 @@ async function loadDashboardPage() {
 
     content.innerHTML = `
 
-        <h2>Dashboard Ready</h2>
+        <h2>
+            Dashboard Ready
+        </h2>
 
         <br>
 
@@ -217,7 +222,9 @@ async function loadDashboardPage() {
 
         <br>
 
-        <h3>Quick Actions</h3>
+        <h3>
+            Quick Actions
+        </h3>
 
         <br>
 
@@ -483,56 +490,26 @@ function showQuestionForm(question = null) {
         question !== null;
 
 
-    /*
-     * Support backend field names:
-     *
-     * title
-     * answer
-     * difficulty
-     * duration
-     *
-     * Also tolerate old frontend names:
-     *
-     * question
-     * answerKey
-     */
-
-    const titleValue =
-        question
-            ? (
-                question.title ??
-                question.question ??
-                ""
-            )
-            : "";
+    const title =
+        question?.title ||
+        question?.questionTitle ||
+        "";
 
 
-    const answerValue =
-        question
-            ? (
-                question.answer ??
-                question.answerKey ??
-                ""
-            )
-            : "";
+    const answer =
+        question?.answer ||
+        question?.answerKey ||
+        "";
 
 
-    const difficultyValue =
-        question
-            ? (
-                question.difficulty ??
-                "Easy"
-            )
-            : "Easy";
+    const difficulty =
+        question?.difficulty ||
+        "Easy";
 
 
-    const durationValue =
-        question
-            ? (
-                question.duration ??
-                30
-            )
-            : 30;
+    const duration =
+        question?.duration ??
+        30;
 
 
     area.innerHTML = `
@@ -540,15 +517,16 @@ function showQuestionForm(question = null) {
         <div class="card-box">
 
             <h3>
+
                 ${
                     editing
                     ? "Edit Speaking Question"
                     : "Add Speaking Question"
                 }
+
             </h3>
 
             <br>
-
 
             <label>
                 Title
@@ -557,37 +535,46 @@ function showQuestionForm(question = null) {
             <input
                 id="questionTitle"
                 type="text"
-                value="${escapeAttribute(titleValue)}"
-                placeholder="Contoh: Greeting"
+                value="${escapeAttribute(title)}"
+                placeholder="Contoh: Unit 1 Classmate"
                 style="${inputStyle}"
             >
 
+            <br><br>
+
+            <label>
+                Question
+            </label>
+
+            <textarea
+                id="questionText"
+                rows="4"
+                style="${textareaStyle}"
+                placeholder="Enter speaking question..."
+            >${
+                editing
+                ? escapeHtml(
+                    question.question || ""
+                )
+                : ""
+            }</textarea>
 
             <br><br>
 
-
             <label>
-                Answer
+                Answer Key
             </label>
 
             <textarea
                 id="answerKey"
-                rows="5"
-                style="
-                    width:100%;
-                    padding:12px;
-                    margin-top:8px;
-                    border:1px solid #ddd;
-                    border-radius:8px;
-                    resize:vertical;
-                    font-size:15px;
-                "
+                rows="4"
+                style="${textareaStyle}"
                 placeholder="Enter answer key..."
-            >${escapeHtml(answerValue)}</textarea>
-
+            >${
+                escapeHtml(answer)
+            }</textarea>
 
             <br><br>
-
 
             <label>
                 Difficulty
@@ -600,47 +587,36 @@ function showQuestionForm(question = null) {
                 <option
                     value="Easy"
                     ${
-                        String(difficultyValue)
-                            .toLowerCase() === "easy"
+                        difficulty === "Easy"
                         ? "selected"
                         : ""
                     }>
-
                     Easy
-
                 </option>
 
                 <option
                     value="Medium"
                     ${
-                        String(difficultyValue)
-                            .toLowerCase() === "medium"
+                        difficulty === "Medium"
                         ? "selected"
                         : ""
                     }>
-
                     Medium
-
                 </option>
 
                 <option
                     value="Hard"
                     ${
-                        String(difficultyValue)
-                            .toLowerCase() === "hard"
+                        difficulty === "Hard"
                         ? "selected"
                         : ""
                     }>
-
                     Hard
-
                 </option>
 
             </select>
 
-
             <br><br>
-
 
             <label>
                 Duration (seconds)
@@ -650,15 +626,12 @@ function showQuestionForm(question = null) {
                 id="questionDuration"
                 type="number"
                 min="1"
-                step="1"
-                value="${escapeAttribute(durationValue)}"
+                value="${escapeAttribute(duration)}"
                 placeholder="30"
                 style="${inputStyle}"
             >
 
-
             <br><br>
-
 
             <div style="
                 display:flex;
@@ -678,7 +651,6 @@ function showQuestionForm(question = null) {
 
                 </button>
 
-
                 <button
                     class="btn"
                     onclick="renderQuestionList()">
@@ -688,7 +660,6 @@ function showQuestionForm(question = null) {
                 </button>
 
             </div>
-
 
             <div
                 id="questionMessage"
@@ -703,59 +674,60 @@ function showQuestionForm(question = null) {
 
 
 /* =========================================================
-GET QUESTION FORM DATA
+QUESTION FORM DATA
 ========================================================= */
 
 function getQuestionFormData() {
 
-    const title =
-        document
-            .getElementById(
-                "questionTitle"
-            )
-            ?.value
-            .trim() || "";
-
-
-    const answer =
-        document
-            .getElementById(
-                "answerKey"
-            )
-            ?.value
-            .trim() || "";
-
-
-    const difficulty =
-        document
-            .getElementById(
-                "questionDifficulty"
-            )
-            ?.value || "Easy";
-
-
-    const duration =
-        document
-            .getElementById(
-                "questionDuration"
-            )
-            ?.value
-            .trim() || "30";
-
-
     return {
 
         title:
-            title,
+            document
+                .getElementById(
+                    "questionTitle"
+                )
+                ?.value
+                .trim() || "",
+
+        question:
+            document
+                .getElementById(
+                    "questionText"
+                )
+                ?.value
+                .trim() || "",
+
+        answerKey:
+            document
+                .getElementById(
+                    "answerKey"
+                )
+                ?.value
+                .trim() || "",
 
         answer:
-            answer,
+            document
+                .getElementById(
+                    "answerKey"
+                )
+                ?.value
+                .trim() || "",
 
         difficulty:
-            difficulty,
+            document
+                .getElementById(
+                    "questionDifficulty"
+                )
+                ?.value || "Easy",
 
         duration:
-            Number(duration)
+            Number(
+                document
+                    .getElementById(
+                        "questionDuration"
+                    )
+                    ?.value || 30
+            )
 
     };
 
@@ -785,11 +757,11 @@ async function submitQuestionInsert() {
     }
 
 
-    if (!data.answer) {
+    if (!data.question) {
 
         showMessage(
             "questionMessage",
-            "Answer wajib diisi.",
+            "Question wajib diisi.",
             "error"
         );
 
@@ -798,14 +770,11 @@ async function submitQuestionInsert() {
     }
 
 
-    if (
-        !data.duration ||
-        data.duration <= 0
-    ) {
+    if (!data.answerKey) {
 
         showMessage(
             "questionMessage",
-            "Duration harus lebih dari 0 detik.",
+            "Answer Key wajib diisi.",
             "error"
         );
 
@@ -815,21 +784,9 @@ async function submitQuestionInsert() {
 
 
     const result =
-        await apiInsertQuestion({
-
-            title:
-                data.title,
-
-            answer:
-                data.answer,
-
-            difficulty:
-                data.difficulty,
-
-            duration:
-                data.duration
-
-        });
+        await apiInsertQuestion(
+            data
+        );
 
 
     if (
@@ -837,11 +794,9 @@ async function submitQuestionInsert() {
         result.success
     ) {
 
-        showMessage(
-            "questionMessage",
+        alert(
             result.message ||
-            "Question berhasil ditambahkan.",
-            "success"
+            "Question berhasil ditambahkan."
         );
 
 
@@ -875,19 +830,6 @@ async function submitQuestionUpdate(id) {
         getQuestionFormData();
 
 
-    if (!id) {
-
-        showMessage(
-            "questionMessage",
-            "Question ID tidak ditemukan.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
     if (!data.title) {
 
         showMessage(
@@ -901,11 +843,11 @@ async function submitQuestionUpdate(id) {
     }
 
 
-    if (!data.answer) {
+    if (!data.question) {
 
         showMessage(
             "questionMessage",
-            "Answer wajib diisi.",
+            "Question wajib diisi.",
             "error"
         );
 
@@ -914,41 +856,27 @@ async function submitQuestionUpdate(id) {
     }
 
 
-    if (
-        !data.duration ||
-        data.duration <= 0
-    ) {
+    if (!data.answerKey) {
 
         showMessage(
             "questionMessage",
-            "Duration harus lebih dari 0 detik.",
+            "Answer Key wajib diisi.",
             "error"
         );
 
         return;
 
     }
+
+
+    data.id =
+        id;
 
 
     const result =
-        await apiUpdateQuestion({
-
-            id:
-                id,
-
-            title:
-                data.title,
-
-            answer:
-                data.answer,
-
-            difficulty:
-                data.difficulty,
-
-            duration:
-                data.duration
-
-        });
+        await apiUpdateQuestion(
+            data
+        );
 
 
     if (
@@ -1071,7 +999,7 @@ async function renderQuestionList() {
             <table style="
                 width:100%;
                 border-collapse:collapse;
-                min-width:850px;
+                min-width:900px;
             ">
 
                 <thead>
@@ -1115,19 +1043,19 @@ async function renderQuestionList() {
         function (item, index) {
 
             const title =
-                item.title ??
-                item.question ??
+                item.title ||
+                item.questionTitle ||
                 "";
 
 
             const answer =
-                item.answer ??
-                item.answerKey ??
+                item.answer ||
+                item.answerKey ||
                 "";
 
 
             const difficulty =
-                item.difficulty ??
+                item.difficulty ||
                 "";
 
 
@@ -1157,8 +1085,11 @@ async function renderQuestionList() {
                     </td>
 
                     <td style="${tableCellStyle}">
-                        ${escapeHtml(String(duration))}
-                        sec
+                        ${escapeHtml(
+                            duration === ""
+                            ? ""
+                            : String(duration) + " sec"
+                        )}
                     </td>
 
                     <td style="${tableCellStyle}">
@@ -1398,90 +1329,92 @@ function showStudentForm(student = null) {
 
             <br>
 
-            <label>
-                NIS
-            </label>
+            <label>NIS</label>
 
             <input
                 id="studentNis"
                 type="text"
-                value="${editing
+                value="${
+                    editing
                     ? escapeAttribute(student.nis || "")
-                    : ""}"
-                ${editing ? "readonly" : ""}
+                    : ""
+                }"
+                ${
+                    editing
+                    ? "readonly"
+                    : ""
+                }
                 placeholder="NIS"
                 style="${inputStyle}"
             >
 
             <br><br>
 
-            <label>
-                Nama
-            </label>
+            <label>Nama</label>
 
             <input
                 id="studentNama"
                 type="text"
-                value="${editing
+                value="${
+                    editing
                     ? escapeAttribute(student.nama || "")
-                    : ""}"
+                    : ""
+                }"
                 placeholder="Nama siswa"
                 style="${inputStyle}"
             >
 
             <br><br>
 
-            <label>
-                Kelas
-            </label>
+            <label>Kelas</label>
 
             <input
                 id="studentKelas"
                 type="text"
-                value="${editing
+                value="${
+                    editing
                     ? escapeAttribute(student.kelas || "")
-                    : ""}"
+                    : ""
+                }"
                 placeholder="Contoh: 7A"
                 style="${inputStyle}"
             >
 
             <br><br>
 
-            <label>
-                Username
-            </label>
+            <label>Username</label>
 
             <input
                 id="studentUsername"
                 type="text"
-                value="${editing
+                value="${
+                    editing
                     ? escapeAttribute(student.username || "")
-                    : ""}"
+                    : ""
+                }"
                 placeholder="Username"
                 style="${inputStyle}"
             >
 
             <br><br>
 
-            <label>
-                Password
-            </label>
+            <label>Password</label>
 
             <input
                 id="studentPassword"
                 type="text"
-                value="${editing
+                value="${
+                    editing
                     ? escapeAttribute(student.password || "")
-                    : ""}"
+                    : ""
+                }"
                 placeholder="Password"
                 style="${inputStyle}"
             >
 
             <br><br>
 
-            <label>
-                Status
-            </label>
+            <label>Status</label>
 
             <select
                 id="studentStatus"
@@ -1489,28 +1422,24 @@ function showStudentForm(student = null) {
 
                 <option
                     value="ACTIVE"
-                    ${(
+                    ${
                         !editing ||
                         student.status === "ACTIVE"
-                    )
-                    ? "selected"
-                    : ""}>
-
+                        ? "selected"
+                        : ""
+                    }>
                     ACTIVE
-
                 </option>
 
                 <option
                     value="INACTIVE"
-                    ${(
+                    ${
                         editing &&
                         student.status === "INACTIVE"
-                    )
-                    ? "selected"
-                    : ""}>
-
+                        ? "selected"
+                        : ""
+                    }>
                     INACTIVE
-
                 </option>
 
             </select>
@@ -1553,6 +1482,67 @@ function showStudentForm(student = null) {
         </div>
 
     `;
+
+}
+
+
+/* =========================================================
+STUDENT FORM DATA
+========================================================= */
+
+function getStudentFormData() {
+
+    return {
+
+        nis:
+            document
+                .getElementById(
+                    "studentNis"
+                )
+                ?.value
+                .trim() || "",
+
+        nama:
+            document
+                .getElementById(
+                    "studentNama"
+                )
+                ?.value
+                .trim() || "",
+
+        kelas:
+            document
+                .getElementById(
+                    "studentKelas"
+                )
+                ?.value
+                .trim() || "",
+
+        username:
+            document
+                .getElementById(
+                    "studentUsername"
+                )
+                ?.value
+                .trim() || "",
+
+        password:
+            document
+                .getElementById(
+                    "studentPassword"
+                )
+                ?.value
+                .trim() || "",
+
+        status:
+            document
+                .getElementById(
+                    "studentStatus"
+                )
+                ?.value ||
+                "ACTIVE"
+
+    };
 
 }
 
@@ -1631,72 +1621,10 @@ async function submitStudentInsert() {
 
 
 /* =========================================================
-GET STUDENT FORM DATA
-========================================================= */
-
-function getStudentFormData() {
-
-    return {
-
-        nis:
-            document
-                .getElementById(
-                    "studentNis"
-                )
-                ?.value
-                .trim() || "",
-
-        nama:
-            document
-                .getElementById(
-                    "studentNama"
-                )
-                ?.value
-                .trim() || "",
-
-        kelas:
-            document
-                .getElementById(
-                    "studentKelas"
-                )
-                ?.value
-                .trim() || "",
-
-        username:
-            document
-                .getElementById(
-                    "studentUsername"
-                )
-                ?.value
-                .trim() || "",
-
-        password:
-            document
-                .getElementById(
-                    "studentPassword"
-                )
-                ?.value
-                .trim() || "",
-
-        status:
-            document
-                .getElementById(
-                    "studentStatus"
-                )
-                ?.value || "ACTIVE"
-
-    };
-
-}
-
-
-/* =========================================================
 UPDATE STUDENT
 ========================================================= */
 
-async function submitStudentUpdate(
-    nis
-) {
+async function submitStudentUpdate(nis) {
 
     const data =
         getStudentFormData();
@@ -1872,9 +1800,7 @@ async function renderStudentList() {
 
         </div>
 
-        <div style="
-            overflow-x:auto;
-        ">
+        <div style="overflow-x:auto;">
 
             <table style="
                 width:100%;
@@ -1928,7 +1854,8 @@ async function renderStudentList() {
 
             const status =
                 String(
-                    student.status || "ACTIVE"
+                    student.status ||
+                    "ACTIVE"
                 ).toUpperCase();
 
 
@@ -1967,9 +1894,7 @@ async function renderStudentList() {
                     </td>
 
                     <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            status
-                        )}
+                        ${escapeHtml(status)}
                     </td>
 
                     <td style="${tableCellStyle}">
@@ -2040,9 +1965,7 @@ function editStudent(index) {
 DELETE STUDENT
 ========================================================= */
 
-async function deleteStudentByIndex(
-    index
-) {
+async function deleteStudentByIndex(index) {
 
     const student =
         teacherStudents[index];
@@ -2056,15 +1979,13 @@ async function deleteStudentByIndex(
         );
 
 
-    const confirmed =
-        confirm(
+    if (
+        !confirm(
             "Hapus student dengan NIS " +
             nis +
             "?"
-        );
-
-
-    if (!confirmed) return;
+        )
+    ) return;
 
 
     const result =
@@ -2155,39 +2076,6 @@ function showCSVImport() {
                     7001,Ahmad Fauzan,7A,ahmad,123456,ACTIVE
                 </code>
 
-                <br>
-
-                <code>
-                    7002,Budi Santoso,7A,budi,123456,ACTIVE
-                </code>
-
-            </div>
-
-            <br>
-
-            <div style="
-                background:#fff8e1;
-                border-left:4px solid #f0ad00;
-                padding:12px;
-                border-radius:6px;
-            ">
-
-                <strong>Catatan:</strong>
-
-                <br>
-
-                NIS harus berada pada kolom
-                <strong>nis</strong>.
-
-                <br>
-
-                Jangan menghapus header CSV.
-
-                <br>
-
-                Password akan disimpan sesuai
-                data CSV.
-
             </div>
 
             <br>
@@ -2196,12 +2084,7 @@ function showCSVImport() {
                 id="studentCSVFile"
                 type="file"
                 accept=".csv,text/csv"
-                style="
-                    width:100%;
-                    padding:12px;
-                    border:1px solid #ddd;
-                    border-radius:8px;
-                "
+                style="${inputStyle}"
             >
 
             <br><br>
@@ -2243,7 +2126,7 @@ function showCSVImport() {
 
 
 /* =========================================================
-PREVIEW CSV
+CSV PREVIEW
 ========================================================= */
 
 function previewStudentCSV() {
@@ -2273,21 +2156,6 @@ function previewStudentCSV() {
         input.files[0];
 
 
-    if (
-        !file.name
-            .toLowerCase()
-            .endsWith(".csv")
-    ) {
-
-        alert(
-            "File harus berformat CSV."
-        );
-
-        return;
-
-    }
-
-
     const reader =
         new FileReader();
 
@@ -2297,13 +2165,9 @@ function previewStudentCSV() {
 
             try {
 
-                const text =
-                    event.target.result;
-
-
                 const result =
                     parseStudentCSV(
-                        text
+                        event.target.result
                     );
 
 
@@ -2371,8 +2235,7 @@ function parseStudentCSV(text) {
 
         return {
 
-            success:
-                false,
+            success:false,
 
             message:
                 "File CSV kosong."
@@ -2402,8 +2265,7 @@ function parseStudentCSV(text) {
 
         return {
 
-            success:
-                false,
+            success:false,
 
             message:
                 "CSV tidak memiliki data student."
@@ -2430,15 +2292,10 @@ function parseStudentCSV(text) {
     const requiredHeaders = [
 
         "nis",
-
         "nama",
-
         "kelas",
-
         "username",
-
         "password",
-
         "status"
 
     ];
@@ -2457,17 +2314,15 @@ function parseStudentCSV(text) {
 
 
     if (
-        missingHeaders.length > 0
+        missingHeaders.length
     ) {
 
         return {
 
-            success:
-                false,
+            success:false,
 
             message:
-                "Header CSV tidak lengkap. " +
-                "Header yang kurang: " +
+                "Header CSV tidak lengkap: " +
                 missingHeaders.join(", ")
 
         };
@@ -2476,8 +2331,6 @@ function parseStudentCSV(text) {
 
 
     const data = [];
-
-    const errors = [];
 
 
     for (
@@ -2500,11 +2353,7 @@ function parseStudentCSV(text) {
 
                 }
             )
-        ) {
-
-            continue;
-
-        }
+        ) continue;
 
 
         const item = {
@@ -2555,30 +2404,10 @@ function parseStudentCSV(text) {
         };
 
 
-        if (!item.nis) {
-
-            errors.push(
-                "Baris " +
-                (i + 1) +
-                ": NIS kosong."
-            );
-
-            continue;
-
-        }
-
-
-        if (!item.nama) {
-
-            errors.push(
-                "Baris " +
-                (i + 1) +
-                ": nama kosong."
-            );
-
-            continue;
-
-        }
+        if (
+            !item.nis ||
+            !item.nama
+        ) continue;
 
 
         data.push(
@@ -2588,17 +2417,14 @@ function parseStudentCSV(text) {
     }
 
 
-    if (
-        data.length === 0
-    ) {
+    if (!data.length) {
 
         return {
 
-            success:
-                false,
+            success:false,
 
             message:
-                "Tidak ada student valid yang ditemukan."
+                "Tidak ada student valid."
 
         };
 
@@ -2607,14 +2433,9 @@ function parseStudentCSV(text) {
 
     return {
 
-        success:
-            true,
+        success:true,
 
-        data:
-            data,
-
-        errors:
-            errors
+        data:data
 
     };
 
@@ -2644,7 +2465,6 @@ function parseCSVRows(text) {
 
         const char =
             text[i];
-
 
         const nextChar =
             text[i + 1];
@@ -2682,9 +2502,7 @@ function parseCSVRows(text) {
             !insideQuotes
         ) {
 
-            row.push(
-                cell
-            );
+            row.push(cell);
 
             cell = "";
 
@@ -2711,14 +2529,9 @@ function parseCSVRows(text) {
             }
 
 
-            row.push(
-                cell
-            );
+            row.push(cell);
 
-            rows.push(
-                row
-            );
-
+            rows.push(row);
 
             row = [];
 
@@ -2739,13 +2552,9 @@ function parseCSVRows(text) {
         row.length > 0
     ) {
 
-        row.push(
-            cell
-        );
+        row.push(cell);
 
-        rows.push(
-            row
-        );
+        rows.push(row);
 
     }
 
@@ -2771,13 +2580,7 @@ function getCSVValue(
         );
 
 
-    if (
-        index < 0
-    ) {
-
-        return "";
-
-    }
+    if (index < 0) return "";
 
 
     return String(
@@ -2801,162 +2604,31 @@ function renderCSVPreview() {
     if (!preview) return;
 
 
-    if (
-        csvStudentData.length === 0
-    ) {
-
-        preview.innerHTML =
-            "Tidak ada data.";
-
-        return;
-
-    }
-
-
     let html = `
 
-        <div style="
-            margin-bottom:15px;
-        ">
-
-            <h3>
-                Preview
-            </h3>
-
-            <p style="
-                color:#666;
-                margin-top:5px;
-            ">
-
-                ${csvStudentData.length}
-                student siap diimport.
-
-            </p>
-
-        </div>
-
-        <div style="
-            overflow-x:auto;
-        ">
-
-            <table style="
-                width:100%;
-                border-collapse:collapse;
-                min-width:750px;
-            ">
-
-                <thead>
-
-                    <tr>
-
-                        <th style="${tableHeadStyle}">
-                            #
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            NIS
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Nama
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Kelas
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Username
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Password
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Status
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-    `;
-
-
-    csvStudentData.forEach(
-        function (student, index) {
-
-            html += `
-
-                <tr>
-
-                    <td style="${tableCellStyle}">
-                        ${index + 1}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(student.nis)}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(student.nama)}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(student.kelas)}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(student.username)}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(student.password)}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(student.status)}
-                    </td>
-
-                </tr>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-
-                </tbody>
-
-            </table>
-
-        </div>
+        <h3>
+            Preview
+        </h3>
 
         <br>
 
-        <div style="
-            display:flex;
-            gap:10px;
-            flex-wrap:wrap;
-        ">
+        <p>
+            ${csvStudentData.length}
+            student siap diimport.
+        </p>
 
-            <button
-                class="btn teacher"
-                id="startCSVImportButton"
-                onclick="startStudentCSVImport()">
+        <br>
 
-                🚀 Import
-                ${csvStudentData.length}
-                Students
+        <button
+            class="btn teacher"
+            id="startCSVImportButton"
+            onclick="startStudentCSVImport()">
 
-            </button>
+            🚀 Import
+            ${csvStudentData.length}
+            Students
 
-        </div>
+        </button>
 
         <div
             id="csvImportProgress"
@@ -2979,12 +2651,11 @@ START CSV IMPORT
 async function startStudentCSVImport() {
 
     if (
-        !csvStudentData ||
-        csvStudentData.length === 0
+        !csvStudentData.length
     ) {
 
         alert(
-            "Tidak ada data CSV untuk diimport."
+            "Tidak ada data CSV."
         );
 
         return;
@@ -2992,15 +2663,13 @@ async function startStudentCSVImport() {
     }
 
 
-    const confirmed =
-        confirm(
+    if (
+        !confirm(
             "Import " +
             csvStudentData.length +
             " student sekarang?"
-        );
-
-
-    if (!confirmed) return;
+        )
+    ) return;
 
 
     const button =
@@ -3011,8 +2680,7 @@ async function startStudentCSVImport() {
 
     if (button) {
 
-        button.disabled =
-            true;
+        button.disabled = true;
 
         button.textContent =
             "⏳ Importing...";
@@ -3020,19 +2688,9 @@ async function startStudentCSVImport() {
     }
 
 
-    const progress =
-        document.getElementById(
-            "csvImportProgress"
-        );
+    let successCount = 0;
 
-
-    let successCount =
-        0;
-
-    let failedCount =
-        0;
-
-    const failedRows = [];
+    let failedCount = 0;
 
 
     for (
@@ -3041,312 +2699,46 @@ async function startStudentCSVImport() {
         i++
     ) {
 
-        const student =
-            csvStudentData[i];
+        const result =
+            await apiInsertStudent(
+                csvStudentData[i]
+            );
 
 
-        if (progress) {
+        if (
+            result &&
+            result.success
+        ) {
 
-            progress.innerHTML = `
-
-                <div style="
-                    padding:15px;
-                    background:#f5f7fa;
-                    border-radius:10px;
-                ">
-
-                    <strong>
-                        Importing ${i + 1}
-                        /
-                        ${csvStudentData.length}
-                    </strong>
-
-                    <br><br>
-
-                    NIS:
-                    ${escapeHtml(
-                        student.nis
-                    )}
-
-                    <br>
-
-                    Nama:
-                    ${escapeHtml(
-                        student.nama
-                    )}
-
-                </div>
-
-            `;
+            successCount++;
 
         }
 
-
-        try {
-
-            const result =
-                await apiInsertStudent(
-                    student
-                );
-
-
-            if (
-                result &&
-                result.success
-            ) {
-
-                successCount++;
-
-            }
-
-            else {
-
-                failedCount++;
-
-                failedRows.push({
-
-                    row:
-                        i + 2,
-
-                    nis:
-                        student.nis,
-
-                    nama:
-                        student.nama,
-
-                    message:
-                        result?.message ||
-                        "Unknown error."
-
-                });
-
-            }
-
-        }
-
-        catch (err) {
+        else {
 
             failedCount++;
 
-            failedRows.push({
-
-                row:
-                    i + 2,
-
-                nis:
-                    student.nis,
-
-                nama:
-                    student.nama,
-
-                message:
-                    err.message ||
-                    "Import error."
-
-            });
-
         }
 
     }
 
 
-    if (button) {
-
-        button.disabled =
-            false;
-
-        button.textContent =
-            "🚀 Import Selesai";
-
-    }
-
-
-    let resultHTML = `
-
-        <div style="
-            padding:20px;
-            background:#f5f7fa;
-            border-radius:12px;
-        ">
-
-            <h3>
-                📊 Import Result
-            </h3>
-
-            <br>
-
-            <strong>
-                Total:
-            </strong>
-            ${csvStudentData.length}
-
-            <br>
-
-            <strong>
-                Berhasil:
-            </strong>
-            ${successCount}
-
-            <br>
-
-            <strong>
-                Gagal:
-            </strong>
-            ${failedCount}
-
-        </div>
-
-    `;
-
-
-    if (
-        failedRows.length > 0
-    ) {
-
-        resultHTML += `
-
-            <br>
-
-            <div style="
-                padding:20px;
-                background:#fff3f3;
-                border-left:4px solid #d32f2f;
-                border-radius:8px;
-            ">
-
-                <h3>
-                    ⚠️ Data Gagal
-                </h3>
-
-                <br>
-
-        `;
-
-
-        failedRows.forEach(
-            function (item) {
-
-                resultHTML += `
-
-                    <div style="
-                        margin-bottom:12px;
-                        padding-bottom:12px;
-                        border-bottom:1px solid #eee;
-                    ">
-
-                        Baris:
-                        <strong>
-                            ${item.row}
-                        </strong>
-
-                        <br>
-
-                        NIS:
-                        ${escapeHtml(
-                            item.nis
-                        )}
-
-                        <br>
-
-                        Nama:
-                        ${escapeHtml(
-                            item.nama
-                        )}
-
-                        <br>
-
-                        Error:
-                        ${escapeHtml(
-                            item.message
-                        )}
-
-                    </div>
-
-                `;
-
-            }
-        );
-
-
-        resultHTML += `
-
-            </div>
-
-        `;
-
-    }
-
-
-    resultHTML += `
-
-        <br>
-
-        <button
-            class="btn teacher"
-            onclick="renderStudentList()">
-
-            👨‍🎓 Kembali ke Student List
-
-        </button>
-
-    `;
-
-
-    if (progress) {
-
-        progress.innerHTML =
-            resultHTML;
-
-    }
+    alert(
+        "Import selesai.\n\n" +
+        "Berhasil: " +
+        successCount +
+        "\n" +
+        "Gagal: " +
+        failedCount
+    );
 
 
     csvStudentData = [];
 
 
+    await renderStudentList();
+
     await refreshDashboardCounters();
-
-}
-
-
-/* =========================================================
-CSV ERROR
-========================================================= */
-
-function showCSVError(
-    message
-) {
-
-    const preview =
-        document.getElementById(
-            "csvPreview"
-        );
-
-    if (!preview) return;
-
-
-    preview.innerHTML = `
-
-        <div style="
-            padding:15px;
-            background:#fff3f3;
-            border-left:4px solid #d32f2f;
-            border-radius:8px;
-            color:#b00020;
-        ">
-
-            <strong>
-                ❌ CSV Error
-            </strong>
-
-            <br><br>
-
-            ${escapeHtml(
-                message
-            )}
-
-        </div>
-
-    `;
 
 }
 
@@ -3370,7 +2762,6 @@ async function loadTokenPage() {
             justify-content:space-between;
             align-items:center;
             flex-wrap:wrap;
-            gap:15px;
         ">
 
             <div>
@@ -3430,9 +2821,39 @@ function showTokenForm() {
     if (!area) return;
 
 
-    /*
-     * Question list must already exist.
-     */
+    let questionOptions = `
+
+        <option value="">
+            -- Select Question --
+        </option>
+
+    `;
+
+
+    teacherQuestions.forEach(
+        function (question) {
+
+            const title =
+                question.title ||
+                question.questionTitle ||
+                question.question ||
+                "Untitled";
+
+
+            questionOptions += `
+
+                <option
+                    value="${escapeAttribute(question.id || "")}">
+
+                    ${escapeHtml(title)}
+
+                </option>
+
+            `;
+
+        }
+    );
+
 
     area.innerHTML = `
 
@@ -3443,7 +2864,6 @@ function showTokenForm() {
             </h3>
 
             <br>
-
 
             <label>
                 Token
@@ -3456,9 +2876,7 @@ function showTokenForm() {
                 style="${inputStyle}"
             >
 
-
             <br><br>
-
 
             <label>
                 Question ID
@@ -3468,27 +2886,11 @@ function showTokenForm() {
                 id="tokenQuestionId"
                 style="${inputStyle}">
 
-                <option value="">
-                    -- Select Question --
-                </option>
+                ${questionOptions}
 
             </select>
 
-
-            <br>
-
-
-            <div
-                id="tokenQuestionInfo"
-                style="
-                    margin-top:8px;
-                    color:#666;
-                ">
-            </div>
-
-
             <br><br>
-
 
             <button
                 class="btn teacher"
@@ -3498,7 +2900,6 @@ function showTokenForm() {
 
             </button>
 
-
             <button
                 class="btn"
                 onclick="renderTokenList()">
@@ -3507,263 +2908,10 @@ function showTokenForm() {
 
             </button>
 
-
             <div
                 id="tokenMessage"
                 style="margin-top:15px;">
             </div>
-
-        </div>
-
-    `;
-
-
-    populateTokenQuestionSelect();
-
-}
-
-
-/* =========================================================
-POPULATE TOKEN QUESTION SELECT
-========================================================= */
-
-async function populateTokenQuestionSelect() {
-
-    const select =
-        document.getElementById(
-            "tokenQuestionId"
-        );
-
-    if (!select) return;
-
-
-    try {
-
-        const response =
-            await apiGetQuestion();
-
-
-        if (
-            !response ||
-            !response.success
-        ) {
-
-            select.innerHTML = `
-
-                <option value="">
-                    Gagal mengambil question
-                </option>
-
-            `;
-
-            return;
-
-        }
-
-
-        teacherQuestions =
-            response.data || [];
-
-
-        if (
-            teacherQuestions.length === 0
-        ) {
-
-            select.innerHTML = `
-
-                <option value="">
-                    Belum ada question
-                </option>
-
-            `;
-
-            return;
-
-        }
-
-
-        let options = `
-
-            <option value="">
-                -- Select Question --
-            </option>
-
-        `;
-
-
-        teacherQuestions.forEach(
-            function (question) {
-
-                const id =
-                    String(
-                        question.id || ""
-                    );
-
-
-                const title =
-                    question.title ??
-                    question.question ??
-                    "";
-
-
-                const difficulty =
-                    question.difficulty ||
-                    "";
-
-
-                options += `
-
-                    <option
-                        value="${escapeAttribute(id)}">
-
-                        ${escapeHtml(id)}
-                        -
-                        ${escapeHtml(title)}
-                        ${
-                            difficulty
-                            ? " [" +
-                              escapeHtml(difficulty) +
-                              "]"
-                            : ""
-                        }
-
-                    </option>
-
-                `;
-
-            }
-        );
-
-
-        select.innerHTML =
-            options;
-
-
-        select.addEventListener(
-            "change",
-            function () {
-
-                showSelectedQuestionInfo(
-                    this.value
-                );
-
-            }
-        );
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "Question Select Error:",
-            err
-        );
-
-        select.innerHTML = `
-
-            <option value="">
-                Gagal mengambil question
-            </option>
-
-        `;
-
-    }
-
-}
-
-
-/* =========================================================
-SELECTED QUESTION INFO
-========================================================= */
-
-function showSelectedQuestionInfo(
-    questionId
-) {
-
-    const info =
-        document.getElementById(
-            "tokenQuestionInfo"
-        );
-
-    if (!info) return;
-
-
-    if (!questionId) {
-
-        info.innerHTML =
-            "";
-
-        return;
-
-    }
-
-
-    const question =
-        teacherQuestions.find(
-            function (item) {
-
-                return String(
-                    item.id || ""
-                ) === String(
-                    questionId
-                );
-
-            }
-        );
-
-
-    if (!question) {
-
-        info.innerHTML =
-            "";
-
-        return;
-
-    }
-
-
-    const title =
-        question.title ??
-        question.question ??
-        "";
-
-
-    const difficulty =
-        question.difficulty ||
-        "";
-
-
-    const duration =
-        question.duration ||
-        "";
-
-
-    info.innerHTML = `
-
-        <div style="
-            padding:10px;
-            background:#f5f7fa;
-            border-radius:8px;
-        ">
-
-            <strong>
-                ${escapeHtml(title)}
-            </strong>
-
-            <br>
-
-            Difficulty:
-            ${escapeHtml(
-                difficulty
-            )}
-
-            <br>
-
-            Duration:
-            ${escapeHtml(
-                String(duration)
-            )}
-            seconds
 
         </div>
 
@@ -3829,6 +2977,9 @@ async function submitTokenCreate() {
                 token,
 
             questionId:
+                questionId,
+
+            questionID:
                 questionId
 
         });
@@ -3943,9 +3094,7 @@ async function renderTokenList() {
 
     let html = `
 
-        <div style="
-            overflow-x:auto;
-        ">
+        <div style="overflow-x:auto;">
 
             <table style="
                 width:100%;
@@ -3985,6 +3134,12 @@ async function renderTokenList() {
     teacherTokens.forEach(
         function (item, index) {
 
+            const questionId =
+                item.questionId ||
+                item.questionID ||
+                "";
+
+
             html += `
 
                 <tr>
@@ -4001,10 +3156,7 @@ async function renderTokenList() {
 
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
-                            String(
-                                item.questionId ||
-                                ""
-                            )
+                            questionId
                         )}
                     </td>
 
@@ -4104,6 +3256,12 @@ async function renderResultList() {
         "Loading results...";
 
 
+    /*
+     * IMPORTANT:
+     * Keep the existing API route.
+     * Do not replace apiGetResult().
+     */
+
     const response =
         await apiGetResult();
 
@@ -4115,7 +3273,10 @@ async function renderResultList() {
 
         area.innerHTML = `
 
-            <div style="color:#b00020;">
+            <div style="
+                color:#b00020;
+                padding:15px;
+            ">
 
                 ${escapeHtml(
                     response?.message ||
@@ -4165,18 +3326,82 @@ async function renderResultList() {
     let html = `
 
         <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            gap:10px;
+            margin-bottom:20px;
+        ">
+
+            <strong>
+                Total Results:
+                ${teacherResults.length}
+            </strong>
+
+            <div style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+            ">
+
+                <button
+                    class="btn"
+                    onclick="selectAllResults()">
+
+                    ☑ Select All
+
+                </button>
+
+                <button
+                    class="btn"
+                    onclick="clearResultSelection()">
+
+                    ☐ Clear
+
+                </button>
+
+                <button
+                    class="btn"
+                    onclick="deleteSelectedResults()">
+
+                    🗑 Delete Selected
+
+                </button>
+
+                <button
+                    class="btn"
+                    onclick="deleteAllResults()">
+
+                    🗑 Delete All
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <div style="
             overflow-x:auto;
         ">
 
             <table style="
                 width:100%;
                 border-collapse:collapse;
-                min-width:850px;
+                min-width:900px;
             ">
 
                 <thead>
 
                     <tr>
+
+                        <th style="${tableHeadStyle}">
+                            <input
+                                type="checkbox"
+                                id="selectAllResultsCheckbox"
+                                onchange="toggleAllResults(this.checked)"
+                            >
+                        </th>
 
                         <th style="${tableHeadStyle}">
                             #
@@ -4206,33 +3431,9 @@ async function renderResultList() {
     teacherResults.forEach(
         function (item, index) {
 
-            /*
-             * Result compatibility:
-             *
-             * question
-             * title
-             * questionTitle
-             */
-
-            const question =
-                item.question ??
-                item.title ??
-                item.questionTitle ??
-                "";
-
-
-            const student =
-                item.nama ??
-                item.username ??
-                item.nis ??
-                item.studentName ??
-                "";
-
-
-            const score =
-                item.score ??
-                item.totalScore ??
-                item.finalScore ??
+            const resultId =
+                item.id ||
+                item.resultId ||
                 "";
 
 
@@ -4241,24 +3442,44 @@ async function renderResultList() {
                 <tr>
 
                     <td style="${tableCellStyle}">
+
+                        <input
+                            type="checkbox"
+                            class="result-checkbox"
+                            data-result-id="${escapeAttribute(resultId)}"
+                            data-result-index="${index}"
+                        >
+
+                    </td>
+
+                    <td style="${tableCellStyle}">
                         ${index + 1}
                     </td>
 
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
-                            String(student)
+                            item.nama ||
+                            item.username ||
+                            item.nis ||
+                            item.student ||
+                            ""
                         )}
                     </td>
 
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
-                            String(question)
+                            item.question ||
+                            item.title ||
+                            ""
                         )}
                     </td>
 
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
-                            String(score)
+                            String(
+                                item.score ??
+                                ""
+                            )
                         )}
                     </td>
 
@@ -4283,6 +3504,371 @@ async function renderResultList() {
 
     area.innerHTML =
         html;
+
+}
+
+
+/* =========================================================
+RESULT SELECT ALL
+========================================================= */
+
+function toggleAllResults(checked) {
+
+    const checkboxes =
+        document.querySelectorAll(
+            ".result-checkbox"
+        );
+
+
+    checkboxes.forEach(
+        function (checkbox) {
+
+            checkbox.checked =
+                checked;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+RESULT SELECT ALL BUTTON
+========================================================= */
+
+function selectAllResults() {
+
+    toggleAllResults(true);
+
+
+    const master =
+        document.getElementById(
+            "selectAllResultsCheckbox"
+        );
+
+
+    if (master) {
+
+        master.checked =
+            true;
+
+    }
+
+}
+
+
+/* =========================================================
+RESULT CLEAR SELECTION
+========================================================= */
+
+function clearResultSelection() {
+
+    toggleAllResults(false);
+
+
+    const master =
+        document.getElementById(
+            "selectAllResultsCheckbox"
+        );
+
+
+    if (master) {
+
+        master.checked =
+            false;
+
+    }
+
+}
+
+
+/* =========================================================
+GET SELECTED RESULTS
+========================================================= */
+
+function getSelectedResultIndexes() {
+
+    const checkboxes =
+        document.querySelectorAll(
+            ".result-checkbox:checked"
+        );
+
+
+    const indexes = [];
+
+
+    checkboxes.forEach(
+        function (checkbox) {
+
+            const index =
+                Number(
+                    checkbox.getAttribute(
+                        "data-result-index"
+                    )
+                );
+
+
+            if (
+                Number.isInteger(index)
+            ) {
+
+                indexes.push(
+                    index
+                );
+
+            }
+
+        }
+    );
+
+
+    return indexes;
+
+}
+
+
+/* =========================================================
+DELETE SELECTED RESULTS
+========================================================= */
+
+async function deleteSelectedResults() {
+
+    const indexes =
+        getSelectedResultIndexes();
+
+
+    if (
+        indexes.length === 0
+    ) {
+
+        alert(
+            "Pilih result yang ingin dihapus terlebih dahulu."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            "Hapus " +
+            indexes.length +
+            " result terpilih?"
+        )
+    ) return;
+
+
+    let successCount = 0;
+
+    let failedCount = 0;
+
+
+    for (
+        const index of indexes
+    ) {
+
+        const item =
+            teacherResults[index];
+
+
+        if (!item) {
+
+            failedCount++;
+
+            continue;
+
+        }
+
+
+        const id =
+            item.id ||
+            item.resultId ||
+            "";
+
+
+        if (!id) {
+
+            failedCount++;
+
+            continue;
+
+        }
+
+
+        try {
+
+            const result =
+                await apiDeleteResult({
+
+                    id:
+                        id
+
+                });
+
+
+            if (
+                result &&
+                result.success
+            ) {
+
+                successCount++;
+
+            }
+
+            else {
+
+                failedCount++;
+
+            }
+
+        }
+
+        catch (err) {
+
+            console.error(
+                "Delete Result Error:",
+                err
+            );
+
+            failedCount++;
+
+        }
+
+    }
+
+
+    alert(
+        "Delete selesai.\n\n" +
+        "Berhasil: " +
+        successCount +
+        "\n" +
+        "Gagal: " +
+        failedCount
+    );
+
+
+    await renderResultList();
+
+    await refreshDashboardCounters();
+
+}
+
+
+/* =========================================================
+DELETE ALL RESULTS
+========================================================= */
+
+async function deleteAllResults() {
+
+    if (
+        teacherResults.length === 0
+    ) {
+
+        alert(
+            "Tidak ada result untuk dihapus."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            "PERINGATAN!\n\n" +
+            "Semua " +
+            teacherResults.length +
+            " speaking result akan dihapus.\n\n" +
+            "Lanjutkan?"
+        )
+    ) return;
+
+
+    let successCount = 0;
+
+    let failedCount = 0;
+
+
+    /*
+     * Use the same established delete-result API
+     * one result at a time.
+     */
+
+    for (
+        const item of teacherResults
+    ) {
+
+        const id =
+            item.id ||
+            item.resultId ||
+            "";
+
+
+        if (!id) {
+
+            failedCount++;
+
+            continue;
+
+        }
+
+
+        try {
+
+            const result =
+                await apiDeleteResult({
+
+                    id:
+                        id
+
+                });
+
+
+            if (
+                result &&
+                result.success
+            ) {
+
+                successCount++;
+
+            }
+
+            else {
+
+                failedCount++;
+
+            }
+
+        }
+
+        catch (err) {
+
+            console.error(
+                "Delete All Result Error:",
+                err
+            );
+
+            failedCount++;
+
+        }
+
+    }
+
+
+    alert(
+        "Hapus semua selesai.\n\n" +
+        "Berhasil: " +
+        successCount +
+        "\n" +
+        "Gagal: " +
+        failedCount
+    );
+
+
+    await renderResultList();
+
+    await refreshDashboardCounters();
 
 }
 
@@ -4347,9 +3933,7 @@ function showMessage(
             color:${color};
         ">
 
-            ${escapeHtml(
-                message
-            )}
+            ${escapeHtml(message)}
 
         </div>
 
@@ -4417,6 +4001,15 @@ const inputStyle = `
     margin-top:8px;
 `;
 
+const textareaStyle = `
+    width:100%;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    font-size:15px;
+    margin-top:8px;
+    resize:vertical;
+`;
 
 const tableHeadStyle = `
     text-align:left;
@@ -4424,7 +4017,6 @@ const tableHeadStyle = `
     border-bottom:2px solid #ddd;
     background:#f5f7fa;
 `;
-
 
 const tableCellStyle = `
     padding:12px;
