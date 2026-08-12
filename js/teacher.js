@@ -1,95 +1,341 @@
 /**
- * =========================================================
+ * ==========================================
  * SAF Speaking Online Test
- * Teacher Dashboard Controller
+ * Teacher Dashboard
  *
- * STABLE FOUNDATION
+ * File:
+ * js/teacher.js
  *
- * MODULE:
- *   - Dashboard
- *   - Question Management
- *   - Student Management
- *   - CSV Student Import
- *   - Token Management
- *   - Result Management
+ * Stable Foundation v7.0
+ * Result Response Fix
  *
- * BACKEND:
- *   api.js
+ * ==========================================
+ *
+ * Frontend Sync:
+ * - Question.gs
+ * - Student.gs
+ * - Token.gs
+ * - Result.gs
+ * - Score.gs
  *
  * IMPORTANT:
- *   - Do not change API architecture from this file.
- *   - Existing API helper functions are preserved.
- *   - Teacher login remains unchanged.
- *   - Question routes remain unchanged.
- *   - Student routes remain unchanged.
- *   - Token routes remain unchanged.
- *   - Result routes remain unchanged.
+ *
+ * - Teacher dashboard business logic
+ * - No dependency on exam.js
+ * - Question state uses STATE object
+ * - Student state uses STATE object
+ * - Token state uses APP.token
+ * - Result state uses APP.result
  *
  * RESULT FIX:
- *   - Normalize API array/object response.
- *   - Supports:
- *       1. Normal Array
- *       2. { data: [...] }
- *       3. Numeric-key Object
- *   - Supports multiple possible score field names.
  *
- * =========================================================
+ * API Result saat ini dapat mengembalikan:
+ *
+ * {
+ *     0: {...},
+ *     1: {...},
+ *     2: {...},
+ *     success: true,
+ *     message: "Success"
+ * }
+ *
+ * atau:
+ *
+ * {
+ *     success: true,
+ *     data: [...]
+ * }
+ *
+ * Keduanya didukung.
+ *
+ * ==========================================
  */
 
 
-/* =========================================================
-GLOBAL STATE
-========================================================= */
+/* =====================================================
+   INITIALIZE
+===================================================== */
 
-let teacherQuestions = [];
-let teacherStudents = [];
-let teacherTokens = [];
-let teacherResults = [];
-
-let csvStudentData = [];
+document.addEventListener(
+    "DOMContentLoaded",
+    init
+);
 
 
-/* =========================================================
-API ARRAY NORMALIZER
-========================================================= */
+/* =====================================================
+   GLOBAL STATE
+===================================================== */
 
-/**
- * Normalize API response data into a standard JavaScript Array.
+const APP = {
+
+    question: [],
+
+    student: [],
+
+    token: [],
+
+    result: []
+
+};
+
+
+const STATE = {
+
+    questionEdit: false,
+
+    questionId: null,
+
+    studentEdit: false,
+
+    studentId: null,
+
+    resultId: null
+
+};
+
+
+/* =====================================================
+   INITIALIZE
+===================================================== */
+
+async function init() {
+
+    checkSession();
+
+    bindMenu();
+
+    bindLogout();
+
+    await refreshDashboard();
+
+    loadDashboard();
+
+}
+
+
+/* =====================================================
+   SESSION
+===================================================== */
+
+function checkSession() {
+
+    const session =
+        sessionStorage.getItem(
+            CONFIG.SESSION_KEY
+        );
+
+
+    if (!session) {
+
+        window.location.href =
+            "login.html?role=teacher";
+
+        return;
+
+    }
+
+
+    try {
+
+        const user =
+            JSON.parse(session);
+
+
+        if (
+            !user ||
+            user.role !== "teacher"
+        ) {
+
+            logout();
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "SESSION ERROR:",
+            err
+        );
+
+        logout();
+
+    }
+
+}
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+function logout() {
+
+    sessionStorage.removeItem(
+        CONFIG.SESSION_KEY
+    );
+
+
+    sessionStorage.removeItem(
+        CONFIG.TOKEN_KEY
+    );
+
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+/* =====================================================
+   LOGOUT BINDING
+===================================================== */
+
+function bindLogout() {
+
+    document
+        .querySelectorAll("a")
+        .forEach(link => {
+
+            if (
+                link.textContent
+                    .trim()
+                    .includes("Logout")
+            ) {
+
+                link.onclick =
+                    function (e) {
+
+                        e.preventDefault();
+
+                        logout();
+
+                    };
+
+            }
+
+        });
+
+}
+
+
+/* =====================================================
+   SIDEBAR MENU
+===================================================== */
+
+function bindMenu() {
+
+    document
+        .querySelectorAll("[data-page]")
+        .forEach(menu => {
+
+            menu.onclick =
+                function (e) {
+
+                    e.preventDefault();
+
+
+                    const page =
+                        this.dataset.page;
+
+
+                    switch (page) {
+
+                        case "dashboard":
+
+                            loadDashboard();
+
+                            break;
+
+
+                        case "question":
+
+                            loadQuestionPage();
+
+                            break;
+
+
+                        case "student":
+
+                            loadStudentPage();
+
+                            break;
+
+
+                        case "token":
+
+                            loadTokenPage();
+
+                            break;
+
+
+                        case "result":
+
+                            loadResultPage();
+
+                            break;
+
+                    }
+
+                };
+
+        });
+
+}
+
+
+/* =====================================================
+   CONTENT
+===================================================== */
+
+function setContent(html) {
+
+    const content =
+        document.getElementById(
+            "content"
+        );
+
+
+    if (!content) {
+
+        console.error(
+            "Teacher dashboard: #content not found."
+        );
+
+        return;
+
+    }
+
+
+    content.innerHTML =
+        html;
+
+}
+
+
+/* =====================================================
+   API ARRAY NORMALIZER
+===================================================== */
+
+/*
+ * Supports both:
  *
- * Supported formats:
+ * 1. response.data = [...]
  *
- * 1. Normal Array
+ * 2. response = {
+ *        0: {...},
+ *        1: {...},
+ *        2: {...},
+ *        success: true,
+ *        message: "Success"
+ *    }
  *
- * [
- *     {...},
- *     {...}
- * ]
- *
- *
- * 2. Object containing data Array
- *
- * {
- *     data: [
- *         {...},
- *         {...}
- *     ]
- * }
- *
- *
- * 3. Object with numeric keys
- *
- * {
- *     "0": {...},
- *     "1": {...},
- *     "2": {...}
- * }
+ * This is especially important
+ * for the current Result API response.
  */
+
 function normalizeApiArray(value) {
-
-    /* ================================================
-       FORMAT 1
-       Already a normal Array
-    ================================================ */
 
     if (Array.isArray(value)) {
 
@@ -98,117 +344,132 @@ function normalizeApiArray(value) {
     }
 
 
-    /* ================================================
-       FORMAT 2
-       Object containing data Array
-    ================================================ */
-
-    if (
-        value &&
-        Array.isArray(value.data)
-    ) {
-
-        return value.data;
-
-    }
-
-
-    /* ================================================
-       FORMAT 3
-       Object with numeric keys
-    ================================================ */
-
     if (
         value &&
         typeof value === "object"
     ) {
 
-        const keys =
-            Object.keys(value);
-
-
-        const numericKeys =
-            keys.filter(
-                function (key) {
-
-                    return /^\d+$/.test(key);
-
-                }
+        return Object.keys(value)
+            .filter(
+                key =>
+                    /^\d+$/.test(key)
+            )
+            .sort(
+                (a, b) =>
+                    Number(a) -
+                    Number(b)
+            )
+            .map(
+                key =>
+                    value[key]
             );
-
-
-        if (
-            numericKeys.length > 0
-        ) {
-
-            return numericKeys
-                .sort(
-                    function (a, b) {
-
-                        return (
-                            Number(a) -
-                            Number(b)
-                        );
-
-                    }
-                )
-                .map(
-                    function (key) {
-
-                        return value[key];
-
-                    }
-                );
-
-        }
 
     }
 
-
-    /* ================================================
-       FORMAT UNKNOWN
-    ================================================ */
 
     return [];
 
 }
 
 
-/* =========================================================
-INITIALIZE
-========================================================= */
+/* =====================================================
+   DASHBOARD DATA
+===================================================== */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        initializeTeacherDashboard();
-
-    }
-);
-
-
-async function initializeTeacherDashboard() {
+async function refreshDashboard() {
 
     try {
 
-        setupMenu();
+        const [
+            questionResult,
+            studentResult,
+            tokenResult,
+            resultResult
+        ] = await Promise.all([
 
-        updateTodayDate();
+            apiGetQuestion(),
+
+            apiGetStudent(),
+
+            apiGetToken(),
+
+            apiGetResult()
+
+        ]);
+
+
+        APP.question =
+            questionResult &&
+            questionResult.success === true
+
+                ? normalizeApiArray(
+                    questionResult.data
+                )
+
+                : [];
+
+
+        APP.student =
+            studentResult &&
+            studentResult.success === true
+
+                ? normalizeApiArray(
+                    studentResult.data
+                )
+
+                : [];
+
+
+        APP.token =
+            tokenResult &&
+            tokenResult.success === true
+
+                ? normalizeApiArray(
+                    tokenResult.data
+                )
+
+                : [];
+
 
         /*
-         * Do not block dashboard rendering.
-         * Counter loading runs asynchronously.
+         * =================================================
+         * RESULT FIX #1
+         * =================================================
+         *
+         * IMPORTANT:
+         *
+         * Current Result API may return the records
+         * directly at the root response:
+         *
+         * response[0]
+         * response[1]
+         * response[2]
+         *
+         * instead of:
+         *
+         * response.data
          */
 
-        refreshDashboardCounters();
+        APP.result =
+            resultResult &&
+            resultResult.success === true
+
+                ? normalizeApiArray(
+                    resultResult.data ??
+                    resultResult
+                )
+
+                : [];
+
+
+        updateDashboardCounters();
 
     }
 
     catch (err) {
 
         console.error(
-            "Teacher Dashboard Init Error:",
+            "REFRESH DASHBOARD ERROR:",
             err
         );
 
@@ -217,673 +478,140 @@ async function initializeTeacherDashboard() {
 }
 
 
-/* =========================================================
-MENU
-========================================================= */
+/* =====================================================
+   DASHBOARD COUNTERS
+===================================================== */
 
-function setupMenu() {
+function updateDashboardCounters() {
 
-    const menuLinks =
-        document.querySelectorAll(
-            ".menu a[data-page]"
-        );
-
-
-    menuLinks.forEach(
-        function (link) {
-
-            link.addEventListener(
-                "click",
-                async function (event) {
-
-                    event.preventDefault();
+    updateQuestionCounter(
+        APP.question.length
+    );
 
 
-                    const page =
-                        this.getAttribute(
-                            "data-page"
-                        );
+    updateStudentCounter(
+        APP.student.length
+    );
 
 
-                    if (!page) return;
+    updateTokenCounter(
+        APP.token.length
+    );
 
 
-                    if (
-                        page === "dashboard"
-                    ) {
-
-                        await loadDashboardPage();
-
-                    }
-
-                    else if (
-                        page === "question"
-                    ) {
-
-                        await loadQuestionPage();
-
-                    }
-
-                    else if (
-                        page === "student"
-                    ) {
-
-                        await loadStudentPage();
-
-                    }
-
-                    else if (
-                        page === "token"
-                    ) {
-
-                        await loadTokenPage();
-
-                    }
-
-                    else if (
-                        page === "result"
-                    ) {
-
-                        await loadResultPage();
-
-                    }
-
-                }
-            );
-
-        }
+    updateResultCounter(
+        APP.result.length
     );
 
 }
 
 
-/* =========================================================
-DATE
-========================================================= */
+/* =====================================================
+   DASHBOARD PAGE
+===================================================== */
 
-function updateTodayDate() {
+function loadDashboard() {
 
-    const el =
-        document.getElementById(
-            "todayDate"
-        );
-
-
-    if (!el) return;
-
-
-    const today =
-        new Date();
-
-
-    const options = {
-
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-
-    };
-
-
-    el.textContent =
-        today.toLocaleDateString(
-            "en-US",
-            options
-        );
-
-}
-
-
-/* =========================================================
-CONTENT
-========================================================= */
-
-function getContentElement() {
-
-    return document.getElementById(
-        "content"
-    );
-
-}
-
-
-/* =========================================================
-DASHBOARD
-========================================================= */
-
-async function loadDashboardPage() {
-
-    const content =
-        getContentElement();
-
-
-    if (!content) return;
-
-
-    content.innerHTML = `
+    setContent(`
 
         <h2>
-            Dashboard Ready
+            Dashboard
         </h2>
 
         <br>
 
         <p>
-            Welcome to the SAF Speaking Online Test
+            Welcome to SAF Speaking Online Test
             Teacher Dashboard.
         </p>
 
         <br>
 
         <p>
-            Manage speaking questions, students,
-            exam tokens, and speaking results.
+            Use the left menu to manage
+            Questions, Students, Exam Tokens
+            and Results.
         </p>
 
         <br>
 
-        <hr>
+        <table
+            width="100%"
+            cellpadding="8"
+            border="1">
+
+            <tr>
+
+                <th>
+                    Total Questions
+                </th>
+
+                <th>
+                    Total Students
+                </th>
+
+                <th>
+                    Total Token
+                </th>
+
+                <th>
+                    Total Results
+                </th>
+
+            </tr>
+
+            <tr>
+
+                <td>
+                    ${APP.question.length}
+                </td>
+
+                <td>
+                    ${APP.student.length}
+                </td>
+
+                <td>
+                    ${APP.token.length}
+                </td>
+
+                <td>
+                    ${APP.result.length}
+                </td>
+
+            </tr>
+
+        </table>
+
+    `);
+
+}
+
+
+/* =====================================================
+   QUESTION PAGE
+===================================================== */
+
+function loadQuestionPage() {
+
+    setContent(`
+
+        <h2>
+            Speaking Question Database
+        </h2>
 
         <br>
 
-        <h3>
-            Quick Actions
-        </h3>
-
-        <br>
-
-        <div style="
-            display:flex;
-            flex-wrap:wrap;
-            gap:12px;
-        ">
-
-            <button
-                class="btn teacher"
-                onclick="loadQuestionPage()">
-
-                🎤 Add Speaking Question
-
-            </button>
-
-            <button
-                class="btn teacher"
-                onclick="loadStudentPage()">
-
-                👨‍🎓 Manage Students
-
-            </button>
-
-            <button
-                class="btn teacher"
-                onclick="loadTokenPage()">
-
-                🔑 Exam Token
-
-            </button>
-
-            <button
-                class="btn teacher"
-                onclick="loadResultPage()">
-
-                📊 Speaking Results
-
-            </button>
-
-        </div>
-
-    `;
-
-
-    refreshDashboardCounters();
-
-}
-
-
-/* =========================================================
-DASHBOARD COUNTERS
-========================================================= */
-
-async function refreshDashboardCounters() {
-
-    /*
-     * Each request is handled independently.
-     * One failed API will not prevent other counters.
-     */
-
-
-    /* =====================================================
-       QUESTION COUNTER
-    ===================================================== */
-
-    try {
-
-        const response =
-            await apiGetQuestion();
-
-
-        if (
-            response &&
-            response.success
-        ) {
-
-            teacherQuestions =
-                normalizeApiArray(
-                    response.data
-                );
-
-
-            const el =
-                document.getElementById(
-                    "totalQuestion"
-                );
-
-
-            if (el) {
-
-                el.textContent =
-                    teacherQuestions.length;
-
-            }
-
-        }
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "Question Counter Error:",
-            err
-        );
-
-    }
-
-
-    /* =====================================================
-       STUDENT COUNTER
-    ===================================================== */
-
-    try {
-
-        const response =
-            await apiGetStudent();
-
-
-        if (
-            response &&
-            response.success
-        ) {
-
-            teacherStudents =
-                normalizeApiArray(
-                    response.data
-                );
-
-
-            const el =
-                document.getElementById(
-                    "totalStudent"
-                );
-
-
-            if (el) {
-
-                el.textContent =
-                    teacherStudents.length;
-
-            }
-
-        }
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "Student Counter Error:",
-            err
-        );
-
-    }
-
-
-    /* =====================================================
-       TOKEN COUNTER
-    ===================================================== */
-
-    try {
-
-        const response =
-            await apiGetToken();
-
-
-        if (
-            response &&
-            response.success
-        ) {
-
-            teacherTokens =
-                normalizeApiArray(
-                    response.data
-                );
-
-
-            const el =
-                document.getElementById(
-                    "totalToken"
-                );
-
-
-            if (el) {
-
-                el.textContent =
-                    teacherTokens.length;
-
-            }
-
-        }
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "Token Counter Error:",
-            err
-        );
-
-    }
-
-
-    /* =====================================================
-       RESULT COUNTER
-    ===================================================== */
-
-    try {
-
-        const response =
-            await apiGetResult();
-
-
-        if (
-            response &&
-            response.success
-        ) {
-
-            teacherResults =
-                normalizeApiArray(
-                    response.data
-                );
-
-
-            const el =
-                document.getElementById(
-                    "totalResult"
-                );
-
-
-            if (el) {
-
-                el.textContent =
-                    teacherResults.length;
-
-            }
-
-        }
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "Result Counter Error:",
-            err
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-QUESTION DATA CACHE
-========================================================= */
-
-/**
- * Make sure Questions are available.
- *
- * Token page uses this function so Question ID
- * dropdown works even when Teacher opens Token page
- * directly without opening Question page first.
- */
-async function ensureTeacherQuestionsLoaded() {
-
-    /*
-     * If cache already contains questions,
-     * use existing data.
-     */
-
-    if (
-        Array.isArray(teacherQuestions) &&
-        teacherQuestions.length > 0
-    ) {
-
-        return teacherQuestions;
-
-    }
-
-
-    try {
-
-        const response =
-            await apiGetQuestion();
-
-
-        if (
-            response &&
-            response.success
-        ) {
-
-            teacherQuestions =
-                normalizeApiArray(
-                    response.data
-                );
-
-
-            return teacherQuestions;
-
-        }
-
-
-        console.error(
-            "Question Load Error:",
-            response?.message ||
-            "Unknown error."
-        );
-
-
-        teacherQuestions = [];
-
-
-        return [];
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "Question Load Exception:",
-            err
-        );
-
-
-        teacherQuestions = [];
-
-
-        return [];
-
-    }
-
-}
-
-
-/* =========================================================
-QUESTION PAGE
-========================================================= */
-
-async function loadQuestionPage() {
-
-    const content =
-        getContentElement();
-
-
-    if (!content) return;
-
-
-    content.innerHTML = `
-
-        <div style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            flex-wrap:wrap;
-            gap:15px;
-        ">
-
-            <div>
-
-                <h2>
-                    🎤 Speaking Questions
-                </h2>
-
-                <p style="
-                    margin-top:8px;
-                    color:#666;
-                ">
-
-                    Manage speaking questions.
-
-                </p>
-
-            </div>
-
-            <button
-                class="btn teacher"
-                onclick="showQuestionForm()">
-
-                ➕ Add Question
-
-            </button>
-
-        </div>
-
-        <div
-            id="questionArea"
-            style="margin-top:25px;">
-
-            Loading...
-
-        </div>
-
-    `;
-
-
-    await renderQuestionList();
-
-}
-
-
-/* =========================================================
-QUESTION FORM
-========================================================= */
-
-function showQuestionForm(
-    question = null
-) {
-
-    const area =
-        document.getElementById(
-            "questionArea"
-        );
-
-
-    if (!area) return;
-
-
-    const editing =
-        question !== null;
-
-
-    const title =
-        question?.title ||
-        question?.questionTitle ||
-        "";
-
-
-    const answer =
-        question?.answer ||
-        question?.answerKey ||
-        "";
-
-
-    const difficulty =
-        question?.difficulty ||
-        "Easy";
-
-
-    const duration =
-        question?.duration ??
-        30;
-
-
-    area.innerHTML = `
-
-        <div class="card-box">
-
-            <h3>
-
-                ${
-                    editing
-                    ? "Edit Speaking Question"
-                    : "Add Speaking Question"
-                }
-
-            </h3>
-
-            <br>
+        <form id="questionForm">
 
             <label>
                 Title
             </label>
 
             <input
-                id="questionTitle"
+                id="title"
                 type="text"
-                value="${escapeAttribute(title)}"
-                placeholder="Contoh: Unit 1 Classmate"
-                style="${inputStyle}"
+                required
             >
-
-            <br><br>
-
-            <label>
-                Question
-            </label>
-
-            <textarea
-                id="questionText"
-                rows="4"
-                style="${textareaStyle}"
-                placeholder="Enter speaking question..."
-            >${
-                editing
-                ? escapeHtml(
-                    question.question || ""
-                )
-                : ""
-            }</textarea>
 
             <br><br>
 
@@ -892,11 +620,10 @@ function showQuestionForm(
             </label>
 
             <textarea
-                id="answerKey"
-                rows="4"
-                style="${textareaStyle}"
-                placeholder="Enter answer key..."
-            >${escapeHtml(answer)}</textarea>
+                id="answer"
+                rows="5"
+                required
+            ></textarea>
 
             <br><br>
 
@@ -904,37 +631,17 @@ function showQuestionForm(
                 Difficulty
             </label>
 
-            <select
-                id="questionDifficulty"
-                style="${inputStyle}">
+            <select id="difficulty">
 
-                <option
-                    value="Easy"
-                    ${
-                        difficulty === "Easy"
-                        ? "selected"
-                        : ""
-                    }>
+                <option value="Easy">
                     Easy
                 </option>
 
-                <option
-                    value="Medium"
-                    ${
-                        difficulty === "Medium"
-                        ? "selected"
-                        : ""
-                    }>
+                <option value="Medium">
                     Medium
                 </option>
 
-                <option
-                    value="Hard"
-                    ${
-                        difficulty === "Hard"
-                        ? "selected"
-                        : ""
-                    }>
+                <option value="Hard">
                     Hard
                 </option>
 
@@ -943,382 +650,319 @@ function showQuestionForm(
             <br><br>
 
             <label>
-                Duration (seconds)
+                Duration (Second)
             </label>
 
             <input
-                id="questionDuration"
+                id="duration"
                 type="number"
-                min="1"
-                value="${escapeAttribute(duration)}"
-                placeholder="30"
-                style="${inputStyle}"
+                value="30"
+                min="10"
+                required
             >
 
             <br><br>
 
-            <div style="
-                display:flex;
-                gap:10px;
-                flex-wrap:wrap;
-            ">
+            <button
+                id="btnSaveQuestion"
+                type="submit"
+                class="btn teacher">
 
-                <button
-                    class="btn teacher"
-                    onclick="${
-                        editing
-                        ? `submitQuestionUpdate('${escapeAttribute(question.id)}')`
-                        : "submitQuestionInsert()"
-                    }">
+                Save Question
 
-                    💾 Save
+            </button>
 
-                </button>
+            <button
+                type="button"
+                onclick="resetQuestionForm()">
 
-                <button
-                    class="btn"
-                    onclick="renderQuestionList()">
+                Cancel
 
-                    Cancel
+            </button>
 
-                </button>
+        </form>
 
-            </div>
+        <br>
 
-            <div
-                id="questionMessage"
-                style="margin-top:15px;">
-            </div>
+        <input
+            id="searchQuestion"
+            type="text"
+            placeholder="Search question..."
+            onkeyup="filterQuestion()"
+        >
+
+        <br><br>
+
+        <div id="questionTable">
+
+            Loading...
 
         </div>
 
-    `;
+    `);
+
+
+    const form =
+        document.getElementById(
+            "questionForm"
+        );
+
+
+    if (form) {
+
+        form.addEventListener(
+            "submit",
+            saveQuestion
+        );
+
+    }
+
+
+    loadQuestions();
 
 }
 
 
-/* =========================================================
-QUESTION FORM DATA
-========================================================= */
+/* =====================================================
+   SAVE QUESTION
+===================================================== */
 
-function getQuestionFormData() {
+async function saveQuestion(e) {
 
-    return {
+    e.preventDefault();
+
+
+    const data = {
 
         title:
             document
-                .getElementById(
-                    "questionTitle"
-                )
-                ?.value
-                .trim() || "",
-
-
-        question:
-            document
-                .getElementById(
-                    "questionText"
-                )
-                ?.value
-                .trim() || "",
-
-
-        answerKey:
-            document
-                .getElementById(
-                    "answerKey"
-                )
-                ?.value
-                .trim() || "",
-
+                .getElementById("title")
+                .value
+                .trim(),
 
         answer:
             document
-                .getElementById(
-                    "answerKey"
-                )
-                ?.value
-                .trim() || "",
-
+                .getElementById("answer")
+                .value
+                .trim(),
 
         difficulty:
             document
-                .getElementById(
-                    "questionDifficulty"
-                )
-                ?.value ||
-                "Easy",
-
+                .getElementById("difficulty")
+                .value,
 
         duration:
             Number(
                 document
-                    .getElementById(
-                        "questionDuration"
-                    )
-                    ?.value || 30
-            )
+                    .getElementById("duration")
+                    .value
+            ),
+
+        status:
+            "Active",
+
+        createdBy:
+            "Teacher"
 
     };
 
-}
 
-
-/* =========================================================
-INSERT QUESTION
-========================================================= */
-
-async function submitQuestionInsert() {
-
-    const data =
-        getQuestionFormData();
-
-
-    if (!data.title) {
-
-        showMessage(
-            "questionMessage",
-            "Title wajib diisi.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (!data.question) {
-
-        showMessage(
-            "questionMessage",
-            "Question wajib diisi.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (!data.answerKey) {
-
-        showMessage(
-            "questionMessage",
-            "Answer Key wajib diisi.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    const result =
-        await apiInsertQuestion(
-            data
-        );
+    let res;
 
 
     if (
-        result &&
-        result.success
+        STATE.questionEdit
     ) {
 
-        alert(
-            result.message ||
-            "Question berhasil ditambahkan."
-        );
+        data.id =
+            STATE.questionId;
 
 
-        await renderQuestionList();
-
-        refreshDashboardCounters();
+        res =
+            await apiUpdateQuestion(
+                data
+            );
 
     }
 
     else {
 
-        showMessage(
-            "questionMessage",
-            result?.message ||
-            "Gagal menambahkan question.",
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-UPDATE QUESTION
-========================================================= */
-
-async function submitQuestionUpdate(id) {
-
-    const data =
-        getQuestionFormData();
-
-
-    if (!data.title) {
-
-        showMessage(
-            "questionMessage",
-            "Title wajib diisi.",
-            "error"
-        );
-
-        return;
+        res =
+            await apiInsertQuestion(
+                data
+            );
 
     }
 
 
-    if (!data.question) {
-
-        showMessage(
-            "questionMessage",
-            "Question wajib diisi.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (!data.answerKey) {
-
-        showMessage(
-            "questionMessage",
-            "Answer Key wajib diisi.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    data.id =
-        id;
-
-
-    const result =
-        await apiUpdateQuestion(
-            data
-        );
+    alert(
+        res &&
+        res.message
+            ? res.message
+            : "Operation completed."
+    );
 
 
     if (
-        result &&
-        result.success
+        !res ||
+        res.success !== true
     ) {
 
-        alert(
-            result.message ||
-            "Question berhasil diupdate."
-        );
-
-
-        await renderQuestionList();
-
-        refreshDashboardCounters();
+        return;
 
     }
 
-    else {
 
-        showMessage(
-            "questionMessage",
-            result?.message ||
-            "Gagal update question.",
-            "error"
-        );
+    resetQuestionForm();
 
-    }
+    await loadQuestions();
+
+    await refreshDashboard();
 
 }
 
 
-/* =========================================================
-QUESTION LIST
-========================================================= */
+/* =====================================================
+   LOAD QUESTIONS
+===================================================== */
 
-async function renderQuestionList() {
+async function loadQuestions() {
 
-    const area =
+    const table =
         document.getElementById(
-            "questionArea"
+            "questionTable"
         );
 
 
-    if (!area) return;
-
-
-    area.innerHTML =
-        "Loading questions...";
-
-
-    const response =
-        await apiGetQuestion();
-
-
-    if (
-        !response ||
-        !response.success
-    ) {
-
-        area.innerHTML = `
-
-            <div style="color:#b00020;">
-
-                Gagal mengambil questions.
-
-                <br>
-
-                ${escapeHtml(
-                    response?.message ||
-                    "Unknown error."
-                )}
-
-            </div>
-
-        `;
-
+    if (!table) {
 
         return;
 
     }
 
 
-    teacherQuestions =
-        normalizeApiArray(
-            response.data
+    table.innerHTML =
+        "<p>Loading questions...</p>";
+
+
+    try {
+
+        const res =
+            await apiGetQuestion();
+
+
+        console.log(
+            "GET QUESTION RESPONSE:",
+            res
         );
 
 
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            APP.question = [];
+
+
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load questions."
+                ) +
+                "</p>";
+
+
+            updateQuestionCounter(0);
+
+            return;
+
+        }
+
+
+        APP.question =
+            normalizeApiArray(
+                res.data
+            );
+
+
+        updateQuestionCounter(
+            APP.question.length
+        );
+
+
+        if (
+            APP.question.length === 0
+        ) {
+
+            table.innerHTML =
+                "<p>No question found.</p>";
+
+            return;
+
+        }
+
+
+        renderQuestions();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "LOAD QUESTIONS ERROR:",
+            err
+        );
+
+
+        APP.question = [];
+
+
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load questions."
+            ) +
+            "</p>";
+
+
+        updateQuestionCounter(0);
+
+    }
+
+}
+
+
+/* =====================================================
+   RENDER QUESTIONS
+===================================================== */
+
+function renderQuestions() {
+
+    const table =
+        document.getElementById(
+            "questionTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
     if (
-        teacherQuestions.length === 0
+        !Array.isArray(APP.question) ||
+        APP.question.length === 0
     ) {
 
-        area.innerHTML = `
-
-            <div class="card-box">
-
-                <h3>
-                    No Questions
-                </h3>
-
-                <br>
-
-                <p>
-                    Belum ada speaking question.
-                </p>
-
-            </div>
-
-        `;
-
+        table.innerHTML =
+            "<p>No question found.</p>";
 
         return;
 
@@ -1327,136 +971,98 @@ async function renderQuestionList() {
 
     let html = `
 
-        <div style="
-            overflow-x:auto;
-        ">
+        <table
+            border="1"
+            width="100%"
+            cellpadding="8">
 
-            <table style="
-                width:100%;
-                border-collapse:collapse;
-                min-width:900px;
-            ">
+            <thead>
 
-                <thead>
+                <tr>
 
-                    <tr>
+                    <th>
+                        No
+                    </th>
 
-                        <th style="${tableHeadStyle}">
-                            #
-                        </th>
+                    <th>
+                        Title
+                    </th>
 
-                        <th style="${tableHeadStyle}">
-                            ID
-                        </th>
+                    <th>
+                        Answer Key
+                    </th>
 
-                        <th style="${tableHeadStyle}">
-                            Title
-                        </th>
+                    <th>
+                        Difficulty
+                    </th>
 
-                        <th style="${tableHeadStyle}">
-                            Answer
-                        </th>
+                    <th>
+                        Duration
+                    </th>
 
-                        <th style="${tableHeadStyle}">
-                            Difficulty
-                        </th>
+                    <th>
+                        Status
+                    </th>
 
-                        <th style="${tableHeadStyle}">
-                            Duration
-                        </th>
+                    <th>
+                        Action
+                    </th>
 
-                        <th style="${tableHeadStyle}">
-                            Action
-                        </th>
+                </tr>
 
-                    </tr>
+            </thead>
 
-                </thead>
-
-                <tbody>
+            <tbody>
 
     `;
 
 
-    teacherQuestions.forEach(
-        function (item, index) {
-
-            const questionId =
-                item.id ||
-                item.questionId ||
-                item.questionID ||
-                "";
-
-
-            const title =
-                item.title ||
-                item.questionTitle ||
-                "";
-
-
-            const answer =
-                item.answer ||
-                item.answerKey ||
-                "";
-
-
-            const difficulty =
-                item.difficulty ||
-                "";
-
-
-            const duration =
-                item.duration ??
-                "";
-
+    APP.question.forEach(
+        (q, index) => {
 
             html += `
 
                 <tr>
 
-                    <td style="${tableCellStyle}">
+                    <td>
                         ${index + 1}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            questionId
-                        )}
+                    <td>
+                        ${escapeHTML(q.title)}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(title)}
+                    <td>
+                        ${escapeHTML(q.answer)}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(answer)}
+                    <td>
+                        ${escapeHTML(q.difficulty)}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(difficulty)}
+                    <td>
+                        ${escapeHTML(q.duration)}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            duration === ""
-                            ? ""
-                            : String(duration) + " sec"
-                        )}
+                    <td>
+                        ${escapeHTML(q.status)}
                     </td>
 
-                    <td style="${tableCellStyle}">
+                    <td>
 
                         <button
-                            class="btn teacher"
-                            onclick="editQuestion(${index})">
+                            type="button"
+                            class="btn edit"
+                            onclick="editQuestion('${escapeAttribute(q.id)}')">
 
                             Edit
 
                         </button>
 
                         <button
-                            class="btn"
-                            onclick="deleteQuestionByIndex(${index})">
+                            type="button"
+                            class="btn delete"
+                            onclick="deleteQuestion('${escapeAttribute(q.id)}')">
 
                             Delete
 
@@ -1474,281 +1080,281 @@ async function renderQuestionList() {
 
     html += `
 
-                </tbody>
+            </tbody>
 
-            </table>
-
-        </div>
+        </table>
 
     `;
 
 
-    area.innerHTML =
+    table.innerHTML =
         html;
 
 }
 
 
-/* =========================================================
-EDIT QUESTION
-========================================================= */
+/* =====================================================
+   EDIT QUESTION
+===================================================== */
 
-function editQuestion(index) {
+function editQuestion(id) {
 
-    const question =
-        teacherQuestions[index];
+    const item =
+        APP.question.find(
+            q =>
+                String(q.id) ===
+                String(id)
+        );
 
 
-    if (!question) return;
+    if (!item) {
+
+        return;
+
+    }
 
 
-    showQuestionForm(
-        question
-    );
+    STATE.questionEdit =
+        true;
+
+    STATE.questionId =
+        item.id;
+
+
+    document.getElementById(
+        "title"
+    ).value =
+        item.title || "";
+
+
+    document.getElementById(
+        "answer"
+    ).value =
+        item.answer || "";
+
+
+    document.getElementById(
+        "difficulty"
+    ).value =
+        item.difficulty || "Easy";
+
+
+    document.getElementById(
+        "duration"
+    ).value =
+        item.duration || 30;
+
+
+    const button =
+        document.getElementById(
+            "btnSaveQuestion"
+        );
+
+
+    if (button) {
+
+        button.innerText =
+            "Update Question";
+
+    }
 
 }
 
 
-/* =========================================================
-DELETE QUESTION
-========================================================= */
+/* =====================================================
+   DELETE QUESTION
+===================================================== */
 
-async function deleteQuestionByIndex(index) {
+async function deleteQuestion(id) {
 
-    const question =
-        teacherQuestions[index];
+    if (
+        !confirm(
+            "Delete this question?"
+        )
+    ) {
 
+        return;
 
-    if (!question) return;
-
-
-    const confirmed =
-        confirm(
-            "Hapus speaking question ini?"
-        );
+    }
 
 
-    if (!confirmed) return;
-
-
-    const questionId =
-        question.id ||
-        question.questionId ||
-        question.questionID ||
-        "";
-
-
-    const result =
+    const res =
         await apiDeleteQuestion({
 
-            id:
-                questionId
+            id: id
 
         });
 
 
+    alert(
+        res &&
+        res.message
+            ? res.message
+            : "Question deleted."
+    );
+
+
     if (
-        result &&
-        result.success
+        !res ||
+        res.success !== true
     ) {
 
-        alert(
-            result.message ||
-            "Question berhasil dihapus."
-        );
-
-
-        await renderQuestionList();
-
-        refreshDashboardCounters();
+        return;
 
     }
 
-    else {
 
-        alert(
-            result?.message ||
-            "Gagal menghapus question."
-        );
+    await loadQuestions();
 
-    }
+    await refreshDashboard();
 
 }
 
 
-/* =========================================================
-STUDENT PAGE
-========================================================= */
+/* =====================================================
+   RESET QUESTION FORM
+===================================================== */
 
-async function loadStudentPage() {
+function resetQuestionForm() {
 
-    const content =
-        getContentElement();
+    STATE.questionEdit =
+        false;
 
-
-    if (!content) return;
-
-
-    content.innerHTML = `
-
-        <div style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            flex-wrap:wrap;
-            gap:15px;
-        ">
-
-            <div>
-
-                <h2>
-                    👨‍🎓 Student Management
-                </h2>
-
-                <p style="
-                    margin-top:8px;
-                    color:#666;
-                ">
-
-                    Manage student accounts
-                    for the speaking test.
-
-                </p>
-
-            </div>
-
-            <div style="
-                display:flex;
-                gap:10px;
-                flex-wrap:wrap;
-            ">
-
-                <button
-                    class="btn teacher"
-                    onclick="showStudentForm()">
-
-                    ➕ Add Student
-
-                </button>
-
-                <button
-                    class="btn teacher"
-                    onclick="showCSVImport()">
-
-                    📥 Import CSV
-
-                </button>
-
-            </div>
-
-        </div>
-
-        <div
-            id="studentArea"
-            style="margin-top:25px;">
-
-            Loading...
-
-        </div>
-
-    `;
+    STATE.questionId =
+        null;
 
 
-    await renderStudentList();
-
-}
-
-
-/* =========================================================
-STUDENT FORM
-========================================================= */
-
-function showStudentForm(
-    student = null
-) {
-
-    const area =
+    const form =
         document.getElementById(
-            "studentArea"
+            "questionForm"
         );
 
 
-    if (!area) return;
+    if (form) {
+
+        form.reset();
+
+    }
 
 
-    const editing =
-        student !== null;
+    const duration =
+        document.getElementById(
+            "duration"
+        );
 
 
-    area.innerHTML = `
+    if (duration) {
 
-        <div class="card-box">
+        duration.value =
+            30;
 
-            <h3>
-                ${
-                    editing
-                    ? "Edit Student"
-                    : "Add Student"
-                }
-            </h3>
+    }
 
-            <br>
+
+    const button =
+        document.getElementById(
+            "btnSaveQuestion"
+        );
+
+
+    if (button) {
+
+        button.innerText =
+            "Save Question";
+
+    }
+
+}
+
+
+/* =====================================================
+   SEARCH QUESTION
+===================================================== */
+
+function filterQuestion() {
+
+    const input =
+        document.getElementById(
+            "searchQuestion"
+        );
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    const keyword =
+        input.value
+            .toLowerCase()
+            .trim();
+
+
+    document
+        .querySelectorAll(
+            "#questionTable tbody tr"
+        )
+        .forEach(row => {
+
+            row.style.display =
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
+
+        });
+
+}
+
+
+/* =====================================================
+   STUDENT PAGE
+===================================================== */
+
+function loadStudentPage() {
+
+    setContent(`
+
+        <h2>
+            Student Database
+        </h2>
+
+        <br>
+
+        <form id="studentForm">
 
             <label>
                 NIS
             </label>
 
             <input
-                id="studentNis"
-                type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(student.nis || "")
-                    : ""
-                }"
-                ${
-                    editing
-                    ? "readonly"
-                    : ""
-                }
-                placeholder="NIS"
-                style="${inputStyle}"
+                id="nis"
+                required
             >
 
             <br><br>
 
             <label>
-                Nama
+                Student Name
             </label>
 
             <input
-                id="studentNama"
-                type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(student.nama || "")
-                    : ""
-                }"
-                placeholder="Nama siswa"
-                style="${inputStyle}"
+                id="nama"
+                required
             >
 
             <br><br>
 
             <label>
-                Kelas
+                Class
             </label>
 
             <input
-                id="studentKelas"
-                type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(student.kelas || "")
-                    : ""
-                }"
-                placeholder="Contoh: 7A"
-                style="${inputStyle}"
+                id="kelas"
+                required
             >
 
             <br><br>
@@ -1758,15 +1364,8 @@ function showStudentForm(
             </label>
 
             <input
-                id="studentUsername"
-                type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(student.username || "")
-                    : ""
-                }"
-                placeholder="Username"
-                style="${inputStyle}"
+                id="username"
+                required
             >
 
             <br><br>
@@ -1776,454 +1375,279 @@ function showStudentForm(
             </label>
 
             <input
-                id="studentPassword"
-                type="text"
-                value="${
-                    editing
-                    ? escapeAttribute(student.password || "")
-                    : ""
-                }"
-                placeholder="Password"
-                style="${inputStyle}"
+                id="password"
+                type="password"
+                required
             >
 
             <br><br>
 
-            <label>
-                Status
-            </label>
-
-            <select
-                id="studentStatus"
-                style="${inputStyle}">
-
-                <option
-                    value="ACTIVE"
-                    ${
-                        !editing ||
-                        student.status === "ACTIVE"
-                        ? "selected"
-                        : ""
-                    }>
-                    ACTIVE
-                </option>
-
-                <option
-                    value="INACTIVE"
-                    ${
-                        editing &&
-                        student.status === "INACTIVE"
-                        ? "selected"
-                        : ""
-                    }>
-                    INACTIVE
-                </option>
-
-            </select>
-
-            <br><br>
-
-            <div style="
-                display:flex;
-                gap:10px;
-                flex-wrap:wrap;
-            ">
-
-                <button
-                    class="btn teacher"
-                    onclick="${
-                        editing
-                        ? `submitStudentUpdate('${escapeAttribute(student.nis)}')`
-                        : "submitStudentInsert()"
-                    }">
-
-                    💾 Save
-
-                </button>
-
-                <button
-                    class="btn"
-                    onclick="renderStudentList()">
-
-                    Cancel
-
-                </button>
-
-            </div>
-
-            <div
-                id="studentMessage"
-                style="margin-top:15px;">
-            </div>
-
-        </div>
-
-    `;
-
-}
-
-
-/* =========================================================
-STUDENT FORM DATA
-========================================================= */
-
-function getStudentFormData() {
-
-    return {
-
-        nis:
-            document
-                .getElementById(
-                    "studentNis"
-                )
-                ?.value
-                .trim() || "",
-
-
-        nama:
-            document
-                .getElementById(
-                    "studentNama"
-                )
-                ?.value
-                .trim() || "",
-
-
-        kelas:
-            document
-                .getElementById(
-                    "studentKelas"
-                )
-                ?.value
-                .trim() || "",
-
-
-        username:
-            document
-                .getElementById(
-                    "studentUsername"
-                )
-                ?.value
-                .trim() || "",
-
-
-        password:
-            document
-                .getElementById(
-                    "studentPassword"
-                )
-                ?.value
-                .trim() || "",
-
-
-        status:
-            document
-                .getElementById(
-                    "studentStatus"
-                )
-                ?.value ||
-                "ACTIVE"
-
-    };
-
-}
-
-
-/* =========================================================
-INSERT STUDENT
-========================================================= */
-
-async function submitStudentInsert() {
-
-    const data =
-        getStudentFormData();
-
-
-    if (!data.nis) {
-
-        showMessage(
-            "studentMessage",
-            "NIS wajib diisi.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (!data.nama) {
-
-        showMessage(
-            "studentMessage",
-            "Nama wajib diisi.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    const result =
-        await apiInsertStudent(
-            data
-        );
-
-
-    if (
-        result &&
-        result.success
-    ) {
-
-        alert(
-            result.message ||
-            "Student berhasil ditambahkan."
-        );
-
-
-        await renderStudentList();
-
-        refreshDashboardCounters();
-
-    }
-
-    else {
-
-        showMessage(
-            "studentMessage",
-            result?.message ||
-            "Gagal menambahkan student.",
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-UPDATE STUDENT
-========================================================= */
-
-async function submitStudentUpdate(nis) {
-
-    const data =
-        getStudentFormData();
-
-
-    data.nis =
-        nis;
-
-
-    if (!data.nama) {
-
-        showMessage(
-            "studentMessage",
-            "Nama wajib diisi.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    const result =
-        await apiUpdateStudent(
-            data
-        );
-
-
-    if (
-        result &&
-        result.success
-    ) {
-
-        alert(
-            result.message ||
-            "Student berhasil diupdate."
-        );
-
-
-        await renderStudentList();
-
-        refreshDashboardCounters();
-
-    }
-
-    else {
-
-        showMessage(
-            "studentMessage",
-            result?.message ||
-            "Gagal update student.",
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-STUDENT LIST
-========================================================= */
-
-async function renderStudentList() {
-
-    const area =
-        document.getElementById(
-            "studentArea"
-        );
-
-
-    if (!area) return;
-
-
-    area.innerHTML =
-        "Loading students...";
-
-
-    const response =
-        await apiGetStudent();
-
-
-    if (
-        !response ||
-        !response.success
-    ) {
-
-        area.innerHTML = `
-
-            <div style="color:#b00020;">
-
-                Gagal mengambil data student.
-
-                <br>
-
-                ${escapeHtml(
-                    response?.message ||
-                    "Unknown error."
-                )}
-
-            </div>
-
-        `;
-
-
-        return;
-
-    }
-
-
-    teacherStudents =
-        normalizeApiArray(
-            response.data
-        );
-
-
-    if (
-        teacherStudents.length === 0
-    ) {
-
-        area.innerHTML = `
-
-            <div class="card-box">
-
-                <h3>
-                    No Students
-                </h3>
-
-                <br>
-
-                <p>
-                    Belum ada student.
-                </p>
-
-                <br>
-
-                <button
-                    class="btn teacher"
-                    onclick="showCSVImport()">
-
-                    📥 Import CSV
-
-                </button>
-
-            </div>
-
-        `;
-
-
-        return;
-
-    }
-
-
-    let html = `
-
-        <div style="
-            margin-bottom:20px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            flex-wrap:wrap;
-            gap:10px;
-        ">
-
-            <strong>
-                Total Students:
-                ${teacherStudents.length}
-            </strong>
-
             <button
-                class="btn teacher"
-                onclick="showCSVImport()">
+                id="btnSaveStudent"
+                type="submit"
+                class="btn teacher">
 
-                📥 Import CSV
+                Save Student
 
             </button>
 
+            <button
+                type="button"
+                onclick="resetStudentForm()">
+
+                Cancel
+
+            </button>
+
+        </form>
+
+        <br>
+
+        <input
+            id="searchStudent"
+            type="text"
+            placeholder="Search Student..."
+            onkeyup="filterStudent()"
+        >
+
+        <br><br>
+
+        <div id="studentTable">
+
+            Loading...
+
         </div>
 
-        <div style="overflow-x:auto;">
+    `);
 
-            <table style="
-                width:100%;
-                border-collapse:collapse;
-                min-width:850px;
-            ">
+
+    const form =
+        document.getElementById(
+            "studentForm"
+        );
+
+
+    if (form) {
+
+        form.addEventListener(
+            "submit",
+            saveStudent
+        );
+
+    }
+
+
+    loadStudents();
+
+}
+
+
+/* =====================================================
+   SAVE STUDENT
+===================================================== */
+
+async function saveStudent(e) {
+
+    e.preventDefault();
+
+
+    const data = {
+
+        nis:
+            document
+                .getElementById("nis")
+                .value
+                .trim(),
+
+        nama:
+            document
+                .getElementById("nama")
+                .value
+                .trim(),
+
+        kelas:
+            document
+                .getElementById("kelas")
+                .value
+                .trim(),
+
+        username:
+            document
+                .getElementById("username")
+                .value
+                .trim(),
+
+        password:
+            document
+                .getElementById("password")
+                .value
+                .trim(),
+
+        status:
+            "Active"
+
+    };
+
+
+    let res;
+
+
+    if (
+        STATE.studentEdit
+    ) {
+
+        data.id =
+            STATE.studentId;
+
+
+        res =
+            await apiUpdateStudent(
+                data
+            );
+
+    }
+
+    else {
+
+        res =
+            await apiInsertStudent(
+                data
+            );
+
+    }
+
+
+    alert(
+        res &&
+        res.message
+            ? res.message
+            : "Operation completed."
+    );
+
+
+    if (
+        !res ||
+        res.success !== true
+    ) {
+
+        return;
+
+    }
+
+
+    resetStudentForm();
+
+    await loadStudents();
+
+    await refreshDashboard();
+
+}
+
+
+/* =====================================================
+   LOAD STUDENTS
+===================================================== */
+
+async function loadStudents() {
+
+    const table =
+        document.getElementById(
+            "studentTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const res =
+            await apiGetStudent();
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load students."
+                ) +
+                "</p>";
+
+            return;
+
+        }
+
+
+        APP.student =
+            normalizeApiArray(
+                res.data
+            );
+
+
+        updateStudentCounter(
+            APP.student.length
+        );
+
+
+        if (
+            APP.student.length === 0
+        ) {
+
+            table.innerHTML =
+                "<p>No student found.</p>";
+
+            return;
+
+        }
+
+
+        let html = `
+
+            <table
+                border="1"
+                width="100%"
+                cellpadding="8">
 
                 <thead>
 
                     <tr>
 
-                        <th style="${tableHeadStyle}">
-                            #
+                        <th>
+                            No
                         </th>
 
-                        <th style="${tableHeadStyle}">
+                        <th>
                             NIS
                         </th>
 
-                        <th style="${tableHeadStyle}">
-                            Nama
+                        <th>
+                            Name
                         </th>
 
-                        <th style="${tableHeadStyle}">
-                            Kelas
+                        <th>
+                            Class
                         </th>
 
-                        <th style="${tableHeadStyle}">
+                        <th>
                             Username
                         </th>
 
-                        <th style="${tableHeadStyle}">
+                        <th>
                             Status
                         </th>
 
-                        <th style="${tableHeadStyle}">
+                        <th>
                             Action
                         </th>
 
@@ -2233,70 +1657,1439 @@ async function renderStudentList() {
 
                 <tbody>
 
+        `;
+
+
+        APP.student.forEach(
+            (s, i) => {
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${i + 1}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.nis)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.nama)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.kelas)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.username)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(s.status)}
+                        </td>
+
+                        <td>
+
+                            <button
+                                type="button"
+                                class="btn edit"
+                                onclick="editStudent('${escapeAttribute(s.id)}')">
+
+                                Edit
+
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn delete"
+                                onclick="deleteStudent('${escapeAttribute(s.id)}')">
+
+                                Delete
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
+
+        html += `
+
+                </tbody>
+
+            </table>
+
+        `;
+
+
+        table.innerHTML =
+            html;
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "LOAD STUDENTS ERROR:",
+            err
+        );
+
+
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load students."
+            ) +
+            "</p>";
+
+    }
+
+}
+
+
+/* =====================================================
+   EDIT STUDENT
+===================================================== */
+
+function editStudent(id) {
+
+    const student =
+        APP.student.find(
+            item =>
+                String(item.id) ===
+                String(id)
+        );
+
+
+    if (!student) {
+
+        return;
+
+    }
+
+
+    STATE.studentEdit =
+        true;
+
+    STATE.studentId =
+        student.id;
+
+
+    document.getElementById(
+        "nis"
+    ).value =
+        student.nis || "";
+
+
+    document.getElementById(
+        "nama"
+    ).value =
+        student.nama || "";
+
+
+    document.getElementById(
+        "kelas"
+    ).value =
+        student.kelas || "";
+
+
+    document.getElementById(
+        "username"
+    ).value =
+        student.username || "";
+
+
+    document.getElementById(
+        "password"
+    ).value =
+        student.password || "";
+
+
+    const button =
+        document.getElementById(
+            "btnSaveStudent"
+        );
+
+
+    if (button) {
+
+        button.innerText =
+            "Update Student";
+
+    }
+
+}
+
+
+/* =====================================================
+   DELETE STUDENT
+===================================================== */
+
+async function deleteStudent(id) {
+
+    if (
+        !confirm(
+            "Delete this student?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const res =
+        await apiDeleteStudent({
+
+            id: id
+
+        });
+
+
+    alert(
+        res &&
+        res.message
+            ? res.message
+            : "Student deleted."
+    );
+
+
+    if (
+        !res ||
+        res.success !== true
+    ) {
+
+        return;
+
+    }
+
+
+    await loadStudents();
+
+    await refreshDashboard();
+
+}
+
+
+/* =====================================================
+   RESET STUDENT FORM
+===================================================== */
+
+function resetStudentForm() {
+
+    STATE.studentEdit =
+        false;
+
+    STATE.studentId =
+        null;
+
+
+    const form =
+        document.getElementById(
+            "studentForm"
+        );
+
+
+    if (form) {
+
+        form.reset();
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "btnSaveStudent"
+        );
+
+
+    if (button) {
+
+        button.innerText =
+            "Save Student";
+
+    }
+
+}
+
+
+/* =====================================================
+   SEARCH STUDENT
+===================================================== */
+
+function filterStudent() {
+
+    const input =
+        document.getElementById(
+            "searchStudent"
+        );
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    const keyword =
+        input.value
+            .toLowerCase()
+            .trim();
+
+
+    document
+        .querySelectorAll(
+            "#studentTable tbody tr"
+        )
+        .forEach(row => {
+
+            row.style.display =
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
+
+        });
+
+}
+
+
+/* =====================================================
+   TOKEN PAGE
+===================================================== */
+
+function loadTokenPage() {
+
+    setContent(`
+
+        <h2>
+            Exam Token
+        </h2>
+
+        <br>
+
+        <form id="tokenForm">
+
+            <label>
+                Class
+            </label>
+
+            <input
+                id="tokenClass"
+                required
+            >
+
+            <br><br>
+
+            <label>
+                Expired (Minutes)
+            </label>
+
+            <input
+                id="expired"
+                type="number"
+                value="30"
+                min="1"
+                required
+            >
+
+            <br><br>
+
+            <label>
+                Note
+            </label>
+
+            <input
+                id="note"
+            >
+
+            <br><br>
+
+            <button
+                type="submit"
+                class="btn teacher">
+
+                Generate Token
+
+            </button>
+
+        </form>
+
+        <br>
+
+        <input
+            id="searchToken"
+            type="text"
+            placeholder="Search Token..."
+            onkeyup="filterToken()"
+        >
+
+        <br><br>
+
+        <div id="tokenTable">
+
+            Loading...
+
+        </div>
+
+    `);
+
+
+    const form =
+        document.getElementById(
+            "tokenForm"
+        );
+
+
+    if (form) {
+
+        form.addEventListener(
+            "submit",
+            generateExamToken
+        );
+
+    }
+
+
+    loadTokens();
+
+}
+
+
+/* =====================================================
+   GENERATE TOKEN
+===================================================== */
+
+async function generateExamToken(e) {
+
+    e.preventDefault();
+
+
+    const classElement =
+        document.getElementById(
+            "tokenClass"
+        );
+
+
+    const expiredElement =
+        document.getElementById(
+            "expired"
+        );
+
+
+    const noteElement =
+        document.getElementById(
+            "note"
+        );
+
+
+    if (
+        !classElement ||
+        !expiredElement ||
+        !noteElement
+    ) {
+
+        alert(
+            "Exam token form is not available."
+        );
+
+        return;
+
+    }
+
+
+    const data = {
+
+        kelas:
+            classElement.value
+                .trim(),
+
+        expired:
+            Number(
+                expiredElement.value
+            ),
+
+        note:
+            noteElement.value
+                .trim(),
+
+        createdBy:
+            "Teacher"
+
+    };
+
+
+    if (!data.kelas) {
+
+        alert(
+            "Class wajib diisi."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !data.expired ||
+        data.expired <= 0
+    ) {
+
+        alert(
+            "Expired minutes tidak valid."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        console.log(
+            "CREATE TOKEN REQUEST:",
+            data
+        );
+
+
+        const res =
+            await apiCreateToken(
+                data
+            );
+
+
+        console.log(
+            "CREATE TOKEN RESPONSE:",
+            res
+        );
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Token created."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        const form =
+            document.getElementById(
+                "tokenForm"
+            );
+
+
+        if (form) {
+
+            form.reset();
+
+        }
+
+
+        const expired =
+            document.getElementById(
+                "expired"
+            );
+
+
+        if (expired) {
+
+            expired.value =
+                30;
+
+        }
+
+
+        await loadTokens();
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "CREATE TOKEN ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to create token."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   LOAD TOKENS
+===================================================== */
+
+async function loadTokens() {
+
+    const table =
+        document.getElementById(
+            "tokenTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const res =
+            await apiGetToken();
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load tokens."
+                ) +
+                "</p>";
+
+            return;
+
+        }
+
+
+        APP.token =
+            normalizeApiArray(
+                res.data
+            );
+
+
+        updateTokenCounter(
+            APP.token.length
+        );
+
+
+        if (
+            APP.token.length === 0
+        ) {
+
+            table.innerHTML =
+                "<p>No token found.</p>";
+
+            return;
+
+        }
+
+
+        let html = `
+
+            <table
+                border="1"
+                width="100%"
+                cellpadding="8">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            No
+                        </th>
+
+                        <th>
+                            Token
+                        </th>
+
+                        <th>
+                            Class
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Expired
+                        </th>
+
+                        <th>
+                            Created
+                        </th>
+
+                        <th>
+                            Action
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        APP.token.forEach(
+            (t, i) => {
+
+                const status =
+                    String(
+                        t.status || ""
+                    )
+                    .toUpperCase();
+
+
+                const disableButton =
+                    status === "ACTIVE"
+
+                        ? `
+
+                            <button
+                                type="button"
+                                class="btn edit"
+                                onclick="disableExamToken('${escapeAttribute(t.token)}')">
+
+                                Disable
+
+                            </button>
+
+                          `
+
+                        : "";
+
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${i + 1}
+                        </td>
+
+                        <td>
+                            <b>
+                                ${escapeHTML(
+                                    t.token
+                                )}
+                            </b>
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                t.kelas
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                t.status
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                t.expired
+                            )}
+                            minutes
+                        </td>
+
+                        <td>
+                            ${formatDate(
+                                t.createdAt
+                            )}
+                        </td>
+
+                        <td>
+
+                            ${disableButton}
+
+                            <button
+                                type="button"
+                                class="btn delete"
+                                onclick="deleteExamToken('${escapeAttribute(t.token)}')">
+
+                                Delete
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
+
+        html += `
+
+                </tbody>
+
+            </table>
+
+        `;
+
+
+        table.innerHTML =
+            html;
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "LOAD TOKENS ERROR:",
+            err
+        );
+
+
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load tokens."
+            ) +
+            "</p>";
+
+    }
+
+}
+
+
+/* =====================================================
+   DISABLE TOKEN
+===================================================== */
+
+async function disableExamToken(token) {
+
+    if (!token) {
+
+        alert(
+            "Token is required."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            "Disable this token?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const res =
+            await apiDisableToken({
+
+                token: token
+
+            });
+
+
+        console.log(
+            "DISABLE TOKEN RESPONSE:",
+            res
+        );
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Token disabled."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        await loadTokens();
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DISABLE TOKEN ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to disable token."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   DELETE TOKEN
+===================================================== */
+
+async function deleteExamToken(token) {
+
+    if (!token) {
+
+        alert(
+            "Token is required."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            "Delete this token?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const res =
+            await apiDeleteToken({
+
+                token: token
+
+            });
+
+
+        console.log(
+            "DELETE TOKEN RESPONSE:",
+            res
+        );
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Token deleted."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        await loadTokens();
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE TOKEN ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete token."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   SEARCH TOKEN
+===================================================== */
+
+function filterToken() {
+
+    const input =
+        document.getElementById(
+            "searchToken"
+        );
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    const keyword =
+        input.value
+            .toLowerCase()
+            .trim();
+
+
+    document
+        .querySelectorAll(
+            "#tokenTable tbody tr"
+        )
+        .forEach(row => {
+
+            row.style.display =
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
+
+        });
+
+}
+
+
+/* =====================================================
+   RESULT PAGE
+===================================================== */
+
+function loadResultPage() {
+
+    setContent(`
+
+        <h2>
+            Speaking Results
+        </h2>
+
+        <br>
+
+        <input
+            id="searchResult"
+            type="text"
+            placeholder="Search Student..."
+            onkeyup="filterResult()"
+        >
+
+        <br><br>
+
+        <div id="resultTable">
+
+            Loading...
+
+        </div>
+
+    `);
+
+
+    loadResults();
+
+}
+
+
+/* =====================================================
+   LOAD RESULTS
+===================================================== */
+
+async function loadResults() {
+
+    const table =
+        document.getElementById(
+            "resultTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const res =
+            await apiGetResult();
+
+
+        console.log(
+            "GET RESULT RESPONSE:",
+            res
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load results."
+                ) +
+                "</p>";
+
+            APP.result = [];
+
+            updateResultCounter(0);
+
+            return;
+
+        }
+
+
+        /*
+         * =================================================
+         * RESULT FIX #2
+         * =================================================
+         *
+         * IMPORTANT:
+         *
+         * If API returns:
+         *
+         * response.data = [...]
+         *
+         * use response.data.
+         *
+         * If API returns:
+         *
+         * response[0]
+         * response[1]
+         * response[2]
+         *
+         * use the root response.
+         */
+
+        APP.result =
+            normalizeApiArray(
+                res.data ??
+                res
+            );
+
+
+        updateResultCounter(
+            APP.result.length
+        );
+
+
+        if (
+            APP.result.length === 0
+        ) {
+
+            table.innerHTML =
+                "<p>No result found.</p>";
+
+            return;
+
+        }
+
+
+        renderResultList();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "LOAD RESULTS ERROR:",
+            err
+        );
+
+
+        APP.result = [];
+
+
+        updateResultCounter(0);
+
+
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load results."
+            ) +
+            "</p>";
+
+    }
+
+}
+
+
+/* =====================================================
+   RENDER RESULT LIST
+===================================================== */
+
+function renderResultList() {
+
+    const table =
+        document.getElementById(
+            "resultTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
+    if (
+        !Array.isArray(APP.result) ||
+        APP.result.length === 0
+    ) {
+
+        table.innerHTML =
+            "<p>No result found.</p>";
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <table
+            border="1"
+            width="100%"
+            cellpadding="8">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        No
+                    </th>
+
+                    <th>
+                        NIS
+                    </th>
+
+                    <th>
+                        Name
+                    </th>
+
+                    <th>
+                        Class
+                    </th>
+
+                    <th>
+                        Question
+                    </th>
+
+                    <th>
+                        Score
+                    </th>
+
+                    <th>
+                        Accuracy
+                    </th>
+
+                    <th>
+                        Transcript
+                    </th>
+
+                    <th>
+                        Feedback
+                    </th>
+
+                    <th>
+                        Result ID
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
     `;
 
 
-    teacherStudents.forEach(
-        function (student, index) {
+    APP.result.forEach(
+        (r, i) => {
 
-            const status =
-                String(
-                    student.status ||
-                    "ACTIVE"
-                ).toUpperCase();
+            /*
+             * Score compatibility.
+             *
+             * Current backend normally provides:
+             *
+             * score
+             *
+             * Additional aliases are supported
+             * without changing backend.
+             */
+
+            const score =
+                r.score ??
+                r.totalScore ??
+                r.nilai ??
+                r.value ??
+                "-";
+
+
+            const accuracy =
+                r.accuracy ??
+                r.accuracyScore ??
+                r.pronunciationAccuracy ??
+                r.accuracyPercent ??
+                "-";
+
+
+            const transcript =
+                r.transcript ??
+                r.recognizedText ??
+                r.text ??
+                "-";
+
+
+            const feedback =
+                r.feedback ??
+                r.comment ??
+                r.message ??
+                "-";
+
+
+            const resultId =
+                r.id ??
+                r.resultId ??
+                "-";
 
 
             html += `
 
                 <tr>
 
-                    <td style="${tableCellStyle}">
-                        ${index + 1}
+                    <td>
+                        ${i + 1}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            String(
-                                student.nis || ""
-                            )
+                    <td>
+                        ${escapeHTML(
+                            r.nis
                         )}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            student.nama || ""
+                    <td>
+                        ${escapeHTML(
+                            r.nama
                         )}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            student.kelas || ""
+                    <td>
+                        ${escapeHTML(
+                            r.kelas
                         )}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            student.username || ""
+                    <td>
+                        ${escapeHTML(
+                            r.question
                         )}
                     </td>
 
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(status)}
+                    <td>
+
+                        <b>
+                            ${escapeHTML(
+                                score
+                            )}
+                        </b>
+
                     </td>
 
-                    <td style="${tableCellStyle}">
+                    <td>
+                        ${escapeHTML(
+                            accuracy
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            transcript
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            feedback
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            resultId
+                        )}
+                    </td>
+
+                    <td>
 
                         <button
-                            class="btn teacher"
-                            onclick="editStudent(${index})">
-
-                            Edit
-
-                        </button>
-
-                        <button
-                            class="btn"
-                            onclick="deleteStudentByIndex(${index})">
+                            type="button"
+                            class="btn delete"
+                            onclick="deleteResult('${escapeAttribute(resultId)}')">
 
                             Delete
 
@@ -2314,745 +3107,29 @@ async function renderStudentList() {
 
     html += `
 
-                </tbody>
+            </tbody>
 
-            </table>
-
-        </div>
+        </table>
 
     `;
 
 
-    area.innerHTML =
+    table.innerHTML =
         html;
 
 }
 
 
-/* =========================================================
-EDIT STUDENT
-========================================================= */
+/* =====================================================
+   DELETE RESULT
+===================================================== */
 
-function editStudent(index) {
+async function deleteResult(id) {
 
-    const student =
-        teacherStudents[index];
-
-
-    if (!student) return;
-
-
-    showStudentForm(
-        student
-    );
-
-}
-
-
-/* =========================================================
-DELETE STUDENT
-========================================================= */
-
-async function deleteStudentByIndex(index) {
-
-    const student =
-        teacherStudents[index];
-
-
-    if (!student) return;
-
-
-    const nis =
-        String(
-            student.nis || ""
-        );
-
-
-    if (
-        !confirm(
-            "Hapus student dengan NIS " +
-            nis +
-            "?"
-        )
-    ) return;
-
-
-    const result =
-        await apiDeleteStudent({
-
-            nis:
-                nis
-
-        });
-
-
-    if (
-        result &&
-        result.success
-    ) {
+    if (!id || id === "-") {
 
         alert(
-            result.message ||
-            "Student berhasil dihapus."
-        );
-
-
-        await renderStudentList();
-
-        refreshDashboardCounters();
-
-    }
-
-    else {
-
-        alert(
-            result?.message ||
-            "Gagal menghapus student."
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-CSV IMPORT UI
-========================================================= */
-
-function showCSVImport() {
-
-    const area =
-        document.getElementById(
-            "studentArea"
-        );
-
-
-    if (!area) return;
-
-
-    csvStudentData = [];
-
-
-    area.innerHTML = `
-
-        <div class="card-box">
-
-            <h2>
-                📥 Import Students from CSV
-            </h2>
-
-            <br>
-
-            <p>
-                Gunakan file CSV dengan format:
-            </p>
-
-            <br>
-
-            <div style="
-                background:#f5f7fa;
-                padding:15px;
-                border-radius:10px;
-                overflow-x:auto;
-            ">
-
-                <code>
-                    nis,nama,kelas,username,password,status
-                </code>
-
-                <br>
-
-                <code>
-                    7001,Ahmad Fauzan,7A,ahmad,123456,ACTIVE
-                </code>
-
-            </div>
-
-            <br>
-
-            <input
-                id="studentCSVFile"
-                type="file"
-                accept=".csv,text/csv"
-                style="${inputStyle}"
-            >
-
-            <br><br>
-
-            <div style="
-                display:flex;
-                gap:10px;
-                flex-wrap:wrap;
-            ">
-
-                <button
-                    class="btn teacher"
-                    onclick="previewStudentCSV()">
-
-                    🔍 Preview CSV
-
-                </button>
-
-                <button
-                    class="btn"
-                    onclick="renderStudentList()">
-
-                    Cancel
-
-                </button>
-
-            </div>
-
-            <div
-                id="csvPreview"
-                style="margin-top:25px;">
-            </div>
-
-        </div>
-
-    `;
-
-}
-
-
-/* =========================================================
-CSV PREVIEW
-========================================================= */
-
-function previewStudentCSV() {
-
-    const input =
-        document.getElementById(
-            "studentCSVFile"
-        );
-
-
-    if (
-        !input ||
-        !input.files ||
-        !input.files[0]
-    ) {
-
-        alert(
-            "Silakan pilih file CSV terlebih dahulu."
-        );
-
-        return;
-
-    }
-
-
-    const file =
-        input.files[0];
-
-
-    const reader =
-        new FileReader();
-
-
-    reader.onload =
-        function (event) {
-
-            try {
-
-                const result =
-                    parseStudentCSV(
-                        event.target.result
-                    );
-
-
-                if (!result.success) {
-
-                    showCSVError(
-                        result.message
-                    );
-
-                    return;
-
-                }
-
-
-                csvStudentData =
-                    result.data;
-
-
-                renderCSVPreview();
-
-            }
-
-            catch (err) {
-
-                console.error(
-                    "CSV Parse Error:",
-                    err
-                );
-
-
-                showCSVError(
-                    "CSV tidak dapat dibaca."
-                );
-
-            }
-
-        };
-
-
-    reader.onerror =
-        function () {
-
-            showCSVError(
-                "Gagal membaca file CSV."
-            );
-
-        };
-
-
-    reader.readAsText(
-        file,
-        "UTF-8"
-    );
-
-}
-
-
-/* =========================================================
-CSV PARSER
-========================================================= */
-
-function parseStudentCSV(text) {
-
-    if (!text) {
-
-        return {
-
-            success: false,
-
-            message:
-                "File CSV kosong."
-
-        };
-
-    }
-
-
-    text =
-        text.replace(
-            /^\uFEFF/,
-            ""
-        );
-
-
-    const rows =
-        parseCSVRows(
-            text
-        );
-
-
-    if (
-        !rows ||
-        rows.length < 2
-    ) {
-
-        return {
-
-            success: false,
-
-            message:
-                "CSV tidak memiliki data student."
-
-        };
-
-    }
-
-
-    const headers =
-        rows[0].map(
-            function (header) {
-
-                return String(
-                    header || ""
-                )
-                .trim()
-                .toLowerCase();
-
-            }
-        );
-
-
-    const requiredHeaders = [
-
-        "nis",
-        "nama",
-        "kelas",
-        "username",
-        "password",
-        "status"
-
-    ];
-
-
-    const missingHeaders =
-        requiredHeaders.filter(
-            function (header) {
-
-                return !headers.includes(
-                    header
-                );
-
-            }
-        );
-
-
-    if (
-        missingHeaders.length
-    ) {
-
-        return {
-
-            success: false,
-
-            message:
-                "Header CSV tidak lengkap: " +
-                missingHeaders.join(", ")
-
-        };
-
-    }
-
-
-    const data = [];
-
-
-    for (
-        let i = 1;
-        i < rows.length;
-        i++
-    ) {
-
-        const row =
-            rows[i];
-
-
-        if (
-            row.every(
-                function (cell) {
-
-                    return String(
-                        cell || ""
-                    ).trim() === "";
-
-                }
-            )
-        ) continue;
-
-
-        const item = {
-
-            nis:
-                getCSVValue(
-                    row,
-                    headers,
-                    "nis"
-                ),
-
-
-            nama:
-                getCSVValue(
-                    row,
-                    headers,
-                    "nama"
-                ),
-
-
-            kelas:
-                getCSVValue(
-                    row,
-                    headers,
-                    "kelas"
-                ),
-
-
-            username:
-                getCSVValue(
-                    row,
-                    headers,
-                    "username"
-                ),
-
-
-            password:
-                getCSVValue(
-                    row,
-                    headers,
-                    "password"
-                ),
-
-
-            status:
-                getCSVValue(
-                    row,
-                    headers,
-                    "status"
-                ) ||
-                "ACTIVE"
-
-        };
-
-
-        if (
-            !item.nis ||
-            !item.nama
-        ) continue;
-
-
-        data.push(
-            item
-        );
-
-    }
-
-
-    if (!data.length) {
-
-        return {
-
-            success: false,
-
-            message:
-                "Tidak ada student valid."
-
-        };
-
-    }
-
-
-    return {
-
-        success: true,
-
-        data: data
-
-    };
-
-}
-
-
-/* =========================================================
-CSV ROW PARSER
-========================================================= */
-
-function parseCSVRows(text) {
-
-    const rows = [];
-
-    let row = [];
-
-    let cell = "";
-
-    let insideQuotes = false;
-
-
-    for (
-        let i = 0;
-        i < text.length;
-        i++
-    ) {
-
-        const char =
-            text[i];
-
-
-        const nextChar =
-            text[i + 1];
-
-
-        if (
-            char === '"'
-        ) {
-
-            if (
-                insideQuotes &&
-                nextChar === '"'
-            ) {
-
-                cell += '"';
-
-                i++;
-
-            }
-
-            else {
-
-                insideQuotes =
-                    !insideQuotes;
-
-            }
-
-            continue;
-
-        }
-
-
-        if (
-            char === "," &&
-            !insideQuotes
-        ) {
-
-            row.push(cell);
-
-            cell = "";
-
-            continue;
-
-        }
-
-
-        if (
-            (
-                char === "\n" ||
-                char === "\r"
-            ) &&
-            !insideQuotes
-        ) {
-
-            if (
-                char === "\r" &&
-                nextChar === "\n"
-            ) {
-
-                i++;
-
-            }
-
-
-            row.push(cell);
-
-            rows.push(row);
-
-            row = [];
-
-            cell = "";
-
-            continue;
-
-        }
-
-
-        cell += char;
-
-    }
-
-
-    if (
-        cell !== "" ||
-        row.length > 0
-    ) {
-
-        row.push(cell);
-
-        rows.push(row);
-
-    }
-
-
-    return rows;
-
-}
-
-
-/* =========================================================
-GET CSV VALUE
-========================================================= */
-
-function getCSVValue(
-    row,
-    headers,
-    field
-) {
-
-    const index =
-        headers.indexOf(
-            field
-        );
-
-
-    if (index < 0) return "";
-
-
-    return String(
-        row[index] || ""
-    ).trim();
-
-}
-
-
-/* =========================================================
-CSV PREVIEW
-========================================================= */
-
-function renderCSVPreview() {
-
-    const preview =
-        document.getElementById(
-            "csvPreview"
-        );
-
-
-    if (!preview) return;
-
-
-    let html = `
-
-        <h3>
-            Preview
-        </h3>
-
-        <br>
-
-        <p>
-            ${csvStudentData.length}
-            student siap diimport.
-        </p>
-
-        <br>
-
-        <button
-            class="btn teacher"
-            id="startCSVImportButton"
-            onclick="startStudentCSVImport()">
-
-            🚀 Import
-            ${csvStudentData.length}
-            Students
-
-        </button>
-
-        <div
-            id="csvImportProgress"
-            style="margin-top:20px;">
-        </div>
-
-    `;
-
-
-    preview.innerHTML =
-        html;
-
-}
-
-
-/* =========================================================
-START CSV IMPORT
-========================================================= */
-
-async function startStudentCSVImport() {
-
-    if (
-        !csvStudentData.length
-    ) {
-
-        alert(
-            "Tidak ada data CSV."
+            "Result ID is not available."
         );
 
         return;
@@ -3062,2171 +3139,365 @@ async function startStudentCSVImport() {
 
     if (
         !confirm(
-            "Import " +
-            csvStudentData.length +
-            " student sekarang?"
+            "Delete this result?"
         )
-    ) return;
-
-
-    const button =
-        document.getElementById(
-            "startCSVImportButton"
-        );
-
-
-    if (button) {
-
-        button.disabled = true;
-
-        button.textContent =
-            "⏳ Importing...";
-
-    }
-
-
-    let successCount = 0;
-
-    let failedCount = 0;
-
-
-    for (
-        let i = 0;
-        i < csvStudentData.length;
-        i++
     ) {
-
-        const result =
-            await apiInsertStudent(
-                csvStudentData[i]
-            );
-
-
-        if (
-            result &&
-            result.success
-        ) {
-
-            successCount++;
-
-        }
-
-        else {
-
-            failedCount++;
-
-        }
-
-    }
-
-
-    alert(
-        "Import selesai.\n\n" +
-        "Berhasil: " +
-        successCount +
-        "\n" +
-        "Gagal: " +
-        failedCount
-    );
-
-
-    csvStudentData = [];
-
-
-    await renderStudentList();
-
-    refreshDashboardCounters();
-
-}
-
-
-/* =========================================================
-TOKEN PAGE
-========================================================= */
-
-async function loadTokenPage() {
-
-    const content =
-        getContentElement();
-
-
-    if (!content) return;
-
-
-    content.innerHTML = `
-
-        <div style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            flex-wrap:wrap;
-        ">
-
-            <div>
-
-                <h2>
-                    🔑 Exam Token
-                </h2>
-
-                <p style="
-                    margin-top:8px;
-                    color:#666;
-                ">
-
-                    Manage examination tokens.
-
-                </p>
-
-            </div>
-
-            <button
-                class="btn teacher"
-                onclick="showTokenForm()">
-
-                ➕ Create Token
-
-            </button>
-
-        </div>
-
-        <div
-            id="tokenArea"
-            style="margin-top:25px;">
-
-            Loading...
-
-        </div>
-
-    `;
-
-
-    await renderTokenList();
-
-}
-
-
-/* =========================================================
-TOKEN GENERATOR
-========================================================= */
-
-/**
- * Generate automatic exam token.
- *
- * Example:
- * SAF-2026-A8K3P7
- */
-function generateExamToken() {
-
-    const year =
-        new Date()
-        .getFullYear();
-
-
-    const characters =
-        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-
-    let randomPart = "";
-
-
-    /*
-     * Use crypto API when available.
-     */
-
-    if (
-        window.crypto &&
-        window.crypto.getRandomValues
-    ) {
-
-        const values =
-            new Uint32Array(6);
-
-
-        window.crypto.getRandomValues(
-            values
-        );
-
-
-        for (
-            let i = 0;
-            i < values.length;
-            i++
-        ) {
-
-            randomPart +=
-                characters[
-                    values[i] %
-                    characters.length
-                ];
-
-        }
-
-    }
-
-    else {
-
-        /*
-         * Fallback for older browsers.
-         */
-
-        for (
-            let i = 0;
-            i < 6;
-            i++
-        ) {
-
-            randomPart +=
-                characters[
-                    Math.floor(
-                        Math.random() *
-                        characters.length
-                    )
-                ];
-
-        }
-
-    }
-
-
-    return (
-        "SAF-" +
-        year +
-        "-" +
-        randomPart
-    );
-
-}
-
-
-/* =========================================================
-TOKEN FORM
-========================================================= */
-
-async function showTokenForm() {
-
-    const area =
-        document.getElementById(
-            "tokenArea"
-        );
-
-
-    if (!area) return;
-
-
-    /*
-     * Always make sure Questions are loaded.
-     */
-
-    area.innerHTML = `
-
-        <div class="card-box">
-
-            <h3>
-                Create Exam Token
-            </h3>
-
-            <br>
-
-            <p style="
-                color:#666;
-            ">
-
-                Loading speaking questions...
-
-            </p>
-
-        </div>
-
-    `;
-
-
-    const questions =
-        await ensureTeacherQuestionsLoaded();
-
-
-    /*
-     * Build Question dropdown.
-     */
-
-    let questionOptions = `
-
-        <option value="">
-            -- Select Question --
-        </option>
-
-    `;
-
-
-    if (
-        questions.length > 0
-    ) {
-
-        questions.forEach(
-            function (question) {
-
-                const questionId =
-                    question.id ||
-                    question.questionId ||
-                    question.questionID ||
-                    "";
-
-
-                const title =
-                    question.title ||
-                    question.questionTitle ||
-                    question.question ||
-                    "Untitled Question";
-
-
-                /*
-                 * Skip question if it has no ID.
-                 */
-
-                if (!questionId) return;
-
-
-                questionOptions += `
-
-                    <option
-                        value="${escapeAttribute(questionId)}">
-
-                        ${escapeHtml(
-                            questionId
-                        )}
-                        —
-                        ${escapeHtml(
-                            title
-                        )}
-
-                    </option>
-
-                `;
-
-            }
-        );
-
-    }
-
-
-    /*
-     * Generate token automatically.
-     */
-
-    const generatedToken =
-        generateExamToken();
-
-
-    area.innerHTML = `
-
-        <div class="card-box">
-
-            <h3>
-                Create Exam Token
-            </h3>
-
-            <br>
-
-            <label>
-                Token
-            </label>
-
-            <div style="
-                display:flex;
-                gap:10px;
-                align-items:center;
-                flex-wrap:wrap;
-                margin-top:8px;
-            ">
-
-                <input
-                    id="tokenValue"
-                    type="text"
-                    value="${escapeAttribute(generatedToken)}"
-                    readonly
-                    style="
-                        ${inputStyle}
-                        margin-top:0;
-                        flex:1;
-                        min-width:250px;
-                        background:#f5f7fa;
-                        font-weight:600;
-                        letter-spacing:1px;
-                    "
-                >
-
-                <button
-                    type="button"
-                    class="btn"
-                    onclick="regenerateExamToken()">
-
-                    🔄 New Token
-
-                </button>
-
-            </div>
-
-            <small style="
-                display:block;
-                margin-top:8px;
-                color:#666;
-            ">
-
-                Token dibuat otomatis oleh sistem.
-
-            </small>
-
-            <br><br>
-
-            <label>
-                Question ID
-            </label>
-
-            <select
-                id="tokenQuestionId"
-                style="${inputStyle}">
-
-                ${questionOptions}
-
-            </select>
-
-            ${
-                questions.length === 0
-                ? `
-                    <div style="
-                        margin-top:10px;
-                        padding:12px;
-                        border-radius:8px;
-                        background:#fff3cd;
-                        color:#856404;
-                    ">
-
-                        Belum ada speaking question.
-                        Silakan buat Question terlebih dahulu.
-
-                    </div>
-                `
-                : ""
-            }
-
-            <br><br>
-
-            <div style="
-                display:flex;
-                gap:10px;
-                flex-wrap:wrap;
-            ">
-
-                <button
-                    class="btn teacher"
-                    onclick="submitTokenCreate()"
-                    ${
-                        questions.length === 0
-                        ? "disabled"
-                        : ""
-                    }>
-
-                    💾 Create Token
-
-                </button>
-
-                <button
-                    class="btn"
-                    onclick="renderTokenList()">
-
-                    Cancel
-
-                </button>
-
-            </div>
-
-            <div
-                id="tokenMessage"
-                style="margin-top:15px;">
-            </div>
-
-        </div>
-
-    `;
-
-}
-
-
-/* =========================================================
-REGENERATE TOKEN
-========================================================= */
-
-function regenerateExamToken() {
-
-    const input =
-        document.getElementById(
-            "tokenValue"
-        );
-
-
-    if (!input) return;
-
-
-    input.value =
-        generateExamToken();
-
-}
-
-
-/* =========================================================
-CREATE TOKEN
-========================================================= */
-
-async function submitTokenCreate() {
-
-    const tokenInput =
-        document.getElementById(
-            "tokenValue"
-        );
-
-
-    const questionInput =
-        document.getElementById(
-            "tokenQuestionId"
-        );
-
-
-    const token =
-        tokenInput
-            ?.value
-            .trim() || "";
-
-
-    const questionId =
-        questionInput
-            ?.value
-            .trim() || "";
-
-
-    if (!token) {
-
-        showMessage(
-            "tokenMessage",
-            "Token gagal dibuat.",
-            "error"
-        );
 
         return;
 
     }
-
-
-    if (!questionId) {
-
-        showMessage(
-            "tokenMessage",
-            "Question ID wajib dipilih.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    /*
-     * Preserve both field names for backend compatibility.
-     */
-
-    const result =
-        await apiCreateToken({
-
-            token:
-                token,
-
-            questionId:
-                questionId,
-
-            questionID:
-                questionId
-
-        });
-
-
-    if (
-        result &&
-        result.success
-    ) {
-
-        alert(
-            result.message ||
-            "Token berhasil dibuat."
-        );
-
-
-        await renderTokenList();
-
-        refreshDashboardCounters();
-
-    }
-
-    else {
-
-        showMessage(
-            "tokenMessage",
-            result?.message ||
-            "Gagal membuat token.",
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-TOKEN LIST
-========================================================= */
-
-async function renderTokenList() {
-
-    const area =
-        document.getElementById(
-            "tokenArea"
-        );
-
-
-    if (!area) return;
-
-
-    area.innerHTML =
-        "Loading tokens...";
-
-
-    const response =
-        await apiGetToken();
-
-
-    if (
-        !response ||
-        !response.success
-    ) {
-
-        area.innerHTML = `
-
-            <div style="color:#b00020;">
-
-                ${escapeHtml(
-                    response?.message ||
-                    "Gagal mengambil token."
-                )}
-
-            </div>
-
-        `;
-
-
-        return;
-
-    }
-
-
-    teacherTokens =
-        normalizeApiArray(
-            response.data
-        );
-
-
-    if (
-        teacherTokens.length === 0
-    ) {
-
-        area.innerHTML = `
-
-            <div class="card-box">
-
-                <h3>
-                    No Token
-                </h3>
-
-                <br>
-
-                <p>
-                    Belum ada exam token.
-                </p>
-
-            </div>
-
-        `;
-
-
-        return;
-
-    }
-
-
-    let html = `
-
-        <div style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            flex-wrap:wrap;
-            gap:10px;
-            margin-bottom:20px;
-        ">
-
-            <strong>
-                Total Tokens:
-                ${teacherTokens.length}
-            </strong>
-
-            <button
-                class="btn teacher"
-                onclick="showTokenForm()">
-
-                ➕ Create Token
-
-            </button>
-
-        </div>
-
-        <div style="overflow-x:auto;">
-
-            <table style="
-                width:100%;
-                border-collapse:collapse;
-                min-width:800px;
-            ">
-
-                <thead>
-
-                    <tr>
-
-                        <th style="${tableHeadStyle}">
-                            #
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Token
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Question ID
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Status
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-    `;
-
-
-    teacherTokens.forEach(
-        function (item, index) {
-
-            const questionId =
-                item.questionId ||
-                item.questionID ||
-                "";
-
-
-            html += `
-
-                <tr>
-
-                    <td style="${tableCellStyle}">
-                        ${index + 1}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        <strong>
-                            ${escapeHtml(
-                                item.token || ""
-                            )}
-                        </strong>
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            questionId
-                        )}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            item.status || ""
-                        )}
-                    </td>
-
-                </tr>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    `;
-
-
-    area.innerHTML =
-        html;
-
-}
-
-
-/* =========================================================
-RESULT PAGE
-========================================================= */
-
-async function loadResultPage() {
-
-    const content =
-        getContentElement();
-
-
-    if (!content) return;
-
-
-    content.innerHTML = `
-
-        <div>
-
-            <h2>
-                📊 Speaking Results
-            </h2>
-
-            <p style="
-                margin-top:8px;
-                color:#666;
-            ">
-
-                Student speaking test results.
-
-            </p>
-
-        </div>
-
-        <div
-            id="resultArea"
-            style="margin-top:25px;">
-
-            Loading...
-
-        </div>
-
-    `;
-
-
-    await renderResultList();
-
-}
-
-
-/* =========================================================
-RESULT ID
-========================================================= */
-
-function getResultId(item) {
-
-    if (
-        !item ||
-        typeof item !== "object"
-    ) {
-
-        return "";
-
-    }
-
-
-    return (
-
-        item.id ||
-        item.resultId ||
-        item.resultID ||
-        ""
-
-    );
-
-}
-
-
-/* =========================================================
-RESULT STUDENT NAME
-========================================================= */
-
-function getResultStudent(item) {
-
-    if (
-        !item ||
-        typeof item !== "object"
-    ) {
-
-        return "";
-
-    }
-
-
-    return (
-
-        item.nama ||
-        item.name ||
-        item.studentName ||
-        item.username ||
-        item.nis ||
-        item.student ||
-        ""
-
-    );
-
-}
-
-
-/* =========================================================
-RESULT QUESTION
-========================================================= */
-
-function getResultQuestion(item) {
-
-    if (
-        !item ||
-        typeof item !== "object"
-    ) {
-
-        return "";
-
-    }
-
-
-    return (
-
-        item.question ||
-        item.questionText ||
-        item.title ||
-        item.questionTitle ||
-        item.questionId ||
-        item.questionID ||
-        ""
-
-    );
-
-}
-
-
-/* =========================================================
-RESULT SCORE
-========================================================= */
-
-/**
- * Read speaking score from Result API.
- *
- * Supported field names:
- *
- *   score
- *   nilai
- *   finalScore
- *   totalScore
- *   pronunciationScore
- *   pronunciationAccuracy
- *   accuracy
- *
- * IMPORTANT:
- *   0 is a valid score.
- */
-function getResultScore(item) {
-
-    if (
-        !item ||
-        typeof item !== "object"
-    ) {
-
-        return "";
-
-    }
-
-
-    const possibleFields = [
-
-        "score",
-        "nilai",
-        "finalScore",
-        "totalScore",
-        "pronunciationScore",
-        "pronunciationAccuracy",
-        "accuracy"
-
-    ];
-
-
-    for (
-        const field of possibleFields
-    ) {
-
-        if (
-            Object.prototype.hasOwnProperty.call(
-                item,
-                field
-            )
-        ) {
-
-            const value =
-                item[field];
-
-
-            /*
-             * Preserve valid zero.
-             */
-
-            if (
-                value !== undefined &&
-                value !== null &&
-                String(value).trim() !== ""
-            ) {
-
-                return value;
-
-            }
-
-        }
-
-    }
-
-
-    return "";
-
-}
-
-
-/* =========================================================
-RESULT ACCURACY
-========================================================= */
-
-function getResultAccuracy(item) {
-
-    if (
-        !item ||
-        typeof item !== "object"
-    ) {
-
-        return "";
-
-    }
-
-
-    const possibleFields = [
-
-        "accuracy",
-        "pronunciationAccuracy",
-        "pronunciationScore"
-
-    ];
-
-
-    for (
-        const field of possibleFields
-    ) {
-
-        if (
-            Object.prototype.hasOwnProperty.call(
-                item,
-                field
-            )
-        ) {
-
-            const value =
-                item[field];
-
-
-            if (
-                value !== undefined &&
-                value !== null &&
-                String(value).trim() !== ""
-            ) {
-
-                return value;
-
-            }
-
-        }
-
-    }
-
-
-    return "";
-
-}
-
-
-/* =========================================================
-FORMAT RESULT SCORE
-========================================================= */
-
-function formatResultScore(value) {
-
-    if (
-        value === undefined ||
-        value === null ||
-        String(value).trim() === ""
-    ) {
-
-        return "-";
-
-    }
-
-
-    const numberValue =
-        Number(value);
-
-
-    if (
-        Number.isFinite(numberValue)
-    ) {
-
-        return Number.isInteger(numberValue)
-            ? String(numberValue)
-            : numberValue.toFixed(2);
-
-    }
-
-
-    return String(value);
-
-}
-
-
-/* =========================================================
-FORMAT RESULT ACCURACY
-========================================================= */
-
-function formatResultAccuracy(value) {
-
-    if (
-        value === undefined ||
-        value === null ||
-        String(value).trim() === ""
-    ) {
-
-        return "-";
-
-    }
-
-
-    const stringValue =
-        String(value).trim();
-
-
-    /*
-     * Backend already sends percentage.
-     */
-
-    if (
-        stringValue.includes("%")
-    ) {
-
-        return stringValue;
-
-    }
-
-
-    const numberValue =
-        Number(value);
-
-
-    if (
-        Number.isFinite(numberValue)
-    ) {
-
-        return (
-            Number.isInteger(numberValue)
-                ? String(numberValue)
-                : numberValue.toFixed(2)
-        ) + "%";
-
-    }
-
-
-    return stringValue;
-
-}
-
-
-/* =========================================================
-RESULT LIST
-========================================================= */
-
-async function renderResultList() {
-
-    const area =
-        document.getElementById(
-            "resultArea"
-        );
-
-
-    if (!area) return;
-
-
-    area.innerHTML =
-        "Loading results...";
-
-
-    /*
-     * IMPORTANT:
-     * Keep existing API route.
-     *
-     * Do not replace apiGetResult().
-     */
-
-    let response;
 
 
     try {
 
-        response =
-            await apiGetResult();
+        const res =
+            await apiDeleteResult({
+
+                id: id
+
+            });
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Result deleted."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        await loadResults();
+
+        await refreshDashboard();
 
     }
 
     catch (err) {
 
         console.error(
-            "Get Result Error:",
+            "DELETE RESULT ERROR:",
             err
         );
 
 
-        area.innerHTML = `
-
-            <div style="
-                color:#b00020;
-                padding:15px;
-            ">
-
-                Gagal mengambil result.
-
-                <br><br>
-
-                ${escapeHtml(
-                    err?.message ||
-                    "API error."
-                )}
-
-            </div>
-
-        `;
-
-
-        return;
-
-    }
-
-
-    if (
-        !response ||
-        !response.success
-    ) {
-
-        area.innerHTML = `
-
-            <div style="
-                color:#b00020;
-                padding:15px;
-            ">
-
-                ${escapeHtml(
-                    response?.message ||
-                    "Gagal mengambil result."
-                )}
-
-            </div>
-
-        `;
-
-
-        return;
-
-    }
-
-
-    /*
-     * IMPORTANT RESULT FIX:
-     *
-     * API result data may arrive as:
-     *
-     * [
-     *     {...},
-     *     {...}
-     * ]
-     *
-     * OR:
-     *
-     * {
-     *     "0": {...},
-     *     "1": {...}
-     * }
-     */
-
-    teacherResults =
-        normalizeApiArray(
-            response.data
+        alert(
+            err.message ||
+            "Unable to delete result."
         );
 
-
-    /*
-     * Debug information.
-     * Useful during testing.
-     */
-
-    console.log(
-        "SAF Result API Response:",
-        response
-    );
-
-
-    console.log(
-        "SAF Normalized Results:",
-        teacherResults
-    );
-
-
-    if (
-        teacherResults.length === 0
-    ) {
-
-        area.innerHTML = `
-
-            <div class="card-box">
-
-                <h3>
-                    No Results
-                </h3>
-
-                <br>
-
-                <p>
-                    Belum ada speaking result.
-                </p>
-
-            </div>
-
-        `;
-
-
-        return;
-
     }
-
-
-    let html = `
-
-        <div style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            flex-wrap:wrap;
-            gap:10px;
-            margin-bottom:20px;
-        ">
-
-            <strong>
-                Total Results:
-                ${teacherResults.length}
-            </strong>
-
-            <div style="
-                display:flex;
-                gap:10px;
-                flex-wrap:wrap;
-            ">
-
-                <button
-                    class="btn"
-                    onclick="selectAllResults()">
-
-                    ☑ Select All
-
-                </button>
-
-                <button
-                    class="btn"
-                    onclick="clearResultSelection()">
-
-                    ☐ Clear
-
-                </button>
-
-                <button
-                    class="btn"
-                    onclick="deleteSelectedResults()">
-
-                    🗑 Delete Selected
-
-                </button>
-
-                <button
-                    class="btn"
-                    onclick="deleteAllResults()">
-
-                    🗑 Delete All
-
-                </button>
-
-            </div>
-
-        </div>
-
-        <div style="
-            overflow-x:auto;
-        ">
-
-            <table style="
-                width:100%;
-                border-collapse:collapse;
-                min-width:1050px;
-            ">
-
-                <thead>
-
-                    <tr>
-
-                        <th style="${tableHeadStyle}">
-
-                            <input
-                                type="checkbox"
-                                id="selectAllResultsCheckbox"
-                                onchange="toggleAllResults(this.checked)"
-                            >
-
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            #
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Student
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Question
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Score
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Accuracy
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Result ID
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-    `;
-
-
-    teacherResults.forEach(
-        function (item, index) {
-
-            const resultId =
-                getResultId(item);
-
-
-            const student =
-                getResultStudent(item);
-
-
-            const question =
-                getResultQuestion(item);
-
-
-            const score =
-                getResultScore(item);
-
-
-            const accuracy =
-                getResultAccuracy(item);
-
-
-            html += `
-
-                <tr>
-
-                    <td style="${tableCellStyle}">
-
-                        <input
-                            type="checkbox"
-                            class="result-checkbox"
-                            data-result-id="${escapeAttribute(
-                                resultId
-                            )}"
-                            data-result-index="${index}"
-                        >
-
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${index + 1}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-
-                        <strong>
-                            ${escapeHtml(
-                                student
-                            )}
-                        </strong>
-
-                    </td>
-
-                    <td style="${tableCellStyle}">
-
-                        ${escapeHtml(
-                            question
-                        )}
-
-                    </td>
-
-                    <td style="${tableCellStyle}">
-
-                        <strong style="
-                            font-size:18px;
-                        ">
-
-                            ${escapeHtml(
-                                formatResultScore(
-                                    score
-                                )
-                            )}
-
-                        </strong>
-
-                    </td>
-
-                    <td style="${tableCellStyle}">
-
-                        ${escapeHtml(
-                            formatResultAccuracy(
-                                accuracy
-                            )
-                        )}
-
-                    </td>
-
-                    <td style="${tableCellStyle}">
-
-                        ${escapeHtml(
-                            resultId
-                        )}
-
-                    </td>
-
-                </tr>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    `;
-
-
-    area.innerHTML =
-        html;
 
 }
 
 
-/* =========================================================
-RESULT SELECT ALL
-========================================================= */
+/* =====================================================
+   SEARCH RESULT
+===================================================== */
 
-function toggleAllResults(
-    checked
-) {
+function filterResult() {
 
-    const checkboxes =
-        document.querySelectorAll(
-            ".result-checkbox"
-        );
-
-
-    checkboxes.forEach(
-        function (checkbox) {
-
-            checkbox.checked =
-                checked;
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-RESULT SELECT ALL BUTTON
-========================================================= */
-
-function selectAllResults() {
-
-    toggleAllResults(
-        true
-    );
-
-
-    const master =
+    const input =
         document.getElementById(
-            "selectAllResultsCheckbox"
+            "searchResult"
         );
 
 
-    if (master) {
+    if (!input) {
 
-        master.checked =
-            true;
+        return;
 
     }
+
+
+    const keyword =
+        input.value
+            .toLowerCase()
+            .trim();
+
+
+    document
+        .querySelectorAll(
+            "#resultTable tbody tr"
+        )
+        .forEach(row => {
+
+            row.style.display =
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
+
+        });
 
 }
 
 
-/* =========================================================
-RESULT CLEAR SELECTION
-========================================================= */
+/* =====================================================
+   DASHBOARD COUNTERS
+===================================================== */
 
-function clearResultSelection() {
+function updateQuestionCounter(total) {
 
-    toggleAllResults(
-        false
-    );
+    const elements = [
 
+        "totalQuestion",
 
-    const master =
-        document.getElementById(
-            "selectAllResultsCheckbox"
-        );
+        "dashboardQuestionCount"
+
+    ];
 
 
-    if (master) {
+    elements.forEach(
+        id => {
 
-        master.checked =
-            false;
-
-    }
-
-}
-
-
-/* =========================================================
-GET SELECTED RESULTS
-========================================================= */
-
-function getSelectedResultIndexes() {
-
-    const checkboxes =
-        document.querySelectorAll(
-            ".result-checkbox:checked"
-        );
-
-
-    const indexes = [];
-
-
-    checkboxes.forEach(
-        function (checkbox) {
-
-            const index =
-                Number(
-                    checkbox.getAttribute(
-                        "data-result-index"
-                    )
+            const el =
+                document.getElementById(
+                    id
                 );
 
 
-            if (
-                Number.isInteger(index)
-            ) {
+            if (el) {
 
-                indexes.push(
-                    index
+                el.textContent =
+                    total;
+
+            }
+
+        }
+    );
+
+}
+
+
+function updateStudentCounter(total) {
+
+    const elements = [
+
+        "totalStudent",
+
+        "dashboardStudentCount"
+
+    ];
+
+
+    elements.forEach(
+        id => {
+
+            const el =
+                document.getElementById(
+                    id
                 );
 
+
+            if (el) {
+
+                el.textContent =
+                    total;
+
             }
 
         }
     );
 
+}
 
-    return indexes;
+
+function updateTokenCounter(total) {
+
+    const elements = [
+
+        "totalToken",
+
+        "dashboardTokenCount"
+
+    ];
+
+
+    elements.forEach(
+        id => {
+
+            const el =
+                document.getElementById(
+                    id
+                );
+
+
+            if (el) {
+
+                el.textContent =
+                    total;
+
+            }
+
+        }
+    );
 
 }
 
 
-/* =========================================================
-DELETE SELECTED RESULTS
-========================================================= */
+function updateResultCounter(total) {
 
-async function deleteSelectedResults() {
+    const elements = [
 
-    const indexes =
-        getSelectedResultIndexes();
+        "totalResult",
 
+        "dashboardResultCount"
+
+    ];
+
+
+    elements.forEach(
+        id => {
+
+            const el =
+                document.getElementById(
+                    id
+                );
+
+
+            if (el) {
+
+                el.textContent =
+                    total;
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(value) {
 
     if (
-        indexes.length === 0
+        value === null ||
+        typeof value === "undefined"
     ) {
 
-        alert(
-            "Pilih result yang ingin dihapus terlebih dahulu."
-        );
-
-        return;
+        return "";
 
     }
 
 
-    if (
-        !confirm(
-            "Hapus " +
-            indexes.length +
-            " result terpilih?"
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
         )
-    ) return;
 
-
-    let successCount = 0;
-
-    let failedCount = 0;
-
-
-    for (
-        const index of indexes
-    ) {
-
-        const item =
-            teacherResults[index];
-
-
-        if (!item) {
-
-            failedCount++;
-
-            continue;
-
-        }
-
-
-        const id =
-            getResultId(item);
-
-
-        if (!id) {
-
-            failedCount++;
-
-            continue;
-
-        }
-
-
-        try {
-
-            const result =
-                await apiDeleteResult({
-
-                    id:
-                        id
-
-                });
-
-
-            if (
-                result &&
-                result.success
-            ) {
-
-                successCount++;
-
-            }
-
-            else {
-
-                failedCount++;
-
-            }
-
-        }
-
-        catch (err) {
-
-            console.error(
-                "Delete Result Error:",
-                err
-            );
-
-
-            failedCount++;
-
-        }
-
-    }
-
-
-    alert(
-        "Delete selesai.\n\n" +
-        "Berhasil: " +
-        successCount +
-        "\n" +
-        "Gagal: " +
-        failedCount
-    );
-
-
-    await renderResultList();
-
-    refreshDashboardCounters();
-
-}
-
-
-/* =========================================================
-DELETE ALL RESULTS
-========================================================= */
-
-async function deleteAllResults() {
-
-    if (
-        teacherResults.length === 0
-    ) {
-
-        alert(
-            "Tidak ada result untuk dihapus."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !confirm(
-            "PERINGATAN!\n\n" +
-            "Semua " +
-            teacherResults.length +
-            " speaking result akan dihapus.\n\n" +
-            "Lanjutkan?"
+        .replace(
+            /</g,
+            "&lt;"
         )
-    ) return;
 
+        .replace(
+            />/g,
+            "&gt;"
+        )
 
-    let successCount = 0;
+        .replace(
+            /"/g,
+            "&quot;"
+        )
 
-    let failedCount = 0;
-
-
-    /*
-     * Use the same established delete-result API
-     * one result at a time.
-     */
-
-    for (
-        const item of teacherResults
-    ) {
-
-        const id =
-            getResultId(item);
-
-
-        if (!id) {
-
-            failedCount++;
-
-            continue;
-
-        }
-
-
-        try {
-
-            const result =
-                await apiDeleteResult({
-
-                    id:
-                        id
-
-                });
-
-
-            if (
-                result &&
-                result.success
-            ) {
-
-                successCount++;
-
-            }
-
-            else {
-
-                failedCount++;
-
-            }
-
-        }
-
-        catch (err) {
-
-            console.error(
-                "Delete All Result Error:",
-                err
-            );
-
-
-            failedCount++;
-
-        }
-
-    }
-
-
-    alert(
-        "Hapus semua selesai.\n\n" +
-        "Berhasil: " +
-        successCount +
-        "\n" +
-        "Gagal: " +
-        failedCount
-    );
-
-
-    await renderResultList();
-
-    refreshDashboardCounters();
-
-}
-
-
-/* =========================================================
-MESSAGE
-========================================================= */
-
-function showMessage(
-    elementId,
-    message,
-    type
-) {
-
-    const el =
-        document.getElementById(
-            elementId
+        .replace(
+            /'/g,
+            "&#039;"
         );
 
-
-    if (!el) return;
-
-
-    let background =
-        "#f5f7fa";
-
-
-    let color =
-        "#333";
-
-
-    if (
-        type === "success"
-    ) {
-
-        background =
-            "#e8f5e9";
-
-
-        color =
-            "#2e7d32";
-
-    }
-
-
-    if (
-        type === "error"
-    ) {
-
-        background =
-            "#ffebee";
-
-
-        color =
-            "#c62828";
-
-    }
-
-
-    el.innerHTML = `
-
-        <div style="
-            padding:12px;
-            border-radius:8px;
-            background:${background};
-            color:${color};
-        ">
-
-            ${escapeHtml(message)}
-
-        </div>
-
-    `;
-
 }
 
 
-/* =========================================================
-CSV ERROR
-========================================================= */
-
-function showCSVError(
-    message
-) {
-
-    const preview =
-        document.getElementById(
-            "csvPreview"
-        );
-
-
-    if (!preview) return;
-
-
-    preview.innerHTML = `
-
-        <div style="
-            padding:12px;
-            border-radius:8px;
-            background:#ffebee;
-            color:#c62828;
-        ">
-
-            ${escapeHtml(
-                message ||
-                "CSV tidak valid."
-            )}
-
-        </div>
-
-    `;
-
-}
-
-
-/* =========================================================
-ESCAPE HTML
-========================================================= */
-
-function escapeHtml(value) {
-
-    return String(
-        value ?? ""
-    )
-    .replace(
-        /&/g,
-        "&amp;"
-    )
-    .replace(
-        /</g,
-        "&lt;"
-    )
-    .replace(
-        />/g,
-        "&gt;"
-    )
-    .replace(
-        /"/g,
-        "&quot;"
-    )
-    .replace(
-        /'/g,
-        "&#039;"
-    );
-
-}
-
-
-/* =========================================================
-ESCAPE ATTRIBUTE
-========================================================= */
+/* =====================================================
+   ESCAPE ATTRIBUTE
+===================================================== */
 
 function escapeAttribute(value) {
 
-    return escapeHtml(
-        value
+    if (
+        value === null ||
+        typeof value === "undefined"
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+
+        .replace(
+            /'/g,
+            "\\'"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        );
+
+}
+
+
+/* =====================================================
+   FORMAT DATE
+===================================================== */
+
+function formatDate(value) {
+
+    if (!value) {
+
+        return "-";
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return escapeHTML(
+            value
+        );
+
+    }
+
+
+    return escapeHTML(
+        date.toLocaleString()
     );
 
 }
 
 
-/* =========================================================
-UI STYLES
-========================================================= */
-
-const inputStyle = `
-    width:100%;
-    padding:12px;
-    border:1px solid #ddd;
-    border-radius:8px;
-    font-size:15px;
-    margin-top:8px;
-`;
-
-
-const textareaStyle = `
-    width:100%;
-    padding:12px;
-    border:1px solid #ddd;
-    border-radius:8px;
-    font-size:15px;
-    margin-top:8px;
-    resize:vertical;
-`;
-
-
-const tableHeadStyle = `
-    text-align:left;
-    padding:12px;
-    border-bottom:2px solid #ddd;
-    background:#f5f7fa;
-`;
-
-
-const tableCellStyle = `
-    padding:12px;
-    border-bottom:1px solid #eee;
-    vertical-align:top;
-`;
-
-
-/* =========================================================
-END OF TEACHER.JS
-========================================================= */
+/* =====================================================
+   END OF FILE
+===================================================== */
