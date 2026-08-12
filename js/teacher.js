@@ -6,33 +6,36 @@
  * STABLE FOUNDATION
  *
  * MODULE:
- * - Dashboard
- * - Question Management
- * - Student Management
- * - CSV Student Import
- * - Token Management
- * - Result Management
+ *   - Dashboard
+ *   - Question Management
+ *   - Student Management
+ *   - CSV Student Import
+ *   - Token Management
+ *   - Result Management
  *
  * BACKEND:
- * api.js
+ *   api.js
  *
  * IMPORTANT:
- * - Do not change API architecture from this file.
- * - Existing API helper functions are preserved.
- * - Teacher login remains unchanged.
- * - Question insert/update/delete routes remain unchanged.
- * - Student routes remain unchanged.
- * - Token routes remain unchanged.
- * - Result routes remain unchanged.
+ *   - Do not change API architecture from this file.
+ *   - Existing API helper functions are preserved.
+ *   - Teacher login remains unchanged.
+ *   - Question routes remain unchanged.
+ *   - Student routes remain unchanged.
+ *   - Token routes remain unchanged.
+ *   - Result routes remain unchanged.
  *
  * RESULT FIX:
- * - Normalize API array/object response
- * - Supports:
- *   1. Normal Array
- *   2. { data: [...] }
- *   3. Numeric-key Object
+ *   - Normalize API array/object response.
+ *   - Supports:
+ *       1. Normal Array
+ *       2. { data: [...] }
+ *       3. Numeric-key Object
+ *   - Supports multiple possible score field names.
+ *
  * =========================================================
  */
+
 
 /* =========================================================
 GLOBAL STATE
@@ -56,12 +59,15 @@ API ARRAY NORMALIZER
  * Supported formats:
  *
  * 1. Normal Array
+ *
  * [
  *     {...},
  *     {...}
  * ]
  *
+ *
  * 2. Object containing data Array
+ *
  * {
  *     data: [
  *         {...},
@@ -69,16 +75,15 @@ API ARRAY NORMALIZER
  *     ]
  * }
  *
+ *
  * 3. Object with numeric keys
+ *
  * {
  *     "0": {...},
  *     "1": {...},
  *     "2": {...}
  * }
- *
- * This is especially important for Result data.
  */
-
 function normalizeApiArray(value) {
 
     /* ================================================
@@ -126,9 +131,7 @@ function normalizeApiArray(value) {
             keys.filter(
                 function (key) {
 
-                    return /^\d+$/.test(
-                        key
-                    );
+                    return /^\d+$/.test(key);
 
                 }
             );
@@ -194,7 +197,7 @@ async function initializeTeacherDashboard() {
         updateTodayDate();
 
         /*
-         * Do not block the dashboard rendering.
+         * Do not block dashboard rendering.
          * Counter loading runs asynchronously.
          */
 
@@ -433,10 +436,6 @@ async function loadDashboardPage() {
     `;
 
 
-    /*
-     * Refresh counters in background.
-     */
-
     refreshDashboardCounters();
 
 }
@@ -613,19 +612,6 @@ async function refreshDashboardCounters() {
             response.success
         ) {
 
-            /*
-             * IMPORTANT:
-             * Normalize Result API response.
-             *
-             * Previously:
-             *
-             * teacherResults =
-             *     response.data || [];
-             *
-             * This failed when response.data
-             * was an object with numeric keys.
-             */
-
             teacherResults =
                 normalizeApiArray(
                     response.data
@@ -668,17 +654,15 @@ QUESTION DATA CACHE
 /**
  * Make sure Questions are available.
  *
- * Important:
- * Token page uses this function so the Question ID
- * dropdown will work even when Teacher opens Token page
+ * Token page uses this function so Question ID
+ * dropdown works even when Teacher opens Token page
  * directly without opening Question page first.
  */
-
 async function ensureTeacherQuestionsLoaded() {
 
     /*
      * If cache already contains questions,
-     * use the existing data.
+     * use existing data.
      */
 
     if (
@@ -1029,6 +1013,7 @@ function getQuestionFormData() {
                 ?.value
                 .trim() || "",
 
+
         question:
             document
                 .getElementById(
@@ -1036,6 +1021,7 @@ function getQuestionFormData() {
                 )
                 ?.value
                 .trim() || "",
+
 
         answerKey:
             document
@@ -1045,6 +1031,7 @@ function getQuestionFormData() {
                 ?.value
                 .trim() || "",
 
+
         answer:
             document
                 .getElementById(
@@ -1053,6 +1040,7 @@ function getQuestionFormData() {
                 ?.value
                 .trim() || "",
 
+
         difficulty:
             document
                 .getElementById(
@@ -1060,6 +1048,7 @@ function getQuestionFormData() {
                 )
                 ?.value ||
                 "Easy",
+
 
         duration:
             Number(
@@ -1890,6 +1879,7 @@ function getStudentFormData() {
                 ?.value
                 .trim() || "",
 
+
         nama:
             document
                 .getElementById(
@@ -1897,6 +1887,7 @@ function getStudentFormData() {
                 )
                 ?.value
                 .trim() || "",
+
 
         kelas:
             document
@@ -1906,6 +1897,7 @@ function getStudentFormData() {
                 ?.value
                 .trim() || "",
 
+
         username:
             document
                 .getElementById(
@@ -1914,6 +1906,7 @@ function getStudentFormData() {
                 ?.value
                 .trim() || "",
 
+
         password:
             document
                 .getElementById(
@@ -1921,6 +1914,7 @@ function getStudentFormData() {
                 )
                 ?.value
                 .trim() || "",
+
 
         status:
             document
@@ -2761,12 +2755,14 @@ function parseStudentCSV(text) {
                     "nis"
                 ),
 
+
             nama:
                 getCSVValue(
                     row,
                     headers,
                     "nama"
                 ),
+
 
             kelas:
                 getCSVValue(
@@ -2775,6 +2771,7 @@ function parseStudentCSV(text) {
                     "kelas"
                 ),
 
+
             username:
                 getCSVValue(
                     row,
@@ -2782,12 +2779,14 @@ function parseStudentCSV(text) {
                     "username"
                 ),
 
+
             password:
                 getCSVValue(
                     row,
                     headers,
                     "password"
                 ),
+
 
             status:
                 getCSVValue(
@@ -3154,11 +3153,6 @@ async function loadTokenPage() {
     if (!content) return;
 
 
-    /*
-     * Render page immediately.
-     * Question data will be loaded afterwards.
-     */
-
     content.innerHTML = `
 
         <div style="
@@ -3206,10 +3200,6 @@ async function loadTokenPage() {
     `;
 
 
-    /*
-     * Load existing tokens.
-     */
-
     await renderTokenList();
 
 }
@@ -3225,7 +3215,6 @@ TOKEN GENERATOR
  * Example:
  * SAF-2026-A8K3P7
  */
-
 function generateExamToken() {
 
     const year =
@@ -3325,11 +3314,7 @@ async function showTokenForm() {
 
 
     /*
-     * IMPORTANT:
      * Always make sure Questions are loaded.
-     *
-     * This fixes the problem where Question ID
-     * was empty when teacher opened Token page directly.
      */
 
     area.innerHTML = `
@@ -3948,6 +3933,333 @@ async function loadResultPage() {
 
 
 /* =========================================================
+RESULT ID
+========================================================= */
+
+function getResultId(item) {
+
+    if (
+        !item ||
+        typeof item !== "object"
+    ) {
+
+        return "";
+
+    }
+
+
+    return (
+
+        item.id ||
+        item.resultId ||
+        item.resultID ||
+        ""
+
+    );
+
+}
+
+
+/* =========================================================
+RESULT STUDENT NAME
+========================================================= */
+
+function getResultStudent(item) {
+
+    if (
+        !item ||
+        typeof item !== "object"
+    ) {
+
+        return "";
+
+    }
+
+
+    return (
+
+        item.nama ||
+        item.name ||
+        item.studentName ||
+        item.username ||
+        item.nis ||
+        item.student ||
+        ""
+
+    );
+
+}
+
+
+/* =========================================================
+RESULT QUESTION
+========================================================= */
+
+function getResultQuestion(item) {
+
+    if (
+        !item ||
+        typeof item !== "object"
+    ) {
+
+        return "";
+
+    }
+
+
+    return (
+
+        item.question ||
+        item.questionText ||
+        item.title ||
+        item.questionTitle ||
+        item.questionId ||
+        item.questionID ||
+        ""
+
+    );
+
+}
+
+
+/* =========================================================
+RESULT SCORE
+========================================================= */
+
+/**
+ * Read speaking score from Result API.
+ *
+ * Supported field names:
+ *
+ *   score
+ *   nilai
+ *   finalScore
+ *   totalScore
+ *   pronunciationScore
+ *   pronunciationAccuracy
+ *   accuracy
+ *
+ * IMPORTANT:
+ *   0 is a valid score.
+ */
+function getResultScore(item) {
+
+    if (
+        !item ||
+        typeof item !== "object"
+    ) {
+
+        return "";
+
+    }
+
+
+    const possibleFields = [
+
+        "score",
+        "nilai",
+        "finalScore",
+        "totalScore",
+        "pronunciationScore",
+        "pronunciationAccuracy",
+        "accuracy"
+
+    ];
+
+
+    for (
+        const field of possibleFields
+    ) {
+
+        if (
+            Object.prototype.hasOwnProperty.call(
+                item,
+                field
+            )
+        ) {
+
+            const value =
+                item[field];
+
+
+            /*
+             * Preserve valid zero.
+             */
+
+            if (
+                value !== undefined &&
+                value !== null &&
+                String(value).trim() !== ""
+            ) {
+
+                return value;
+
+            }
+
+        }
+
+    }
+
+
+    return "";
+
+}
+
+
+/* =========================================================
+RESULT ACCURACY
+========================================================= */
+
+function getResultAccuracy(item) {
+
+    if (
+        !item ||
+        typeof item !== "object"
+    ) {
+
+        return "";
+
+    }
+
+
+    const possibleFields = [
+
+        "accuracy",
+        "pronunciationAccuracy",
+        "pronunciationScore"
+
+    ];
+
+
+    for (
+        const field of possibleFields
+    ) {
+
+        if (
+            Object.prototype.hasOwnProperty.call(
+                item,
+                field
+            )
+        ) {
+
+            const value =
+                item[field];
+
+
+            if (
+                value !== undefined &&
+                value !== null &&
+                String(value).trim() !== ""
+            ) {
+
+                return value;
+
+            }
+
+        }
+
+    }
+
+
+    return "";
+
+}
+
+
+/* =========================================================
+FORMAT RESULT SCORE
+========================================================= */
+
+function formatResultScore(value) {
+
+    if (
+        value === undefined ||
+        value === null ||
+        String(value).trim() === ""
+    ) {
+
+        return "-";
+
+    }
+
+
+    const numberValue =
+        Number(value);
+
+
+    if (
+        Number.isFinite(numberValue)
+    ) {
+
+        return Number.isInteger(numberValue)
+            ? String(numberValue)
+            : numberValue.toFixed(2);
+
+    }
+
+
+    return String(value);
+
+}
+
+
+/* =========================================================
+FORMAT RESULT ACCURACY
+========================================================= */
+
+function formatResultAccuracy(value) {
+
+    if (
+        value === undefined ||
+        value === null ||
+        String(value).trim() === ""
+    ) {
+
+        return "-";
+
+    }
+
+
+    const stringValue =
+        String(value).trim();
+
+
+    /*
+     * Backend already sends percentage.
+     */
+
+    if (
+        stringValue.includes("%")
+    ) {
+
+        return stringValue;
+
+    }
+
+
+    const numberValue =
+        Number(value);
+
+
+    if (
+        Number.isFinite(numberValue)
+    ) {
+
+        return (
+            Number.isInteger(numberValue)
+                ? String(numberValue)
+                : numberValue.toFixed(2)
+        ) + "%";
+
+    }
+
+
+    return stringValue;
+
+}
+
+
+/* =========================================================
 RESULT LIST
 ========================================================= */
 
@@ -3968,12 +4280,53 @@ async function renderResultList() {
 
     /*
      * IMPORTANT:
-     * Keep the existing API route.
+     * Keep existing API route.
+     *
      * Do not replace apiGetResult().
      */
 
-    const response =
-        await apiGetResult();
+    let response;
+
+
+    try {
+
+        response =
+            await apiGetResult();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "Get Result Error:",
+            err
+        );
+
+
+        area.innerHTML = `
+
+            <div style="
+                color:#b00020;
+                padding:15px;
+            ">
+
+                Gagal mengambil result.
+
+                <br><br>
+
+                ${escapeHtml(
+                    err?.message ||
+                    "API error."
+                )}
+
+            </div>
+
+        `;
+
+
+        return;
+
+    }
 
 
     if (
@@ -4019,15 +4372,29 @@ async function renderResultList() {
      *     "0": {...},
      *     "1": {...}
      * }
-     *
-     * Array.isArray() alone is therefore
-     * not sufficient.
      */
 
     teacherResults =
         normalizeApiArray(
             response.data
         );
+
+
+    /*
+     * Debug information.
+     * Useful during testing.
+     */
+
+    console.log(
+        "SAF Result API Response:",
+        response
+    );
+
+
+    console.log(
+        "SAF Normalized Results:",
+        teacherResults
+    );
 
 
     if (
@@ -4123,7 +4490,7 @@ async function renderResultList() {
             <table style="
                 width:100%;
                 border-collapse:collapse;
-                min-width:900px;
+                min-width:1050px;
             ">
 
                 <thead>
@@ -4156,6 +4523,14 @@ async function renderResultList() {
                             Score
                         </th>
 
+                        <th style="${tableHeadStyle}">
+                            Accuracy
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Result ID
+                        </th>
+
                     </tr>
 
                 </thead>
@@ -4169,9 +4544,23 @@ async function renderResultList() {
         function (item, index) {
 
             const resultId =
-                item.id ||
-                item.resultId ||
-                "";
+                getResultId(item);
+
+
+            const student =
+                getResultStudent(item);
+
+
+            const question =
+                getResultQuestion(item);
+
+
+            const score =
+                getResultScore(item);
+
+
+            const accuracy =
+                getResultAccuracy(item);
 
 
             html += `
@@ -4183,7 +4572,9 @@ async function renderResultList() {
                         <input
                             type="checkbox"
                             class="result-checkbox"
-                            data-result-id="${escapeAttribute(resultId)}"
+                            data-result-id="${escapeAttribute(
+                                resultId
+                            )}"
                             data-result-index="${index}"
                         >
 
@@ -4194,30 +4585,55 @@ async function renderResultList() {
                     </td>
 
                     <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            item.nama ||
-                            item.username ||
-                            item.nis ||
-                            item.student ||
-                            ""
-                        )}
+
+                        <strong>
+                            ${escapeHtml(
+                                student
+                            )}
+                        </strong>
+
                     </td>
 
                     <td style="${tableCellStyle}">
+
                         ${escapeHtml(
-                            item.question ||
-                            item.title ||
-                            ""
+                            question
                         )}
+
                     </td>
 
                     <td style="${tableCellStyle}">
+
+                        <strong style="
+                            font-size:18px;
+                        ">
+
+                            ${escapeHtml(
+                                formatResultScore(
+                                    score
+                                )
+                            )}
+
+                        </strong>
+
+                    </td>
+
+                    <td style="${tableCellStyle}">
+
                         ${escapeHtml(
-                            String(
-                                item.score ??
-                                ""
+                            formatResultAccuracy(
+                                accuracy
                             )
                         )}
+
+                    </td>
+
+                    <td style="${tableCellStyle}">
+
+                        ${escapeHtml(
+                            resultId
+                        )}
+
                     </td>
 
                 </tr>
@@ -4425,9 +4841,7 @@ async function deleteSelectedResults() {
 
 
         const id =
-            item.id ||
-            item.resultId ||
-            "";
+            getResultId(item);
 
 
         if (!id) {
@@ -4544,9 +4958,7 @@ async function deleteAllResults() {
     ) {
 
         const id =
-            item.id ||
-            item.resultId ||
-            "";
+            getResultId(item);
 
 
         if (!id) {
