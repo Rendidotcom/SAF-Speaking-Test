@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SAF SPEAKING ONLINE TEST
+ * SAF Speaking Online Test
  * Teacher Dashboard
  *
  * File:
@@ -9,42 +9,28 @@
  * Stable Foundation v7.3
  *
  * FIX:
- * - Exam Token requires Speaking Question
- * - Token creation sends questionId
- * - Question selector uses APP.question
- * - No dependency on exam.js
+ * - Result response normalization
+ * - Result numeric-key response support
+ * - Result Select All
+ * - Result Delete Selected
+ * - Result Delete All
+ * - Result individual delete
  *
- * RESULT RESPONSE FIX:
- * - Normalize API array responses
- * - Supports:
- *   1. Direct Array
- *   2. Object with data Array
- *   3. Object with numeric keys
+ * PRESERVED:
+ * - Dashboard
+ * - Question management
+ * - Student management
+ * - Token management
+ * - Session / Logout
+ * - Existing API functions
  *
- * RESULT BULK DELETE FIX:
- * - Checkbox per result
- * - Select All
- * - Delete Selected
- * - Delete All
- *
- * Frontend Sync:
- * - Question.gs
- * - Student.gs
- * - Token.gs
- * - Result.gs
- * - Score.gs
- *
- * IMPORTANT:
- * - Existing architecture preserved
- * - Existing API action names preserved
- * - Existing APP state preserved
- * - Existing STATE object preserved
- * - No exam.js dependency
+ * NO BACKEND CHANGE REQUIRED
  * =========================================================
  */
 
+
 /* =========================================================
-INITIALIZE
+   INITIALIZE
 ========================================================= */
 
 document.addEventListener(
@@ -54,7 +40,7 @@ document.addEventListener(
 
 
 /* =========================================================
-GLOBAL STATE
+   GLOBAL STATE
 ========================================================= */
 
 const APP = {
@@ -76,142 +62,22 @@ const STATE = {
 
     questionId: null,
 
-
     studentEdit: false,
 
-    studentId: null,
-
-
-    resultId: null
+    studentId: null
 
 };
 
 
 /* =========================================================
-API ARRAY NORMALIZER
+   RESULT SELECTION STATE
 ========================================================= */
 
-/**
- * Normalize API response data into a real JavaScript Array.
- *
- * Supported formats:
- *
- * 1. Direct Array
- *
- * [
- *   {...},
- *   {...}
- * ]
- *
- * 2. Object containing data Array
- *
- * {
- *   data: [
- *      {...},
- *      {...}
- *   ]
- * }
- *
- * 3. Object with numeric keys
- *
- * {
- *   "0": {...},
- *   "1": {...}
- * }
- */
-
-function normalizeApiArray(value) {
-
-    /* -----------------------------------------------------
-       FORMAT 1
-       Already an Array
-    ----------------------------------------------------- */
-
-    if (Array.isArray(value)) {
-
-        return value;
-
-    }
-
-
-    /* -----------------------------------------------------
-       FORMAT 2
-       Object with data Array
-    ----------------------------------------------------- */
-
-    if (
-        value &&
-        Array.isArray(value.data)
-    ) {
-
-        return value.data;
-
-    }
-
-
-    /* -----------------------------------------------------
-       FORMAT 3
-       Object with numeric keys
-    ----------------------------------------------------- */
-
-    if (
-        value &&
-        typeof value === "object"
-    ) {
-
-        const keys =
-            Object.keys(value);
-
-
-        const numericKeys =
-            keys.filter(
-                function (key) {
-
-                    return /^\d+$/.test(key);
-
-                }
-            );
-
-
-        if (
-            numericKeys.length > 0
-        ) {
-
-            return numericKeys
-                .sort(
-                    function (a, b) {
-
-                        return (
-                            Number(a) -
-                            Number(b)
-                        );
-
-                    }
-                )
-                .map(
-                    function (key) {
-
-                        return value[key];
-
-                    }
-                );
-
-        }
-
-    }
-
-
-    /* -----------------------------------------------------
-       FALLBACK
-    ----------------------------------------------------- */
-
-    return [];
-
-}
+const RESULT_SELECTION = new Set();
 
 
 /* =========================================================
-INITIALIZE
+   INITIALIZE
 ========================================================= */
 
 async function init() {
@@ -230,7 +96,7 @@ async function init() {
 
 
 /* =========================================================
-SESSION
+   SESSION
 ========================================================= */
 
 function checkSession() {
@@ -282,17 +148,19 @@ function checkSession() {
 }
 
 
+/* =========================================================
+   LOGOUT
+========================================================= */
+
 function logout() {
 
     sessionStorage.removeItem(
         CONFIG.SESSION_KEY
     );
 
-
     sessionStorage.removeItem(
         CONFIG.TOKEN_KEY
     );
-
 
     window.location.href =
         "index.html";
@@ -301,108 +169,103 @@ function logout() {
 
 
 /* =========================================================
-LOGOUT BINDING
+   LOGOUT BINDING
 ========================================================= */
 
 function bindLogout() {
 
     document
         .querySelectorAll("a")
-        .forEach(
-            function (link) {
+        .forEach(link => {
 
-                if (
-                    link.textContent
-                        .trim()
-                        .includes("Logout")
-                ) {
+            if (
+                link.textContent
+                    .trim()
+                    .includes("Logout")
+            ) {
 
-                    link.onclick =
-                        function (e) {
+                link.onclick =
+                    function (e) {
 
-                            e.preventDefault();
+                        e.preventDefault();
 
-                            logout();
+                        logout();
 
-                        };
-
-                }
+                    };
 
             }
-        );
+
+        });
 
 }
 
 
 /* =========================================================
-SIDEBAR MENU
+   SIDEBAR MENU
 ========================================================= */
 
 function bindMenu() {
 
     document
         .querySelectorAll("[data-page]")
-        .forEach(
-            function (menu) {
+        .forEach(menu => {
 
-                menu.onclick =
-                    function (e) {
+            menu.onclick =
+                function (e) {
 
-                        e.preventDefault();
+                    e.preventDefault();
 
-
-                        const page =
-                            this.dataset.page;
+                    const page =
+                        this.dataset.page;
 
 
-                        switch (page) {
+                    switch (page) {
 
-                            case "dashboard":
+                        case "dashboard":
 
-                                loadDashboard();
+                            loadDashboard();
 
-                                break;
-
-
-                            case "question":
-
-                                loadQuestionPage();
-
-                                break;
+                            break;
 
 
-                            case "student":
+                        case "question":
 
-                                loadStudentPage();
+                            loadQuestionPage();
 
-                                break;
-
-
-                            case "token":
-
-                                loadTokenPage();
-
-                                break;
+                            break;
 
 
-                            case "result":
+                        case "student":
 
-                                loadResultPage();
+                            loadStudentPage();
 
-                                break;
+                            break;
 
-                        }
 
-                    };
+                        case "token":
 
-            }
-        );
+                            loadTokenPage();
+
+                            break;
+
+
+                        case "result":
+
+                            loadResultPage();
+
+                            break;
+
+                    }
+
+                };
+
+        });
 
 }
 
 
 /* =========================================================
-CONTENT
+   CONTENT
 ========================================================= */
 
 function setContent(html) {
@@ -431,7 +294,7 @@ function setContent(html) {
 
 
 /* =========================================================
-DASHBOARD DATA
+   DASHBOARD DATA
 ========================================================= */
 
 async function refreshDashboard() {
@@ -458,69 +321,82 @@ async function refreshDashboard() {
 
         APP.question =
             questionResult &&
-            questionResult.success
-                ? normalizeApiArray(
-                    questionResult.data
+            questionResult.success === true
+                ? (
+                    Array.isArray(
+                        questionResult.data
+                    )
+                        ? questionResult.data
+                        : []
                 )
                 : [];
 
 
         APP.student =
             studentResult &&
-            studentResult.success
-                ? normalizeApiArray(
-                    studentResult.data
+            studentResult.success === true
+                ? (
+                    Array.isArray(
+                        studentResult.data
+                    )
+                        ? studentResult.data
+                        : []
                 )
                 : [];
 
 
         APP.token =
             tokenResult &&
-            tokenResult.success
-                ? normalizeApiArray(
-                    tokenResult.data
+            tokenResult.success === true
+                ? (
+                    Array.isArray(
+                        tokenResult.data
+                    )
+                        ? tokenResult.data
+                        : []
                 )
                 : [];
 
+
+        /*
+         * IMPORTANT:
+         * Result tidak boleh hanya membaca:
+         *
+         * resultResult.data
+         *
+         * karena backend saat ini dapat mengembalikan
+         * object dengan numeric keys.
+         */
 
         APP.result =
             resultResult &&
-            resultResult.success
-                ? normalizeApiArray(
-                    resultResult.data
+            resultResult.success === true
+                ? normalizeResultResponse(
+                    resultResult
                 )
                 : [];
-
-
-        console.log(
-            "REFRESH DASHBOARD RESULT:",
-            resultResult
-        );
-
-
-        console.log(
-            "NORMALIZED APP.result:",
-            APP.result
-        );
 
 
         updateQuestionCounter(
             APP.question.length
         );
 
-
         updateStudentCounter(
             APP.student.length
         );
-
 
         updateTokenCounter(
             APP.token.length
         );
 
-
         updateResultCounter(
             APP.result.length
+        );
+
+
+        console.log(
+            "DASHBOARD RESULT:",
+            APP.result
         );
 
     }
@@ -538,7 +414,7 @@ async function refreshDashboard() {
 
 
 /* =========================================================
-DASHBOARD PAGE
+   DASHBOARD PAGE
 ========================================================= */
 
 function loadDashboard() {
@@ -593,19 +469,19 @@ function loadDashboard() {
 
             <tr>
 
-                <td id="dashboardQuestionCount">
+                <td>
                     ${APP.question.length}
                 </td>
 
-                <td id="dashboardStudentCount">
+                <td>
                     ${APP.student.length}
                 </td>
 
-                <td id="dashboardTokenCount">
+                <td>
                     ${APP.token.length}
                 </td>
 
-                <td id="dashboardResultCount">
+                <td>
                     ${APP.result.length}
                 </td>
 
@@ -619,18 +495,10 @@ function loadDashboard() {
 
 
 /* =========================================================
-QUESTION PAGE
+   QUESTION PAGE
 ========================================================= */
 
 function loadQuestionPage() {
-
-    STATE.questionEdit =
-        false;
-
-
-    STATE.questionId =
-        null;
-
 
     setContent(`
 
@@ -763,269 +631,7 @@ function loadQuestionPage() {
 
 
 /* =========================================================
-LOAD QUESTIONS
-========================================================= */
-
-async function loadQuestions() {
-
-    const table =
-        document.getElementById(
-            "questionTable"
-        );
-
-
-    if (!table) {
-
-        console.warn(
-            "loadQuestions: #questionTable not found."
-        );
-
-        return;
-
-    }
-
-
-    table.innerHTML =
-        "<p>Loading questions...</p>";
-
-
-    try {
-
-        const res =
-            await apiGetQuestion();
-
-
-        console.log(
-            "GET QUESTION RESPONSE:",
-            res
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            APP.question = [];
-
-
-            table.innerHTML =
-                "<p style='color:red'>" +
-                escapeHTML(
-                    res &&
-                    res.message
-                        ? res.message
-                        : "Failed to load questions."
-                ) +
-                "</p>";
-
-
-            updateQuestionCounter(0);
-
-            return;
-
-        }
-
-
-        APP.question =
-            normalizeApiArray(
-                res.data
-            );
-
-
-        updateQuestionCounter(
-            APP.question.length
-        );
-
-
-        if (
-            APP.question.length === 0
-        ) {
-
-            table.innerHTML =
-                "<p>No question found.</p>";
-
-            return;
-
-        }
-
-
-        renderQuestions();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "LOAD QUESTIONS ERROR:",
-            err
-        );
-
-
-        APP.question = [];
-
-
-        table.innerHTML =
-            "<p style='color:red'>" +
-            escapeHTML(
-                err.message ||
-                "Unable to load questions."
-            ) +
-            "</p>";
-
-
-        updateQuestionCounter(0);
-
-    }
-
-}
-
-
-/* =========================================================
-RENDER QUESTIONS
-========================================================= */
-
-function renderQuestions() {
-
-    const table =
-        document.getElementById(
-            "questionTable"
-        );
-
-
-    if (!table) {
-
-        return;
-
-    }
-
-
-    if (
-        !Array.isArray(APP.question) ||
-        APP.question.length === 0
-    ) {
-
-        table.innerHTML =
-            "<p>No question found.</p>";
-
-        return;
-
-    }
-
-
-    let html = `
-
-        <table
-            border="1"
-            width="100%"
-            cellpadding="8">
-
-            <thead>
-
-                <tr>
-
-                    <th>No</th>
-
-                    <th>Title</th>
-
-                    <th>Answer Key</th>
-
-                    <th>Difficulty</th>
-
-                    <th>Duration</th>
-
-                    <th>Status</th>
-
-                    <th>Action</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-    `;
-
-
-    APP.question.forEach(
-        function (q, index) {
-
-            html += `
-
-                <tr>
-
-                    <td>
-                        ${index + 1}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(q.title)}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(q.answer)}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(q.difficulty)}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(q.duration)}
-                        seconds
-                    </td>
-
-                    <td>
-                        ${escapeHTML(q.status)}
-                    </td>
-
-                    <td>
-
-                        <button
-                            type="button"
-                            class="btn edit"
-                            onclick="editQuestion('${escapeAttribute(q.id)}')">
-
-                            Edit
-
-                        </button>
-
-                        <button
-                            type="button"
-                            class="btn delete"
-                            onclick="deleteQuestion('${escapeAttribute(q.id)}')">
-
-                            Delete
-
-                        </button>
-
-                    </td>
-
-                </tr>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-
-            </tbody>
-
-        </table>
-
-    `;
-
-
-    table.innerHTML =
-        html;
-
-}
-
-
-/* =========================================================
-SAVE QUESTION
+   SAVE QUESTION
 ========================================================= */
 
 async function saveQuestion(e) {
@@ -1034,27 +640,16 @@ async function saveQuestion(e) {
 
 
     const titleElement =
-        document.getElementById(
-            "title"
-        );
-
+        document.getElementById("title");
 
     const answerElement =
-        document.getElementById(
-            "answer"
-        );
-
+        document.getElementById("answer");
 
     const difficultyElement =
-        document.getElementById(
-            "difficulty"
-        );
-
+        document.getElementById("difficulty");
 
     const durationElement =
-        document.getElementById(
-            "duration"
-        );
+        document.getElementById("duration");
 
 
     if (
@@ -1171,28 +766,16 @@ async function saveQuestion(e) {
         );
 
 
-        if (!res) {
-
-            alert(
-                "No response from API."
-            );
-
-            return;
-
-        }
-
-
         alert(
-            res.message ||
-            (
-                STATE.questionEdit
-                    ? "Question updated."
-                    : "Question created."
-            )
+            res &&
+            res.message
+                ? res.message
+                : "Question saved."
         );
 
 
         if (
+            !res ||
             res.success !== true
         ) {
 
@@ -1203,9 +786,7 @@ async function saveQuestion(e) {
 
         resetQuestionForm();
 
-
         await loadQuestions();
-
 
         await refreshDashboard();
 
@@ -1230,21 +811,220 @@ async function saveQuestion(e) {
 
 
 /* =========================================================
-EDIT QUESTION
+   LOAD QUESTIONS
+========================================================= */
+
+async function loadQuestions() {
+
+    const table =
+        document.getElementById(
+            "questionTable"
+        );
+
+
+    if (!table) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const res =
+            await apiGetQuestion();
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            table.innerHTML =
+                "<p style='color:red'>" +
+                escapeHTML(
+                    res &&
+                    res.message
+                        ? res.message
+                        : "Failed to load questions."
+                ) +
+                "</p>";
+
+            return;
+
+        }
+
+
+        APP.question =
+            Array.isArray(res.data)
+                ? res.data
+                : [];
+
+
+        updateQuestionCounter(
+            APP.question.length
+        );
+
+
+        if (
+            APP.question.length === 0
+        ) {
+
+            table.innerHTML =
+                "<p>No question found.</p>";
+
+            return;
+
+        }
+
+
+        let html = `
+
+            <table
+                border="1"
+                width="100%"
+                cellpadding="8">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            No
+                        </th>
+
+                        <th>
+                            Title
+                        </th>
+
+                        <th>
+                            Difficulty
+                        </th>
+
+                        <th>
+                            Duration
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Action
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        APP.question.forEach(
+            (q, i) => {
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${i + 1}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(q.title)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(q.difficulty)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(q.duration)}s
+                        </td>
+
+                        <td>
+                            ${escapeHTML(q.status)}
+                        </td>
+
+                        <td>
+
+                            <button
+                                type="button"
+                                class="btn edit"
+                                onclick="editQuestion('${escapeAttribute(q.id)}')">
+
+                                Edit
+
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn delete"
+                                onclick="deleteQuestion('${escapeAttribute(q.id)}')">
+
+                                Delete
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
+
+        html += `
+
+                </tbody>
+
+            </table>
+
+        `;
+
+
+        table.innerHTML =
+            html;
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "LOAD QUESTIONS ERROR:",
+            err
+        );
+
+
+        table.innerHTML =
+            "<p style='color:red'>" +
+            escapeHTML(
+                err.message ||
+                "Unable to load questions."
+            ) +
+            "</p>";
+
+    }
+
+}
+
+
+/* =========================================================
+   EDIT QUESTION
 ========================================================= */
 
 function editQuestion(id) {
 
     const question =
         APP.question.find(
-            function (item) {
-
-                return (
-                    String(item.id) ===
-                    String(id)
-                );
-
-            }
+            item =>
+                String(item.id) ===
+                String(id)
         );
 
 
@@ -1262,32 +1042,25 @@ function editQuestion(id) {
     STATE.questionEdit =
         true;
 
-
     STATE.questionId =
         question.id;
 
 
     const title =
-        document.getElementById(
-            "title"
-        );
-
+        document.getElementById("title");
 
     const answer =
-        document.getElementById(
-            "answer"
-        );
-
+        document.getElementById("answer");
 
     const difficulty =
-        document.getElementById(
-            "difficulty"
-        );
-
+        document.getElementById("difficulty");
 
     const duration =
+        document.getElementById("duration");
+
+    const button =
         document.getElementById(
-            "duration"
+            "btnSaveQuestion"
         );
 
 
@@ -1310,8 +1083,7 @@ function editQuestion(id) {
     if (difficulty) {
 
         difficulty.value =
-            question.difficulty ||
-            "Easy";
+            question.difficulty || "Easy";
 
     }
 
@@ -1319,16 +1091,9 @@ function editQuestion(id) {
     if (duration) {
 
         duration.value =
-            question.duration ||
-            30;
+            question.duration || 30;
 
     }
-
-
-    const button =
-        document.getElementById(
-            "btnSaveQuestion"
-        );
 
 
     if (button) {
@@ -1338,20 +1103,11 @@ function editQuestion(id) {
 
     }
 
-
-    window.scrollTo({
-
-        top: 0,
-
-        behavior: "smooth"
-
-    });
-
 }
 
 
 /* =========================================================
-DELETE QUESTION
+   DELETE QUESTION
 ========================================================= */
 
 async function deleteQuestion(id) {
@@ -1388,12 +1144,6 @@ async function deleteQuestion(id) {
             });
 
 
-        console.log(
-            "DELETE QUESTION RESPONSE:",
-            res
-        );
-
-
         alert(
             res &&
             res.message
@@ -1412,19 +1162,7 @@ async function deleteQuestion(id) {
         }
 
 
-        if (
-            String(
-                STATE.questionId
-            ) === String(id)
-        ) {
-
-            resetQuestionForm();
-
-        }
-
-
         await loadQuestions();
-
 
         await refreshDashboard();
 
@@ -1449,14 +1187,13 @@ async function deleteQuestion(id) {
 
 
 /* =========================================================
-RESET QUESTION FORM
+   RESET QUESTION FORM
 ========================================================= */
 
 function resetQuestionForm() {
 
     STATE.questionEdit =
         false;
-
 
     STATE.questionId =
         null;
@@ -1506,7 +1243,7 @@ function resetQuestionForm() {
 
 
 /* =========================================================
-SEARCH QUESTION
+   SEARCH QUESTION
 ========================================================= */
 
 function filterQuestion() {
@@ -1534,35 +1271,25 @@ function filterQuestion() {
         .querySelectorAll(
             "#questionTable tbody tr"
         )
-        .forEach(
-            function (row) {
+        .forEach(row => {
 
-                row.style.display =
-                    row.innerText
-                        .toLowerCase()
-                        .includes(keyword)
-                            ? ""
-                            : "none";
+            row.style.display =
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
 
-            }
-        );
+        });
 
 }
 
 
 /* =========================================================
-STUDENT PAGE
+   STUDENT PAGE
 ========================================================= */
 
 function loadStudentPage() {
-
-    STATE.studentEdit =
-        false;
-
-
-    STATE.studentId =
-        null;
-
 
     setContent(`
 
@@ -1691,7 +1418,7 @@ function loadStudentPage() {
 
 
 /* =========================================================
-SAVE STUDENT
+   SAVE STUDENT
 ========================================================= */
 
 async function saveStudent(e) {
@@ -1700,33 +1427,19 @@ async function saveStudent(e) {
 
 
     const nis =
-        document.getElementById(
-            "nis"
-        );
-
+        document.getElementById("nis");
 
     const nama =
-        document.getElementById(
-            "nama"
-        );
-
+        document.getElementById("nama");
 
     const kelas =
-        document.getElementById(
-            "kelas"
-        );
-
+        document.getElementById("kelas");
 
     const username =
-        document.getElementById(
-            "username"
-        );
-
+        document.getElementById("username");
 
     const password =
-        document.getElementById(
-            "password"
-        );
+        document.getElementById("password");
 
 
     if (
@@ -1764,31 +1477,9 @@ async function saveStudent(e) {
             password.value.trim(),
 
         status:
-            "ACTIVE"
+            "Active"
 
     };
-
-
-    if (!data.nis) {
-
-        alert(
-            "NIS wajib diisi."
-        );
-
-        return;
-
-    }
-
-
-    if (!data.nama) {
-
-        alert(
-            "Nama siswa wajib diisi."
-        );
-
-        return;
-
-    }
 
 
     let res;
@@ -1822,12 +1513,6 @@ async function saveStudent(e) {
         }
 
 
-        console.log(
-            "STUDENT SAVE RESPONSE:",
-            res
-        );
-
-
         alert(
             res &&
             res.message
@@ -1848,9 +1533,7 @@ async function saveStudent(e) {
 
         resetStudentForm();
 
-
         await loadStudents();
-
 
         await refreshDashboard();
 
@@ -1875,7 +1558,7 @@ async function saveStudent(e) {
 
 
 /* =========================================================
-LOAD STUDENTS
+   LOAD STUDENTS
 ========================================================= */
 
 async function loadStudents() {
@@ -1888,17 +1571,9 @@ async function loadStudents() {
 
     if (!table) {
 
-        console.warn(
-            "loadStudents: #studentTable not found."
-        );
-
         return;
 
     }
-
-
-    table.innerHTML =
-        "<p>Loading students...</p>";
 
 
     try {
@@ -1907,19 +1582,10 @@ async function loadStudents() {
             await apiGetStudent();
 
 
-        console.log(
-            "GET STUDENT RESPONSE:",
-            res
-        );
-
-
         if (
             !res ||
             res.success !== true
         ) {
-
-            APP.student = [];
-
 
             table.innerHTML =
                 "<p style='color:red'>" +
@@ -1931,18 +1597,15 @@ async function loadStudents() {
                 ) +
                 "</p>";
 
-
-            updateStudentCounter(0);
-
             return;
 
         }
 
 
         APP.student =
-            normalizeApiArray(
-                res.data
-            );
+            Array.isArray(res.data)
+                ? res.data
+                : [];
 
 
         updateStudentCounter(
@@ -1973,19 +1636,33 @@ async function loadStudents() {
 
                     <tr>
 
-                        <th>No</th>
+                        <th>
+                            No
+                        </th>
 
-                        <th>NIS</th>
+                        <th>
+                            NIS
+                        </th>
 
-                        <th>Name</th>
+                        <th>
+                            Name
+                        </th>
 
-                        <th>Class</th>
+                        <th>
+                            Class
+                        </th>
 
-                        <th>Username</th>
+                        <th>
+                            Username
+                        </th>
 
-                        <th>Status</th>
+                        <th>
+                            Status
+                        </th>
 
-                        <th>Action</th>
+                        <th>
+                            Action
+                        </th>
 
                     </tr>
 
@@ -1997,14 +1674,14 @@ async function loadStudents() {
 
 
         APP.student.forEach(
-            function (s, index) {
+            (s, i) => {
 
                 html += `
 
                     <tr>
 
                         <td>
-                            ${index + 1}
+                            ${i + 1}
                         </td>
 
                         <td>
@@ -2079,9 +1756,6 @@ async function loadStudents() {
         );
 
 
-        APP.student = [];
-
-
         table.innerHTML =
             "<p style='color:red'>" +
             escapeHTML(
@@ -2096,21 +1770,16 @@ async function loadStudents() {
 
 
 /* =========================================================
-EDIT STUDENT
+   EDIT STUDENT
 ========================================================= */
 
 function editStudent(nis) {
 
     const student =
         APP.student.find(
-            function (item) {
-
-                return (
-                    String(item.nis) ===
-                    String(nis)
-                );
-
-            }
+            item =>
+                String(item.nis) ===
+                String(nis)
         );
 
 
@@ -2128,38 +1797,28 @@ function editStudent(nis) {
     STATE.studentEdit =
         true;
 
-
     STATE.studentId =
         student.nis;
 
 
     const nisElement =
-        document.getElementById(
-            "nis"
-        );
-
+        document.getElementById("nis");
 
     const namaElement =
-        document.getElementById(
-            "nama"
-        );
-
+        document.getElementById("nama");
 
     const kelasElement =
-        document.getElementById(
-            "kelas"
-        );
-
+        document.getElementById("kelas");
 
     const usernameElement =
-        document.getElementById(
-            "username"
-        );
-
+        document.getElementById("username");
 
     const passwordElement =
+        document.getElementById("password");
+
+    const button =
         document.getElementById(
-            "password"
+            "btnSaveStudent"
         );
 
 
@@ -2167,9 +1826,6 @@ function editStudent(nis) {
 
         nisElement.value =
             student.nis || "";
-
-        nisElement.readOnly =
-            true;
 
     }
 
@@ -2206,12 +1862,6 @@ function editStudent(nis) {
     }
 
 
-    const button =
-        document.getElementById(
-            "btnSaveStudent"
-        );
-
-
     if (button) {
 
         button.innerText =
@@ -2219,20 +1869,11 @@ function editStudent(nis) {
 
     }
 
-
-    window.scrollTo({
-
-        top: 0,
-
-        behavior: "smooth"
-
-    });
-
 }
 
 
 /* =========================================================
-DELETE STUDENT
+   DELETE STUDENT
 ========================================================= */
 
 async function deleteStudent(nis) {
@@ -2240,7 +1881,7 @@ async function deleteStudent(nis) {
     if (!nis) {
 
         alert(
-            "Student NIS is required."
+            "NIS is required."
         );
 
         return;
@@ -2288,9 +1929,8 @@ async function deleteStudent(nis) {
 
 
         if (
-            String(
-                STATE.studentId
-            ) === String(nis)
+            String(STATE.studentId) ===
+            String(nis)
         ) {
 
             resetStudentForm();
@@ -2299,7 +1939,6 @@ async function deleteStudent(nis) {
 
 
         await loadStudents();
-
 
         await refreshDashboard();
 
@@ -2324,14 +1963,13 @@ async function deleteStudent(nis) {
 
 
 /* =========================================================
-RESET STUDENT FORM
+   RESET STUDENT FORM
 ========================================================= */
 
 function resetStudentForm() {
 
     STATE.studentEdit =
         false;
-
 
     STATE.studentId =
         null;
@@ -2346,20 +1984,6 @@ function resetStudentForm() {
     if (form) {
 
         form.reset();
-
-    }
-
-
-    const nis =
-        document.getElementById(
-            "nis"
-        );
-
-
-    if (nis) {
-
-        nis.readOnly =
-            false;
 
     }
 
@@ -2381,7 +2005,7 @@ function resetStudentForm() {
 
 
 /* =========================================================
-SEARCH STUDENT
+   SEARCH STUDENT
 ========================================================= */
 
 function filterStudent() {
@@ -2409,138 +2033,25 @@ function filterStudent() {
         .querySelectorAll(
             "#studentTable tbody tr"
         )
-        .forEach(
-            function (row) {
+        .forEach(row => {
 
-                row.style.display =
-                    row.innerText
-                        .toLowerCase()
-                        .includes(keyword)
-                            ? ""
-                            : "none";
+            row.style.display =
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
 
-            }
-        );
+        });
 
 }
 
 
 /* =========================================================
-TOKEN PAGE
+   TOKEN PAGE
 ========================================================= */
 
 function loadTokenPage() {
-
-    if (
-        !Array.isArray(APP.question) ||
-        APP.question.length === 0
-    ) {
-
-        loadQuestionsForTokenPage();
-
-        return;
-
-    }
-
-
-    renderTokenPage();
-
-}
-
-
-/* =========================================================
-LOAD QUESTIONS FOR TOKEN PAGE
-========================================================= */
-
-async function loadQuestionsForTokenPage() {
-
-    try {
-
-        const result =
-            await apiGetQuestion();
-
-
-        if (
-            result &&
-            result.success === true
-        ) {
-
-            APP.question =
-                normalizeApiArray(
-                    result.data
-                );
-
-        }
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "LOAD TOKEN QUESTIONS ERROR:",
-            err
-        );
-
-    }
-
-
-    renderTokenPage();
-
-}
-
-
-/* =========================================================
-RENDER TOKEN PAGE
-========================================================= */
-
-function renderTokenPage() {
-
-    const activeQuestions =
-        APP.question.filter(
-            function (question) {
-
-                return (
-                    question &&
-                    String(
-                        question.status || ""
-                    )
-                        .trim()
-                        .toUpperCase()
-                    === "ACTIVE"
-                );
-
-            }
-        );
-
-
-    let questionOptions = `
-
-        <option value="">
-            -- Select Speaking Question --
-        </option>
-
-    `;
-
-
-    activeQuestions.forEach(
-        function (question) {
-
-            questionOptions += `
-
-                <option
-                    value="${escapeAttribute(question.id)}">
-
-                    ${escapeHTML(
-                        question.title
-                    )}
-
-                </option>
-
-            `;
-
-        }
-    );
-
 
     setContent(`
 
@@ -2558,23 +2069,8 @@ function renderTokenPage() {
 
             <input
                 id="tokenClass"
-                type="text"
                 required
             >
-
-            <br><br>
-
-            <label>
-                Speaking Question
-            </label>
-
-            <select
-                id="tokenQuestionId"
-                required>
-
-                ${questionOptions}
-
-            </select>
 
             <br><br>
 
@@ -2598,7 +2094,6 @@ function renderTokenPage() {
 
             <input
                 id="note"
-                type="text"
             >
 
             <br><br>
@@ -2655,7 +2150,7 @@ function renderTokenPage() {
 
 
 /* =========================================================
-GENERATE TOKEN
+   GENERATE TOKEN
 ========================================================= */
 
 async function generateExamToken(e) {
@@ -2668,18 +2163,10 @@ async function generateExamToken(e) {
             "tokenClass"
         );
 
-
-    const questionElement =
-        document.getElementById(
-            "tokenQuestionId"
-        );
-
-
     const expiredElement =
         document.getElementById(
             "expired"
         );
-
 
     const noteElement =
         document.getElementById(
@@ -2689,94 +2176,12 @@ async function generateExamToken(e) {
 
     if (
         !classElement ||
-        !questionElement ||
         !expiredElement ||
         !noteElement
     ) {
 
         alert(
-            "Exam Token form is not available."
-        );
-
-        return;
-
-    }
-
-
-    const kelas =
-        classElement.value
-            .trim();
-
-
-    const questionId =
-        questionElement.value
-            .trim();
-
-
-    const expired =
-        Number(
-            expiredElement.value
-        );
-
-
-    const note =
-        noteElement.value
-            .trim();
-
-
-    if (!kelas) {
-
-        alert(
-            "Class wajib diisi."
-        );
-
-        return;
-
-    }
-
-
-    if (!questionId) {
-
-        alert(
-            "Question ID wajib dipilih saat membuat exam token."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !expired ||
-        expired <= 0
-    ) {
-
-        alert(
-            "Expired minutes tidak valid."
-        );
-
-        return;
-
-    }
-
-
-    const selectedQuestion =
-        APP.question.find(
-            function (question) {
-
-                return (
-                    String(question.id) ===
-                    String(questionId)
-                );
-
-            }
-        );
-
-
-    if (!selectedQuestion) {
-
-        alert(
-            "Speaking Question tidak ditemukan."
+            "Token form is not available."
         );
 
         return;
@@ -2787,16 +2192,15 @@ async function generateExamToken(e) {
     const data = {
 
         kelas:
-            kelas,
-
-        questionId:
-            questionId,
+            classElement.value.trim(),
 
         expired:
-            expired,
+            Number(
+                expiredElement.value
+            ),
 
         note:
-            note,
+            noteElement.value.trim(),
 
         createdBy:
             "Teacher"
@@ -2804,10 +2208,29 @@ async function generateExamToken(e) {
     };
 
 
-    console.log(
-        "CREATE TOKEN REQUEST:",
-        data
-    );
+    if (!data.kelas) {
+
+        alert(
+            "Class wajib diisi."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !data.expired ||
+        data.expired <= 0
+    ) {
+
+        alert(
+            "Expiration time tidak valid."
+        );
+
+        return;
+
+    }
 
 
     try {
@@ -2828,12 +2251,7 @@ async function generateExamToken(e) {
             res &&
             res.message
                 ? res.message
-                : (
-                    res &&
-                    res.success === true
-                        ? "Exam token created."
-                        : "Failed to create exam token."
-                )
+                : "Token created."
         );
 
 
@@ -2860,22 +2278,21 @@ async function generateExamToken(e) {
         }
 
 
-        const expiredInput =
+        const expired =
             document.getElementById(
                 "expired"
             );
 
 
-        if (expiredInput) {
+        if (expired) {
 
-            expiredInput.value =
+            expired.value =
                 30;
 
         }
 
 
         await loadTokens();
-
 
         await refreshDashboard();
 
@@ -2884,14 +2301,14 @@ async function generateExamToken(e) {
     catch (err) {
 
         console.error(
-            "CREATE TOKEN ERROR:",
+            "GENERATE TOKEN ERROR:",
             err
         );
 
 
         alert(
             err.message ||
-            "Unable to create exam token."
+            "Unable to create token."
         );
 
     }
@@ -2900,7 +2317,7 @@ async function generateExamToken(e) {
 
 
 /* =========================================================
-LOAD TOKENS
+   LOAD TOKENS
 ========================================================= */
 
 async function loadTokens() {
@@ -2913,17 +2330,9 @@ async function loadTokens() {
 
     if (!table) {
 
-        console.warn(
-            "loadTokens: #tokenTable not found."
-        );
-
         return;
 
     }
-
-
-    table.innerHTML =
-        "<p>Loading tokens...</p>";
 
 
     try {
@@ -2932,19 +2341,10 @@ async function loadTokens() {
             await apiGetToken();
 
 
-        console.log(
-            "GET TOKEN RESPONSE:",
-            res
-        );
-
-
         if (
             !res ||
             res.success !== true
         ) {
-
-            APP.token = [];
-
 
             table.innerHTML =
                 "<p style='color:red'>" +
@@ -2956,18 +2356,15 @@ async function loadTokens() {
                 ) +
                 "</p>";
 
-
-            updateTokenCounter(0);
-
             return;
 
         }
 
 
         APP.token =
-            normalizeApiArray(
-                res.data
-            );
+            Array.isArray(res.data)
+                ? res.data
+                : [];
 
 
         updateTokenCounter(
@@ -2987,7 +2384,120 @@ async function loadTokens() {
         }
 
 
-        renderTokens();
+        let html = `
+
+            <table
+                border="1"
+                width="100%"
+                cellpadding="8">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            No
+                        </th>
+
+                        <th>
+                            Token
+                        </th>
+
+                        <th>
+                            Class
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Expired
+                        </th>
+
+                        <th>
+                            Action
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        APP.token.forEach(
+            (t, i) => {
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${i + 1}
+                        </td>
+
+                        <td>
+                            <b>
+                                ${escapeHTML(t.token)}
+                            </b>
+                        </td>
+
+                        <td>
+                            ${escapeHTML(t.kelas)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(t.status)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(t.expired)}
+                        </td>
+
+                        <td>
+
+                            <button
+                                type="button"
+                                class="btn edit"
+                                onclick="disableExamToken('${escapeAttribute(t.token)}')">
+
+                                Disable
+
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn delete"
+                                onclick="deleteExamToken('${escapeAttribute(t.token)}')">
+
+                                Delete
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
+
+        html += `
+
+                </tbody>
+
+            </table>
+
+        `;
+
+
+        table.innerHTML =
+            html;
 
     }
 
@@ -2997,9 +2507,6 @@ async function loadTokens() {
             "LOAD TOKENS ERROR:",
             err
         );
-
-
-        APP.token = [];
 
 
         table.innerHTML =
@@ -3016,187 +2523,7 @@ async function loadTokens() {
 
 
 /* =========================================================
-RENDER TOKENS
-========================================================= */
-
-function renderTokens() {
-
-    const table =
-        document.getElementById(
-            "tokenTable"
-        );
-
-
-    if (!table) {
-
-        return;
-
-    }
-
-
-    if (
-        !Array.isArray(APP.token) ||
-        APP.token.length === 0
-    ) {
-
-        table.innerHTML =
-            "<p>No token found.</p>";
-
-        return;
-
-    }
-
-
-    let html = `
-
-        <table
-            border="1"
-            width="100%"
-            cellpadding="8">
-
-            <thead>
-
-                <tr>
-
-                    <th>No</th>
-
-                    <th>Token</th>
-
-                    <th>Class</th>
-
-                    <th>Question</th>
-
-                    <th>Status</th>
-
-                    <th>Expired</th>
-
-                    <th>Action</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-    `;
-
-
-    APP.token.forEach(
-        function (token, index) {
-
-            const question =
-                APP.question.find(
-                    function (q) {
-
-                        return (
-                            String(q.id) ===
-                            String(
-                                token.questionId || ""
-                            )
-                        );
-
-                    }
-                );
-
-
-            const questionTitle =
-                question
-                    ? question.title
-                    : (
-                        token.questionId
-                            ? "Question ID: " +
-                              token.questionId
-                            : "-"
-                    );
-
-
-            html += `
-
-                <tr>
-
-                    <td>
-                        ${index + 1}
-                    </td>
-
-                    <td>
-                        <b>
-                            ${escapeHTML(
-                                token.token
-                            )}
-                        </b>
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            token.kelas
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            questionTitle
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            token.status
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            token.expired
-                        )}
-                    </td>
-
-                    <td>
-
-                        <button
-                            type="button"
-                            class="btn edit"
-                            onclick="disableExamToken('${escapeAttribute(token.token)}')">
-
-                            Disable
-
-                        </button>
-
-                        <button
-                            type="button"
-                            class="btn delete"
-                            onclick="deleteExamToken('${escapeAttribute(token.token)}')">
-
-                            Delete
-
-                        </button>
-
-                    </td>
-
-                </tr>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-
-            </tbody>
-
-        </table>
-
-    `;
-
-
-    table.innerHTML =
-        html;
-
-}
-
-
-/* =========================================================
-DISABLE TOKEN
+   DISABLE TOKEN
 ========================================================= */
 
 async function disableExamToken(token) {
@@ -3228,16 +2555,9 @@ async function disableExamToken(token) {
         const res =
             await apiDisableToken({
 
-                token:
-                    token
+                token: token
 
             });
-
-
-        console.log(
-            "DISABLE TOKEN RESPONSE:",
-            res
-        );
 
 
         alert(
@@ -3259,7 +2579,6 @@ async function disableExamToken(token) {
 
 
         await loadTokens();
-
 
         await refreshDashboard();
 
@@ -3284,7 +2603,7 @@ async function disableExamToken(token) {
 
 
 /* =========================================================
-DELETE TOKEN
+   DELETE TOKEN
 ========================================================= */
 
 async function deleteExamToken(token) {
@@ -3316,16 +2635,9 @@ async function deleteExamToken(token) {
         const res =
             await apiDeleteToken({
 
-                token:
-                    token
+                token: token
 
             });
-
-
-        console.log(
-            "DELETE TOKEN RESPONSE:",
-            res
-        );
 
 
         alert(
@@ -3347,7 +2659,6 @@ async function deleteExamToken(token) {
 
 
         await loadTokens();
-
 
         await refreshDashboard();
 
@@ -3372,7 +2683,7 @@ async function deleteExamToken(token) {
 
 
 /* =========================================================
-SEARCH TOKEN
+   SEARCH TOKEN
 ========================================================= */
 
 function filterToken() {
@@ -3400,27 +2711,28 @@ function filterToken() {
         .querySelectorAll(
             "#tokenTable tbody tr"
         )
-        .forEach(
-            function (row) {
+        .forEach(row => {
 
-                row.style.display =
-                    row.innerText
-                        .toLowerCase()
-                        .includes(keyword)
-                            ? ""
-                            : "none";
+            row.style.display =
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
 
-            }
-        );
+        });
 
 }
 
 
 /* =========================================================
-RESULT PAGE
+   RESULT PAGE
 ========================================================= */
 
 function loadResultPage() {
+
+    RESULT_SELECTION.clear();
+
 
     setContent(`
 
@@ -3440,14 +2752,14 @@ function loadResultPage() {
         <br><br>
 
         <div
-            id="resultActions"
             style="
                 display:flex;
-                gap:10px;
                 align-items:center;
+                gap:10px;
                 flex-wrap:wrap;
                 margin-bottom:15px;
-            ">
+            "
+        >
 
             <label
                 style="
@@ -3455,48 +2767,54 @@ function loadResultPage() {
                     align-items:center;
                     gap:6px;
                     cursor:pointer;
-                ">
+                "
+            >
 
                 <input
                     id="selectAllResults"
                     type="checkbox"
-                    onchange="toggleSelectAllResults(this)"
+                    onchange="toggleSelectAllResults(this.checked)"
                 >
 
-                Select All
+                <span>
+                    Select All
+                </span>
 
             </label>
 
+
             <button
-                id="btnDeleteSelectedResults"
                 type="button"
                 class="btn delete"
                 onclick="deleteSelectedResults()"
-                disabled>
+            >
 
                 Delete Selected
 
             </button>
 
+
             <button
-                id="btnDeleteAllResults"
                 type="button"
                 class="btn delete"
-                onclick="deleteAllResults()">
+                onclick="deleteAllResults()"
+            >
 
                 Delete All
 
             </button>
 
+
             <span
                 id="selectedResultCount"
-                style="font-size:14px;">
+            >
 
                 0 selected
 
             </span>
 
         </div>
+
 
         <div id="resultTable">
 
@@ -3513,7 +2831,210 @@ function loadResultPage() {
 
 
 /* =========================================================
-LOAD RESULTS
+   RESULT NORMALIZER
+========================================================= */
+
+function normalizeResultResponse(response) {
+
+    console.log(
+        "RESULT RESPONSE:",
+        response
+    );
+
+
+    if (!response) {
+
+        return [];
+
+    }
+
+
+    /*
+     * CASE 1
+     *
+     * Standard:
+     *
+     * {
+     *   success: true,
+     *   data: [...]
+     * }
+     */
+
+    if (
+        Array.isArray(
+            response.data
+        )
+    ) {
+
+        console.log(
+            "RESULT DATA IS ARRAY:",
+            true
+        );
+
+
+        return response.data;
+
+    }
+
+
+    /*
+     * CASE 2
+     *
+     * Some backend versions:
+     *
+     * {
+     *   success: true,
+     *   result: [...]
+     * }
+     */
+
+    if (
+        Array.isArray(
+            response.result
+        )
+    ) {
+
+        return response.result;
+
+    }
+
+
+    /*
+     * CASE 3
+     *
+     * Some backend versions:
+     *
+     * {
+     *   success: true,
+     *   results: [...]
+     * }
+     */
+
+    if (
+        Array.isArray(
+            response.results
+        )
+    ) {
+
+        return response.results;
+
+    }
+
+
+    /*
+     * CASE 4
+     *
+     * CURRENT PROBLEM
+     *
+     * Response can look like:
+     *
+     * {
+     *   0: {...},
+     *   1: {...},
+     *   2: {...},
+     *   success: true,
+     *   message: "Success"
+     * }
+     *
+     * Therefore extract numeric keys.
+     */
+
+    const numericKeys =
+        Object.keys(response)
+            .filter(
+                key =>
+                    /^\d+$/.test(key)
+            )
+            .sort(
+                (a, b) =>
+                    Number(a) -
+                    Number(b)
+            );
+
+
+    if (
+        numericKeys.length > 0
+    ) {
+
+        const normalized =
+            numericKeys.map(
+                key =>
+                    response[key]
+            );
+
+
+        console.log(
+            "NORMALIZED RESULT ARRAY:",
+            normalized
+        );
+
+
+        return normalized;
+
+    }
+
+
+    /*
+     * CASE 5
+     *
+     * Sometimes data itself is an object:
+     *
+     * {
+     *   data: {
+     *      0: {...},
+     *      1: {...}
+     *   }
+     * }
+     */
+
+    if (
+        response.data &&
+        typeof response.data ===
+            "object"
+    ) {
+
+        const dataKeys =
+            Object.keys(
+                response.data
+            )
+            .filter(
+                key =>
+                    /^\d+$/.test(key)
+            )
+            .sort(
+                (a, b) =>
+                    Number(a) -
+                    Number(b)
+            );
+
+
+        if (
+            dataKeys.length > 0
+        ) {
+
+            return dataKeys.map(
+                key =>
+                    response.data[key]
+            );
+
+        }
+
+    }
+
+
+    console.warn(
+        "RESULT RESPONSE FORMAT UNKNOWN:",
+        response
+    );
+
+
+    return [];
+
+}
+
+
+/* =========================================================
+   LOAD RESULTS
 ========================================================= */
 
 async function loadResults() {
@@ -3531,57 +3052,25 @@ async function loadResults() {
     }
 
 
-    table.innerHTML =
-        "<p>Loading results...</p>";
-
-
     try {
+
+        console.log(
+            "================================="
+        );
+
+        console.log(
+            "GET RESULT"
+        );
+
 
         const res =
             await apiGetResult();
 
 
         console.log(
-            "GET RESULT RESPONSE:",
+            "RESULT API RESPONSE:",
             res
         );
-
-
-        console.log(
-            "RESULT SUCCESS:",
-            res &&
-            res.success
-        );
-
-
-        console.log(
-            "RESULT DATA:",
-            res &&
-            res.data
-        );
-
-
-        console.log(
-            "RESULT DATA IS ARRAY:",
-            res &&
-            Array.isArray(res.data)
-        );
-
-
-        if (
-            res &&
-            res.data &&
-            typeof res.data === "object"
-        ) {
-
-            console.log(
-                "RESULT DATA KEYS:",
-                Object.keys(
-                    res.data
-                )
-            );
-
-        }
 
 
         if (
@@ -3590,6 +3079,14 @@ async function loadResults() {
         ) {
 
             APP.result = [];
+
+
+            updateResultCounter(
+                0
+            );
+
+
+            updateSelectedResultCount();
 
 
             table.innerHTML =
@@ -3602,27 +3099,41 @@ async function loadResults() {
                 ) +
                 "</p>";
 
-
-            updateResultCounter(0);
-
-            updateSelectedResultsUI();
-
             return;
 
         }
 
 
+        /*
+         * IMPORTANT:
+         * Use normalizer.
+         */
+
         APP.result =
-            normalizeApiArray(
-                res.data
+            normalizeResultResponse(
+                res
             );
 
+
+        console.log(
+            "RESULT SUCCESS:",
+            res.success
+        );
+
+        console.log(
+            "RESULT DATA:",
+            res.data
+        );
+
+        console.log(
+            "RESULT DATA IS ARRAY:",
+            Array.isArray(res.data)
+        );
 
         console.log(
             "NORMALIZED RESULT ARRAY:",
             APP.result
         );
-
 
         console.log(
             "NORMALIZED RESULT LENGTH:",
@@ -3635,14 +3146,55 @@ async function loadResults() {
         );
 
 
+        /*
+         * Remove selected IDs
+         * that no longer exist.
+         */
+
+        const validIds =
+            new Set(
+                APP.result.map(
+                    item =>
+                        String(item.id)
+                )
+            );
+
+
+        Array
+            .from(
+                RESULT_SELECTION
+            )
+            .forEach(id => {
+
+                if (
+                    !validIds.has(
+                        String(id)
+                    )
+                ) {
+
+                    RESULT_SELECTION.delete(
+                        id
+                    );
+
+                }
+
+            });
+
+
+        updateSelectedResultCount();
+
+
         if (
             APP.result.length === 0
         ) {
 
+            updateSelectAllCheckbox(
+                false
+            );
+
+
             table.innerHTML =
                 "<p>No result found.</p>";
-
-            updateSelectedResultsUI();
 
             return;
 
@@ -3651,119 +3203,129 @@ async function loadResults() {
 
         let html = `
 
-            <table
-                border="1"
-                width="100%"
-                cellpadding="8">
+            <div
+                style="overflow-x:auto;"
+            >
 
-                <thead>
+                <table
+                    border="1"
+                    width="100%"
+                    cellpadding="8"
+                >
 
-                    <tr>
+                    <thead>
 
-                        <th>
-                            Select
-                        </th>
+                        <tr>
 
-                        <th>
-                            No
-                        </th>
+                            <th>
+                                <input
+                                    id="resultHeaderCheckbox"
+                                    type="checkbox"
+                                    onchange="toggleSelectAllResults(this.checked)"
+                                >
+                            </th>
 
-                        <th>
-                            NIS
-                        </th>
+                            <th>
+                                No
+                            </th>
 
-                        <th>
-                            Name
-                        </th>
+                            <th>
+                                NIS
+                            </th>
 
-                        <th>
-                            Question
-                        </th>
+                            <th>
+                                Name
+                            </th>
 
-                        <th>
-                            Score
-                        </th>
+                            <th>
+                                Class
+                            </th>
 
-                        <th>
-                            Feedback
-                        </th>
+                            <th>
+                                Question
+                            </th>
 
-                        <th>
-                            Action
-                        </th>
+                            <th>
+                                Score
+                            </th>
 
-                    </tr>
+                            <th>
+                                Feedback
+                            </th>
 
-                </thead>
+                            <th>
+                                Action
+                            </th>
 
-                <tbody>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
 
         `;
 
 
         APP.result.forEach(
-            function (result, index) {
+            (r, i) => {
 
-                const resultId =
+                const id =
                     String(
-                        result.id === null ||
-                        typeof result.id === "undefined"
-                            ? ""
-                            : result.id
+                        r.id || ""
                     );
+
+
+                const checked =
+                    RESULT_SELECTION.has(
+                        id
+                    )
+                        ? "checked"
+                        : "";
 
 
                 html += `
 
                     <tr>
 
-                        <td
-                            style="
-                                text-align:center;
-                            ">
-
+                        <td>
                             <input
                                 type="checkbox"
                                 class="result-checkbox"
-                                value="${escapeAttribute(resultId)}"
-                                onchange="updateSelectedResultsUI()"
+                                data-result-id="${escapeAttribute(id)}"
+                                ${checked}
+                                onchange="toggleResultSelection(this)"
                             >
-
                         </td>
 
                         <td>
-                            ${index + 1}
+                            ${i + 1}
                         </td>
 
                         <td>
-                            ${escapeHTML(
-                                result.nis
-                            )}
+                            ${escapeHTML(r.nis)}
                         </td>
 
                         <td>
-                            ${escapeHTML(
-                                result.nama
-                            )}
+                            ${escapeHTML(r.nama)}
                         </td>
 
                         <td>
-                            ${escapeHTML(
-                                result.question
-                            )}
+                            ${escapeHTML(r.kelas)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(r.question)}
                         </td>
 
                         <td>
                             <b>
-                                ${escapeHTML(
-                                    result.score
-                                )}
+                                ${escapeHTML(r.score)}
                             </b>
                         </td>
 
                         <td>
                             ${escapeHTML(
-                                result.feedback
+                                r.feedback || "-"
                             )}
                         </td>
 
@@ -3772,7 +3334,8 @@ async function loadResults() {
                             <button
                                 type="button"
                                 class="btn delete"
-                                onclick="deleteResult('${escapeAttribute(resultId)}')">
+                                onclick="deleteResult('${escapeAttribute(id)}')"
+                            >
 
                                 Delete
 
@@ -3790,9 +3353,11 @@ async function loadResults() {
 
         html += `
 
-                </tbody>
+                    </tbody>
 
-            </table>
+                </table>
+
+            </div>
 
         `;
 
@@ -3801,7 +3366,9 @@ async function loadResults() {
             html;
 
 
-        updateSelectedResultsUI();
+        syncResultCheckboxes();
+
+        updateSelectedResultCount();
 
     }
 
@@ -3813,9 +3380,6 @@ async function loadResults() {
         );
 
 
-        APP.result = [];
-
-
         table.innerHTML =
             "<p style='color:red'>" +
             escapeHTML(
@@ -3824,157 +3388,239 @@ async function loadResults() {
             ) +
             "</p>";
 
-
-        updateResultCounter(0);
-
-        updateSelectedResultsUI();
-
     }
 
 }
 
 
 /* =========================================================
-GET SELECTED RESULT IDS
+   TOGGLE SINGLE RESULT
 ========================================================= */
 
-function getSelectedResultIds() {
+function toggleResultSelection(
+    checkbox
+) {
 
-    const checkboxes =
-        document.querySelectorAll(
-            ".result-checkbox:checked"
+    if (!checkbox) {
+
+        return;
+
+    }
+
+
+    const id =
+        String(
+            checkbox.dataset.resultId ||
+            ""
         );
 
 
-    return Array
-        .from(checkboxes)
-        .map(
-            function (checkbox) {
+    if (!id) {
 
-                return String(
-                    checkbox.value
+        return;
+
+    }
+
+
+    if (
+        checkbox.checked
+    ) {
+
+        RESULT_SELECTION.add(
+            id
+        );
+
+    }
+
+    else {
+
+        RESULT_SELECTION.delete(
+            id
+        );
+
+    }
+
+
+    updateSelectedResultCount();
+
+    syncResultSelectAll();
+
+}
+
+
+/* =========================================================
+   TOGGLE SELECT ALL
+========================================================= */
+
+function toggleSelectAllResults(
+    checked
+) {
+
+    const checkboxes =
+        document.querySelectorAll(
+            "#resultTable .result-checkbox"
+        );
+
+
+    checkboxes.forEach(
+        checkbox => {
+
+            checkbox.checked =
+                checked;
+
+
+            const id =
+                String(
+                    checkbox.dataset.resultId ||
+                    ""
+                );
+
+
+            if (!id) {
+
+                return;
+
+            }
+
+
+            if (checked) {
+
+                RESULT_SELECTION.add(
+                    id
                 );
 
             }
-        )
-        .filter(
-            function (id) {
 
-                return id.trim() !== "";
+            else {
+
+                RESULT_SELECTION.delete(
+                    id
+                );
 
             }
-        );
+
+        }
+    );
+
+
+    updateSelectedResultCount();
+
+    updateSelectAllCheckbox(
+        checked
+    );
 
 }
 
 
 /* =========================================================
-UPDATE SELECTED RESULT UI
+   SYNC RESULT CHECKBOXES
 ========================================================= */
 
-function updateSelectedResultsUI() {
+function syncResultCheckboxes() {
 
     const checkboxes =
         document.querySelectorAll(
-            ".result-checkbox"
+            "#resultTable .result-checkbox"
         );
 
 
-    const selected =
-        document.querySelectorAll(
-            ".result-checkbox:checked"
+    checkboxes.forEach(
+        checkbox => {
+
+            const id =
+                String(
+                    checkbox.dataset.resultId ||
+                    ""
+                );
+
+
+            checkbox.checked =
+                RESULT_SELECTION.has(
+                    id
+                );
+
+        }
+    );
+
+
+    syncResultSelectAll();
+
+}
+
+
+/* =========================================================
+   SYNC SELECT ALL
+========================================================= */
+
+function syncResultSelectAll() {
+
+    const checkboxes =
+        Array.from(
+            document.querySelectorAll(
+                "#resultTable .result-checkbox"
+            )
         );
 
 
-    const selectedCount =
-        selected.length;
+    if (
+        checkboxes.length === 0
+    ) {
 
-
-    const countElement =
-        document.getElementById(
-            "selectedResultCount"
+        updateSelectAllCheckbox(
+            false
         );
 
-
-    if (countElement) {
-
-        countElement.textContent =
-            selectedCount +
-            (
-                selectedCount === 1
-                    ? " selected"
-                    : " selected"
-            );
+        return;
 
     }
 
 
-    const deleteSelectedButton =
-        document.getElementById(
-            "btnDeleteSelectedResults"
+    const allChecked =
+        checkboxes.every(
+            checkbox =>
+                checkbox.checked
         );
 
 
-    if (deleteSelectedButton) {
+    updateSelectAllCheckbox(
+        allChecked
+    );
 
-        deleteSelectedButton.disabled =
-            selectedCount === 0;
-
-    }
+}
 
 
-    const selectAll =
+/* =========================================================
+   UPDATE SELECT ALL CHECKBOX
+========================================================= */
+
+function updateSelectAllCheckbox(
+    checked
+) {
+
+    const top =
         document.getElementById(
             "selectAllResults"
         );
 
 
-    if (selectAll) {
+    if (top) {
 
-        if (checkboxes.length === 0) {
+        top.checked =
+            checked;
 
-            selectAll.checked =
-                false;
+    }
 
-            selectAll.indeterminate =
-                false;
 
-        }
+    const header =
+        document.getElementById(
+            "resultHeaderCheckbox"
+        );
 
-        else if (
-            selectedCount ===
-            checkboxes.length
-        ) {
 
-            selectAll.checked =
-                true;
+    if (header) {
 
-            selectAll.indeterminate =
-                false;
-
-        }
-
-        else if (
-            selectedCount > 0
-        ) {
-
-            selectAll.checked =
-                false;
-
-            selectAll.indeterminate =
-                true;
-
-        }
-
-        else {
-
-            selectAll.checked =
-                false;
-
-            selectAll.indeterminate =
-                false;
-
-        }
+        header.checked =
+            checked;
 
     }
 
@@ -3982,140 +3628,22 @@ function updateSelectedResultsUI() {
 
 
 /* =========================================================
-SELECT / UNSELECT ALL
+   SELECTED RESULT COUNTER
 ========================================================= */
 
-function toggleSelectAllResults(masterCheckbox) {
+function updateSelectedResultCount() {
 
-    const checked =
-        masterCheckbox &&
-        masterCheckbox.checked === true;
-
-
-    document
-        .querySelectorAll(
-            ".result-checkbox"
-        )
-        .forEach(
-            function (checkbox) {
-
-                checkbox.checked =
-                    checked;
-
-            }
+    const el =
+        document.getElementById(
+            "selectedResultCount"
         );
 
 
-    updateSelectedResultsUI();
+    if (el) {
 
-}
-
-
-/* =========================================================
-DELETE SELECTED RESULTS
-========================================================= */
-
-async function deleteSelectedResults() {
-
-    const ids =
-        getSelectedResultIds();
-
-
-    if (
-        ids.length === 0
-    ) {
-
-        alert(
-            "Please select at least one result."
-        );
-
-        return;
-
-    }
-
-
-    const confirmed =
-        confirm(
-            "Delete " +
-            ids.length +
-            " selected result" +
-            (
-                ids.length > 1
-                    ? "s"
-                    : ""
-            ) +
-            "?\n\nThis action cannot be undone."
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const res =
-            await apiDeleteResults({
-
-                ids: ids
-
-            });
-
-
-        console.log(
-            "DELETE SELECTED RESULTS RESPONSE:",
-            res
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            alert(
-                res &&
-                res.message
-                    ? res.message
-                    : "Failed to delete selected results."
-            );
-
-            return;
-
-        }
-
-
-        alert(
-            res.message ||
-            (
-                ids.length +
-                " result(s) deleted."
-            )
-        );
-
-
-        await loadResults();
-
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE SELECTED RESULTS ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to delete selected results."
-        );
+        el.textContent =
+            RESULT_SELECTION.size +
+            " selected";
 
     }
 
@@ -4123,152 +3651,7 @@ async function deleteSelectedResults() {
 
 
 /* =========================================================
-DELETE ALL RESULTS
-========================================================= */
-
-async function deleteAllResults() {
-
-    if (
-        !Array.isArray(APP.result) ||
-        APP.result.length === 0
-    ) {
-
-        alert(
-            "No result found."
-        );
-
-        return;
-
-    }
-
-
-    const total =
-        APP.result.length;
-
-
-    const confirmed =
-        confirm(
-            "WARNING!\n\n" +
-            "This will permanently delete ALL " +
-            total +
-            " speaking result(s).\n\n" +
-            "This action cannot be undone.\n\n" +
-            "Continue?"
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
-    const ids =
-        APP.result
-            .map(
-                function (result) {
-
-                    return String(
-                        result.id === null ||
-                        typeof result.id === "undefined"
-                            ? ""
-                            : result.id
-                    );
-
-                }
-            )
-            .filter(
-                function (id) {
-
-                    return id.trim() !== "";
-
-                }
-            );
-
-
-    if (
-        ids.length === 0
-    ) {
-
-        alert(
-            "No valid result IDs found."
-        );
-
-        return;
-
-    }
-
-
-    try {
-
-        const res =
-            await apiDeleteResults({
-
-                ids: ids
-
-            });
-
-
-        console.log(
-            "DELETE ALL RESULTS RESPONSE:",
-            res
-        );
-
-
-        if (
-            !res ||
-            res.success !== true
-        ) {
-
-            alert(
-                res &&
-                res.message
-                    ? res.message
-                    : "Failed to delete all results."
-            );
-
-            return;
-
-        }
-
-
-        alert(
-            res.message ||
-            (
-                ids.length +
-                " result(s) deleted."
-            )
-        );
-
-
-        await loadResults();
-
-
-        await refreshDashboard();
-
-    }
-
-    catch (err) {
-
-        console.error(
-            "DELETE ALL RESULTS ERROR:",
-            err
-        );
-
-
-        alert(
-            err.message ||
-            "Unable to delete all results."
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-DELETE SINGLE RESULT
+   DELETE INDIVIDUAL RESULT
 ========================================================= */
 
 async function deleteResult(id) {
@@ -4300,16 +3683,9 @@ async function deleteResult(id) {
         const res =
             await apiDeleteResult({
 
-                id:
-                    id
+                id: id
 
             });
-
-
-        console.log(
-            "DELETE RESULT RESPONSE:",
-            res
-        );
 
 
         alert(
@@ -4330,8 +3706,12 @@ async function deleteResult(id) {
         }
 
 
-        await loadResults();
+        RESULT_SELECTION.delete(
+            String(id)
+        );
 
+
+        await loadResults();
 
         await refreshDashboard();
 
@@ -4356,7 +3736,343 @@ async function deleteResult(id) {
 
 
 /* =========================================================
-SEARCH RESULT
+   DELETE SELECTED RESULTS
+========================================================= */
+
+async function deleteSelectedResults() {
+
+    const selectedIds =
+        Array.from(
+            RESULT_SELECTION
+        );
+
+
+    if (
+        selectedIds.length === 0
+    ) {
+
+        alert(
+            "Please select at least one result."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            "Delete " +
+            selectedIds.length +
+            " selected result(s)?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        let deleted =
+            0;
+
+        let failedCount =
+            0;
+
+
+        for (
+            const id of selectedIds
+        ) {
+
+            try {
+
+                const res =
+                    await apiDeleteResult({
+
+                        id: id
+
+                    });
+
+
+                if (
+                    res &&
+                    res.success === true
+                ) {
+
+                    deleted++;
+
+                }
+
+                else {
+
+                    failedCount++;
+
+                    console.error(
+                        "DELETE SELECTED FAILED:",
+                        id,
+                        res
+                    );
+
+                }
+
+            }
+
+            catch (err) {
+
+                failedCount++;
+
+                console.error(
+                    "DELETE SELECTED ERROR:",
+                    id,
+                    err
+                );
+
+            }
+
+        }
+
+
+        RESULT_SELECTION.clear();
+
+
+        await loadResults();
+
+        await refreshDashboard();
+
+
+        if (
+            failedCount === 0
+        ) {
+
+            alert(
+                deleted +
+                " result(s) deleted successfully."
+            );
+
+        }
+
+        else {
+
+            alert(
+                deleted +
+                " result(s) deleted.\n" +
+                failedCount +
+                " result(s) failed."
+            );
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE SELECTED RESULTS ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete selected results."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   DELETE ALL RESULTS
+========================================================= */
+
+async function deleteAllResults() {
+
+    if (
+        APP.result.length === 0
+    ) {
+
+        alert(
+            "No result available to delete."
+        );
+
+        return;
+
+    }
+
+
+    const total =
+        APP.result.length;
+
+
+    if (
+        !confirm(
+            "WARNING\n\n" +
+            "Delete ALL " +
+            total +
+            " result(s)?\n\n" +
+            "This action cannot be undone."
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+     * Second confirmation.
+     * Prevent accidental Delete All.
+     */
+
+    if (
+        !confirm(
+            "FINAL CONFIRMATION\n\n" +
+            "Are you absolutely sure you want to delete ALL results?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        let deleted =
+            0;
+
+        let failedCount =
+            0;
+
+
+        /*
+         * Copy IDs first.
+         * Do not modify APP.result
+         * while looping.
+         */
+
+        const ids =
+            APP.result
+                .map(
+                    item =>
+                        String(
+                            item.id || ""
+                        )
+                )
+                .filter(
+                    id =>
+                        id !== ""
+                );
+
+
+        for (
+            const id of ids
+        ) {
+
+            try {
+
+                const res =
+                    await apiDeleteResult({
+
+                        id: id
+
+                    });
+
+
+                if (
+                    res &&
+                    res.success === true
+                ) {
+
+                    deleted++;
+
+                }
+
+                else {
+
+                    failedCount++;
+
+                    console.error(
+                        "DELETE ALL FAILED:",
+                        id,
+                        res
+                    );
+
+                }
+
+            }
+
+            catch (err) {
+
+                failedCount++;
+
+                console.error(
+                    "DELETE ALL ERROR:",
+                    id,
+                    err
+                );
+
+            }
+
+        }
+
+
+        RESULT_SELECTION.clear();
+
+
+        await loadResults();
+
+        await refreshDashboard();
+
+
+        if (
+            failedCount === 0
+        ) {
+
+            alert(
+                "All " +
+                deleted +
+                " result(s) deleted successfully."
+            );
+
+        }
+
+        else {
+
+            alert(
+                deleted +
+                " result(s) deleted.\n" +
+                failedCount +
+                " result(s) failed."
+            );
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "DELETE ALL RESULTS ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to delete all results."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SEARCH RESULT
 ========================================================= */
 
 function filterResult() {
@@ -4384,174 +4100,201 @@ function filterResult() {
         .querySelectorAll(
             "#resultTable tbody tr"
         )
-        .forEach(
-            function (row) {
+        .forEach(row => {
 
-                row.style.display =
-                    row.innerText
-                        .toLowerCase()
-                        .includes(keyword)
-                            ? ""
-                            : "none";
+            row.style.display =
+                row.innerText
+                    .toLowerCase()
+                    .includes(keyword)
+                        ? ""
+                        : "none";
 
-            }
-        );
+        });
+
+
+    /*
+     * Selection remains based on IDs,
+     * not visual filtering.
+     */
+
+    syncResultSelectAll();
 
 }
 
 
 /* =========================================================
-DASHBOARD COUNTERS
+   COUNTERS
 ========================================================= */
 
-function updateQuestionCounter(total) {
+function updateQuestionCounter(
+    total
+) {
 
-    const elements =
-        document.querySelectorAll(
-            "#totalQuestion"
+    const el =
+        document.getElementById(
+            "totalQuestion"
         );
 
 
-    elements.forEach(
-        function (element) {
+    if (el) {
 
-            element.textContent =
-                total;
+        el.textContent =
+            total;
 
-        }
-    );
+    }
 
 }
 
 
-function updateStudentCounter(total) {
+function updateStudentCounter(
+    total
+) {
 
-    const elements =
-        document.querySelectorAll(
-            "#totalStudent"
+    const el =
+        document.getElementById(
+            "totalStudent"
         );
 
 
-    elements.forEach(
-        function (element) {
+    if (el) {
 
-            element.textContent =
-                total;
+        el.textContent =
+            total;
 
-        }
-    );
+    }
 
 }
 
 
-function updateTokenCounter(total) {
+function updateTokenCounter(
+    total
+) {
 
-    const elements =
-        document.querySelectorAll(
-            "#totalToken"
+    const el =
+        document.getElementById(
+            "totalToken"
         );
 
 
-    elements.forEach(
-        function (element) {
+    if (el) {
 
-            element.textContent =
-                total;
+        el.textContent =
+            total;
 
-        }
-    );
+    }
 
 }
 
 
-function updateResultCounter(total) {
+function updateResultCounter(
+    total
+) {
 
-    const elements =
-        document.querySelectorAll(
-            "#totalResult"
+    const el =
+        document.getElementById(
+            "totalResult"
         );
 
 
-    elements.forEach(
-        function (element) {
+    if (el) {
 
-            element.textContent =
-                total;
+        el.textContent =
+            total;
 
-        }
-    );
+    }
 
 }
 
 
 /* =========================================================
-COMMON HELPERS
+   COMMON HELPERS
 ========================================================= */
 
-function escapeHTML(value) {
+function escapeHTML(text) {
 
     return String(
-        value === null ||
-        typeof value === "undefined"
+        text === undefined ||
+        text === null
             ? ""
-            : value
+            : text
     )
 
-    .replace(
-        /&/g,
-        "&amp;"
-    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
 
-    .replace(
-        /</g,
-        "&lt;"
-    )
+        .replace(
+            /</g,
+            "&lt;"
+        )
 
-    .replace(
-        />/g,
-        "&gt;"
-    )
+        .replace(
+            />/g,
+            "&gt;"
+        )
 
-    .replace(
-        /"/g,
-        "&quot;"
-    )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
 
-    .replace(
-        /'/g,
-        "&#039;"
-    );
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
 
-function escapeAttribute(value) {
+/* =========================================================
+   ATTRIBUTE ESCAPE
+========================================================= */
 
-    return String(
-        value === null ||
-        typeof value === "undefined"
-            ? ""
-            : value
-    )
+function escapeAttribute(text) {
 
-    .replace(
-        /\\/g,
-        "\\\\"
-    )
-
-    .replace(
-        /'/g,
-        "\\'"
-    )
-
-    .replace(
-        /"/g,
-        "&quot;"
+    return escapeHTML(
+        text
     );
 
 }
 
 
 /* =========================================================
-END OF FILE
+   FORMAT DATE
+========================================================= */
+
+function formatDate(value) {
+
+    if (!value) {
+
+        return "-";
+
+    }
+
+
+    const d =
+        new Date(value);
+
+
+    if (
+        isNaN(
+            d.getTime()
+        )
+    ) {
+
+        return String(
+            value
+        );
+
+    }
+
+
+    return d.toLocaleString();
+
+}
+
+
+/* =========================================================
+   END OF FILE
 ========================================================= */
