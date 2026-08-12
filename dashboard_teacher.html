@@ -10,7 +10,7 @@
     content="width=device-width, initial-scale=1.0"
 >
 
-<title>Teacher Dashboard</title>
+<title>SAF Speaking Online Test - Teacher Dashboard</title>
 
 <link
     rel="icon"
@@ -24,393 +24,874 @@
 
 <style>
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+/* =========================================================
+   SAF SPEAKING ONLINE TEST
+   TEACHER DASHBOARD
+   UI REFINEMENT ONLY
+   NO JAVASCRIPT / API / BACKEND CHANGES
+========================================================= */
+
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-body{
+html {
+    scroll-behavior: smooth;
+}
 
-    background:#eef3f8;
+body {
+
+    background: #f4f7fb;
 
     font-family:
         Arial,
         Helvetica,
         sans-serif;
 
-    color:#333;
+    color: #243447;
+
+    line-height: 1.5;
 
 }
 
-.dashboard{
+/* =========================================================
+   DASHBOARD LAYOUT
+========================================================= */
 
-    display:flex;
+.dashboard {
 
-    min-height:100vh;
+    display: flex;
+
+    min-height: 100vh;
 
 }
 
-/* =====================================
-SIDEBAR
-===================================== */
+/* =========================================================
+   SIDEBAR
+========================================================= */
 
-.sidebar{
+.sidebar {
 
-    width:280px;
+    width: 255px;
 
-    background:#0B72B9;
+    min-height: 100vh;
 
-    color:white;
+    background: #ffffff;
 
-    padding:30px;
+    color: #243447;
+
+    padding: 28px 18px;
+
+    border-right: 1px solid #e5eaf0;
 
     box-shadow:
-        4px 0 20px
-        rgba(0,0,0,.15);
+        4px 0 18px
+        rgba(31, 55, 80, 0.05);
+
+    position: sticky;
+
+    top: 0;
+
+    align-self: flex-start;
 
 }
 
-.sidebar img{
+/* LOGO */
 
-    width:120px;
+.sidebar img {
 
-    display:block;
+    width: 92px;
 
-    margin:auto;
+    height: auto;
 
-    margin-bottom:15px;
+    display: block;
 
-}
-
-.sidebar h2{
-
-    text-align:center;
-
-    font-size:22px;
-
-    margin-bottom:5px;
+    margin: 0 auto 16px auto;
 
 }
 
-.sidebar p{
+/* TITLE */
 
-    text-align:center;
+.sidebar h2 {
 
-    font-size:13px;
+    text-align: center;
 
-    opacity:.85;
+    font-size: 19px;
 
-    margin-bottom:35px;
+    font-weight: 700;
 
-}
+    color: #1f3b57;
 
-.menu{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:10px;
+    margin-bottom: 4px;
 
 }
 
-.menu a{
+/* SUBTITLE */
 
-    color:white;
+.sidebar p {
 
-    text-decoration:none;
+    text-align: center;
 
-    padding:14px 18px;
+    font-size: 12px;
 
-    border-radius:10px;
+    color: #7a8998;
 
-    transition:.25s;
-
-    font-size:15px;
-
-    font-weight:bold;
+    margin-bottom: 28px;
 
 }
 
-.menu a:hover{
+/* =========================================================
+   MENU
+========================================================= */
 
-    background:white;
+.menu {
 
-    color:#0B72B9;
+    display: flex;
 
-    transform:translateX(6px);
+    flex-direction: column;
 
-}
-
-/* =====================================
-MAIN
-===================================== */
-
-.main{
-
-    flex:1;
-
-    padding:40px;
+    gap: 6px;
 
 }
 
-.header{
+.menu a {
 
-    display:flex;
+    display: flex;
 
-    justify-content:space-between;
+    align-items: center;
 
-    align-items:center;
+    gap: 10px;
 
-    margin-bottom:35px;
+    color: #526477;
 
-}
+    text-decoration: none;
 
-.header h1{
+    padding: 12px 14px;
 
-    font-size:34px;
+    border-radius: 10px;
 
-    color:#0B72B9;
+    transition:
+        background-color .2s ease,
+        color .2s ease,
+        transform .2s ease;
 
-    margin-bottom:8px;
+    font-size: 14px;
 
-}
-
-.header p{
-
-    color:#666;
-
-    line-height:1.6;
+    font-weight: 600;
 
 }
 
-/* =====================================
-CARDS
-===================================== */
+/* HOVER */
 
-.cards{
+.menu a:hover {
 
-    display:grid;
+    background: #edf5ff;
+
+    color: #1769aa;
+
+    transform: translateX(3px);
+
+}
+
+/* ACTIVE-LIKE FIRST MENU */
+
+.menu a[data-page="dashboard"] {
+
+    background: #edf5ff;
+
+    color: #1769aa;
+
+}
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.main {
+
+    flex: 1;
+
+    min-width: 0;
+
+    padding: 34px 38px 45px 38px;
+
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 28px;
+
+    padding-bottom: 22px;
+
+    border-bottom: 1px solid #e3e9ef;
+
+}
+
+.header h1 {
+
+    font-size: 29px;
+
+    font-weight: 700;
+
+    color: #21384f;
+
+    margin-bottom: 5px;
+
+}
+
+.header p {
+
+    color: #7b8997;
+
+    line-height: 1.7;
+
+    font-size: 14px;
+
+}
+
+/* =========================================================
+   STATISTIC CARDS
+========================================================= */
+
+.cards {
+
+    display: grid;
 
     grid-template-columns:
         repeat(
             auto-fit,
-            minmax(240px,1fr)
+            minmax(210px, 1fr)
         );
 
-    gap:25px;
+    gap: 18px;
 
 }
 
-.card-box{
+/* CARD */
 
-    background:white;
+.card-box {
 
-    border-radius:16px;
+    background: #ffffff;
 
-    padding:30px;
+    border: 1px solid #e8edf2;
+
+    border-radius: 14px;
+
+    padding: 23px;
 
     box-shadow:
-        0 8px 25px
-        rgba(0,0,0,.08);
+        0 4px 14px
+        rgba(31, 55, 80, 0.055);
 
-    transition:.25s;
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease,
+        border-color .2s ease;
 
 }
 
-.card-box:hover{
+/* HOVER */
 
-    transform:translateY(-6px);
+.card-box:hover {
+
+    transform: translateY(-2px);
+
+    border-color: #dce7f1;
 
     box-shadow:
-        0 15px 35px
-        rgba(0,0,0,.12);
+        0 8px 22px
+        rgba(31, 55, 80, 0.08);
 
 }
 
-.card-box h3{
+/* CARD TITLE */
 
-    color:#0B72B9;
+.card-box h3 {
 
-    margin-bottom:15px;
+    color: #617386;
 
-    font-size:18px;
+    margin-bottom: 10px;
 
-}
+    font-size: 14px;
 
-.number{
-
-    font-size:46px;
-
-    font-weight:bold;
-
-    color:#0B72B9;
+    font-weight: 600;
 
 }
 
-/* =====================================
-CONTENT
-===================================== */
+/* NUMBER */
 
-.content{
+.number {
 
-    margin-top:35px;
+    font-size: 38px;
 
-    background:white;
+    line-height: 1.1;
 
-    border-radius:16px;
+    font-weight: 700;
 
-    padding:35px;
+    color: #1769aa;
 
-    min-height:500px;
+}
+
+/* =========================================================
+   CONTENT AREA
+========================================================= */
+
+.content {
+
+    margin-top: 24px;
+
+    background: #ffffff;
+
+    border: 1px solid #e8edf2;
+
+    border-radius: 14px;
+
+    padding: 28px;
+
+    min-height: 500px;
 
     box-shadow:
-        0 8px 25px
-        rgba(0,0,0,.08);
+        0 4px 14px
+        rgba(31, 55, 80, 0.05);
 
 }
 
-/* =====================================
-IMPORT STUDENT
-===================================== */
+/* CONTENT HEADINGS */
 
-.import-box{
+.content h2 {
 
-    border:2px dashed #0B72B9;
+    color: #243b53;
 
-    background:#f7fbff;
-
-    padding:25px;
-
-    border-radius:14px;
-
-    margin-bottom:25px;
+    font-size: 23px;
 
 }
 
-.import-box h3{
+.content h3 {
 
-    color:#0B72B9;
+    color: #304b63;
 
-    margin-bottom:10px;
-
-}
-
-.import-box p{
-
-    color:#666;
-
-    line-height:1.6;
-
-    margin-bottom:15px;
+    font-size: 17px;
 
 }
 
-.import-actions{
+/* CONTENT PARAGRAPH */
 
-    display:flex;
+.content p {
 
-    gap:10px;
-
-    flex-wrap:wrap;
-
-    align-items:center;
+    color: #68798a;
 
 }
 
-.import-actions input[type="file"]{
+/* =========================================================
+   BUTTONS
+========================================================= */
 
-    padding:10px;
+.btn {
 
-    background:white;
+    border: 1px solid #d8e0e8;
 
-    border:1px solid #ccc;
+    background: #ffffff;
 
-    border-radius:8px;
+    color: #526477;
+
+    padding: 10px 16px;
+
+    border-radius: 9px;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background-color .2s ease,
+        border-color .2s ease,
+        color .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
 
 }
 
-.preview-box{
+/* GENERAL BUTTON HOVER */
 
-    margin-top:20px;
+.btn:hover {
 
-    overflow-x:auto;
+    background: #f4f7fa;
+
+    border-color: #c8d4df;
+
+    transform: translateY(-1px);
 
 }
 
-.preview-table{
+/* TEACHER BUTTON */
 
-    width:100%;
+.btn.teacher {
 
-    border-collapse:collapse;
+    background: #1769aa;
+
+    border-color: #1769aa;
+
+    color: #ffffff;
+
+    box-shadow:
+        0 3px 8px
+        rgba(23, 105, 170, 0.16);
+
+}
+
+/* TEACHER BUTTON HOVER */
+
+.btn.teacher:hover {
+
+    background: #145c95;
+
+    border-color: #145c95;
+
+    color: #ffffff;
+
+    box-shadow:
+        0 5px 12px
+        rgba(23, 105, 170, 0.22);
+
+}
+
+/* DISABLED */
+
+.btn:disabled {
+
+    opacity: .55;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+    box-shadow: none;
+
+}
+
+/* =========================================================
+   FORM ELEMENTS
+========================================================= */
+
+input,
+textarea,
+select {
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    color: #30475e;
+
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+
+    outline: none;
+
+    border-color: #7fb2d8 !important;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(23, 105, 170, 0.08);
+
+}
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+table {
+
+    color: #405568;
+
+}
+
+table th {
+
+    color: #53697d !important;
+
+    font-weight: 700;
+
+}
+
+table td {
+
+    color: #536577;
+
+}
+
+/* =========================================================
+   IMPORT STUDENT
+========================================================= */
+
+.import-box {
+
+    border: 1px dashed #9dbbd3;
+
+    background: #f8fbfd;
+
+    padding: 22px;
+
+    border-radius: 12px;
+
+    margin-bottom: 22px;
+
+}
+
+.import-box h3 {
+
+    color: #315c7d;
+
+    margin-bottom: 8px;
+
+}
+
+.import-box p {
+
+    color: #6f8090;
+
+    line-height: 1.6;
+
+    margin-bottom: 15px;
+
+}
+
+.import-actions {
+
+    display: flex;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+}
+
+.import-actions input[type="file"] {
+
+    padding: 9px;
+
+    background: #ffffff;
+
+    border: 1px solid #d7e0e8;
+
+    border-radius: 8px;
+
+    color: #596b7c;
+
+}
+
+.preview-box {
+
+    margin-top: 20px;
+
+    overflow-x: auto;
+
+}
+
+.preview-table {
+
+    width: 100%;
+
+    border-collapse: collapse;
 
 }
 
 .preview-table th,
-.preview-table td{
+.preview-table td {
 
-    border:1px solid #ddd;
+    border: 1px solid #e1e7ec;
 
-    padding:8px;
+    padding: 9px;
 
-    text-align:left;
-
-}
-
-.preview-table th{
-
-    background:#0B72B9;
-
-    color:white;
+    text-align: left;
 
 }
 
-.import-summary{
+.preview-table th {
 
-    margin-top:15px;
+    background: #edf5fa;
 
-    padding:12px;
-
-    background:#eef7ff;
-
-    border-radius:8px;
-
-    font-weight:bold;
+    color: #42647d;
 
 }
 
-/* =====================================
-RESPONSIVE
-===================================== */
+.import-summary {
 
-@media(max-width:900px){
+    margin-top: 15px;
 
-    .dashboard{
+    padding: 12px;
 
-        flex-direction:column;
+    background: #f1f7fb;
+
+    border-radius: 8px;
+
+    font-weight: 600;
+
+    color: #50677a;
+
+}
+
+/* =========================================================
+   HR
+========================================================= */
+
+hr {
+
+    border: 0;
+
+    border-top: 1px solid #e5eaf0;
+
+}
+
+/* =========================================================
+   LINKS
+========================================================= */
+
+a {
+
+    -webkit-tap-highlight-color: transparent;
+
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+
+    width: 8px;
+
+    height: 8px;
+
+}
+
+::-webkit-scrollbar-track {
+
+    background: #f1f4f7;
+
+}
+
+::-webkit-scrollbar-thumb {
+
+    background: #c6d1db;
+
+    border-radius: 10px;
+
+}
+
+::-webkit-scrollbar-thumb:hover {
+
+    background: #aebdca;
+
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media(max-width: 1100px) {
+
+    .sidebar {
+
+        width: 225px;
 
     }
 
-    .sidebar{
+    .main {
 
-        width:100%;
-
-    }
-
-    .main{
-
-        padding:25px;
+        padding:
+            28px
+            28px
+            40px
+            28px;
 
     }
 
-    .cards{
+    .header h1 {
 
-        grid-template-columns:1fr;
+        font-size: 26px;
 
     }
 
 }
+
+@media(max-width: 900px) {
+
+    .dashboard {
+
+        flex-direction: column;
+
+    }
+
+    .sidebar {
+
+        width: 100%;
+
+        min-height: auto;
+
+        position: relative;
+
+        padding: 20px;
+
+        border-right: none;
+
+        border-bottom: 1px solid #e5eaf0;
+
+    }
+
+    .sidebar img {
+
+        width: 75px;
+
+        margin-bottom: 10px;
+
+    }
+
+    .sidebar h2 {
+
+        font-size: 18px;
+
+    }
+
+    .sidebar p {
+
+        margin-bottom: 18px;
+
+    }
+
+    .menu {
+
+        flex-direction: row;
+
+        flex-wrap: wrap;
+
+        justify-content: center;
+
+    }
+
+    .menu a {
+
+        padding:
+            9px
+            12px;
+
+        font-size: 13px;
+
+    }
+
+    .main {
+
+        padding:
+            22px
+            18px
+            35px
+            18px;
+
+    }
+
+    .cards {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+    }
+
+}
+
+@media(max-width: 600px) {
+
+    .header {
+
+        align-items: flex-start;
+
+        margin-bottom: 22px;
+
+    }
+
+    .header h1 {
+
+        font-size: 23px;
+
+    }
+
+    .cards {
+
+        grid-template-columns: 1fr;
+
+    }
+
+    .card-box {
+
+        padding: 20px;
+
+    }
+
+    .number {
+
+        font-size: 34px;
+
+    }
+
+    .content {
+
+        padding: 20px;
+
+        min-height: 400px;
+
+    }
+
+    .menu {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        gap: 5px;
+
+    }
+
+    .menu a {
+
+        justify-content: flex-start;
+
+    }
+
+}
+
+/* =========================================================
+   END UI REFINEMENT
+========================================================= */
 
 </style>
 
@@ -420,7 +901,9 @@ RESPONSIVE
 
 <div class="dashboard">
 
-    <!-- SIDEBAR -->
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
 
     <aside class="sidebar">
 
@@ -439,23 +922,38 @@ RESPONSIVE
 
         <nav class="menu">
 
-            <a href="#" data-page="dashboard">
+            <a
+                href="#"
+                data-page="dashboard"
+            >
                 🏠 Dashboard
             </a>
 
-            <a href="#" data-page="question">
+            <a
+                href="#"
+                data-page="question"
+            >
                 🎤 Speaking Questions
             </a>
 
-            <a href="#" data-page="student">
+            <a
+                href="#"
+                data-page="student"
+            >
                 👨‍🎓 Students
             </a>
 
-            <a href="#" data-page="token">
+            <a
+                href="#"
+                data-page="token"
+            >
                 🔑 Exam Token
             </a>
 
-            <a href="#" data-page="result">
+            <a
+                href="#"
+                data-page="result"
+            >
                 📊 Speaking Results
             </a>
 
@@ -475,7 +973,10 @@ RESPONSIVE
 
     </aside>
 
-    <!-- MAIN -->
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
 
     <main class="main">
 
@@ -503,7 +1004,10 @@ RESPONSIVE
 
         </div>
 
-        <!-- CARDS -->
+
+        <!-- =================================================
+             STATISTIC CARDS
+        ================================================== -->
 
         <section class="cards">
 
@@ -522,6 +1026,7 @@ RESPONSIVE
 
             </div>
 
+
             <div class="card-box">
 
                 <h3>
@@ -537,6 +1042,7 @@ RESPONSIVE
 
             </div>
 
+
             <div class="card-box">
 
                 <h3>
@@ -551,6 +1057,7 @@ RESPONSIVE
                 </div>
 
             </div>
+
 
             <div class="card-box">
 
@@ -569,7 +1076,10 @@ RESPONSIVE
 
         </section>
 
-        <!-- CONTENT -->
+
+        <!-- =================================================
+             CONTENT
+        ================================================== -->
 
         <section
             class="content"
@@ -598,6 +1108,7 @@ RESPONSIVE
                 style="
                     padding-left:25px;
                     line-height:2;
+                    color:#68798a;
                 "
             >
 
@@ -648,23 +1159,36 @@ RESPONSIVE
 
 </div>
 
-<!-- EXISTING CONFIG -->
+
+<!-- =========================================================
+     EXISTING CONFIG
+========================================================= -->
 
 <script src="js/config.js"></script>
 
-<!-- EXISTING API -->
+
+<!-- =========================================================
+     EXISTING API
+========================================================= -->
 
 <script src="js/api.js"></script>
 
-<!-- SHEETJS FOR XLSX / XLS / CSV -->
+
+<!-- =========================================================
+     SHEETJS FOR XLSX / XLS / CSV
+========================================================= -->
 
 <script
     src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
 ></script>
 
-<!-- TEACHER -->
+
+<!-- =========================================================
+     TEACHER
+========================================================= -->
 
 <script src="js/teacher.js"></script>
+
 
 <script>
 
