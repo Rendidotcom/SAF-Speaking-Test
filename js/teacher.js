@@ -29,7 +29,7 @@
 
 
 /* =========================================================
-GLOBAL STATE
+   GLOBAL STATE
 ========================================================= */
 
 let teacherQuestions = [];
@@ -41,7 +41,7 @@ let csvStudentData = [];
 
 
 /* =========================================================
-INITIALIZE
+   INITIALIZE
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -80,7 +80,7 @@ async function initializeTeacherDashboard() {
 
 
 /* =========================================================
-MENU
+   MENU
 ========================================================= */
 
 function setupMenu() {
@@ -98,6 +98,7 @@ function setupMenu() {
             async function (event) {
 
                 event.preventDefault();
+
 
                 const page =
                     this.getAttribute(
@@ -147,7 +148,7 @@ function setupMenu() {
 
 
 /* =========================================================
-DATE
+   DATE
 ========================================================= */
 
 function updateTodayDate() {
@@ -185,7 +186,7 @@ function updateTodayDate() {
 
 
 /* =========================================================
-CONTENT
+   CONTENT
 ========================================================= */
 
 function getContentElement() {
@@ -198,7 +199,7 @@ function getContentElement() {
 
 
 /* =========================================================
-DASHBOARD
+   DASHBOARD
 ========================================================= */
 
 async function loadDashboardPage() {
@@ -294,7 +295,7 @@ async function loadDashboardPage() {
 
 
 /* =========================================================
-DASHBOARD COUNTERS
+   DASHBOARD COUNTERS
 ========================================================= */
 
 async function refreshDashboardCounters() {
@@ -475,7 +476,7 @@ async function refreshDashboardCounters() {
 
 
 /* =========================================================
-QUESTION DATA CACHE
+   QUESTION DATA CACHE
 ========================================================= */
 
 /**
@@ -486,6 +487,7 @@ QUESTION DATA CACHE
  * dropdown will work even when Teacher opens Token page
  * directly without opening Question page first.
  */
+
 async function ensureTeacherQuestionsLoaded() {
 
     /*
@@ -555,7 +557,7 @@ async function ensureTeacherQuestionsLoaded() {
 
 
 /* =========================================================
-QUESTION PAGE
+   QUESTION PAGE
 ========================================================= */
 
 async function loadQuestionPage() {
@@ -621,7 +623,7 @@ async function loadQuestionPage() {
 
 
 /* =========================================================
-QUESTION FORM
+   QUESTION FORM
 ========================================================= */
 
 function showQuestionForm(question = null) {
@@ -719,9 +721,7 @@ function showQuestionForm(question = null) {
                 rows="4"
                 style="${textareaStyle}"
                 placeholder="Enter answer key..."
-            >${
-                escapeHtml(answer)
-            }</textarea>
+            >${escapeHtml(answer)}</textarea>
 
             <br><br>
 
@@ -823,7 +823,7 @@ function showQuestionForm(question = null) {
 
 
 /* =========================================================
-QUESTION FORM DATA
+   QUESTION FORM DATA
 ========================================================= */
 
 function getQuestionFormData() {
@@ -885,7 +885,7 @@ function getQuestionFormData() {
 
 
 /* =========================================================
-INSERT QUESTION
+   INSERT QUESTION
 ========================================================= */
 
 async function submitQuestionInsert() {
@@ -950,9 +950,6 @@ async function submitQuestionInsert() {
         );
 
 
-        /*
-         * Reload question cache.
-         */
         await renderQuestionList();
 
         refreshDashboardCounters();
@@ -974,7 +971,7 @@ async function submitQuestionInsert() {
 
 
 /* =========================================================
-UPDATE QUESTION
+   UPDATE QUESTION
 ========================================================= */
 
 async function submitQuestionUpdate(id) {
@@ -1064,7 +1061,7 @@ async function submitQuestionUpdate(id) {
 
 
 /* =========================================================
-QUESTION LIST
+   QUESTION LIST
 ========================================================= */
 
 async function renderQuestionList() {
@@ -1311,7 +1308,7 @@ async function renderQuestionList() {
 
 
 /* =========================================================
-EDIT QUESTION
+   EDIT QUESTION
 ========================================================= */
 
 function editQuestion(index) {
@@ -1331,7 +1328,7 @@ function editQuestion(index) {
 
 
 /* =========================================================
-DELETE QUESTION
+   DELETE QUESTION
 ========================================================= */
 
 async function deleteQuestionByIndex(index) {
@@ -1398,7 +1395,7 @@ async function deleteQuestionByIndex(index) {
 
 
 /* =========================================================
-STUDENT PAGE
+   STUDENT PAGE
 ========================================================= */
 
 async function loadStudentPage() {
@@ -1481,7 +1478,7 @@ async function loadStudentPage() {
 
 
 /* =========================================================
-STUDENT FORM
+   STUDENT FORM
 ========================================================= */
 
 function showStudentForm(student = null) {
@@ -1683,7 +1680,7 @@ function showStudentForm(student = null) {
 
 
 /* =========================================================
-STUDENT FORM DATA
+   STUDENT FORM DATA
 ========================================================= */
 
 function getStudentFormData() {
@@ -1744,7 +1741,7 @@ function getStudentFormData() {
 
 
 /* =========================================================
-INSERT STUDENT
+   INSERT STUDENT
 ========================================================= */
 
 async function submitStudentInsert() {
@@ -1817,7 +1814,7 @@ async function submitStudentInsert() {
 
 
 /* =========================================================
-UPDATE STUDENT
+   UPDATE STUDENT
 ========================================================= */
 
 async function submitStudentUpdate(nis) {
@@ -1881,7 +1878,7 @@ async function submitStudentUpdate(nis) {
 
 
 /* =========================================================
-STUDENT LIST
+   STUDENT LIST
 ========================================================= */
 
 async function renderStudentList() {
@@ -2142,7 +2139,7 @@ async function renderStudentList() {
 
 
 /* =========================================================
-EDIT STUDENT
+   EDIT STUDENT
 ========================================================= */
 
 function editStudent(index) {
@@ -2162,7 +2159,7 @@ function editStudent(index) {
 
 
 /* =========================================================
-DELETE STUDENT
+   DELETE STUDENT
 ========================================================= */
 
 async function deleteStudentByIndex(index) {
@@ -2228,7 +2225,7 @@ async function deleteStudentByIndex(index) {
 
 
 /* =========================================================
-CSV IMPORT UI
+   CSV IMPORT UI
 ========================================================= */
 
 function showCSVImport() {
@@ -2328,7 +2325,7 @@ function showCSVImport() {
 
 
 /* =========================================================
-CSV PREVIEW
+   CSV PREVIEW
 ========================================================= */
 
 function previewStudentCSV() {
@@ -2428,7 +2425,7 @@ function previewStudentCSV() {
 
 
 /* =========================================================
-CSV PARSER
+   CSV PARSER
 ========================================================= */
 
 function parseStudentCSV(text) {
@@ -2437,7 +2434,7 @@ function parseStudentCSV(text) {
 
         return {
 
-            success:false,
+            success: false,
 
             message:
                 "File CSV kosong."
@@ -2467,7 +2464,7 @@ function parseStudentCSV(text) {
 
         return {
 
-            success:false,
+            success: false,
 
             message:
                 "CSV tidak memiliki data student."
@@ -2521,7 +2518,7 @@ function parseStudentCSV(text) {
 
         return {
 
-            success:false,
+            success: false,
 
             message:
                 "Header CSV tidak lengkap: " +
@@ -2623,7 +2620,7 @@ function parseStudentCSV(text) {
 
         return {
 
-            success:false,
+            success: false,
 
             message:
                 "Tidak ada student valid."
@@ -2635,9 +2632,9 @@ function parseStudentCSV(text) {
 
     return {
 
-        success:true,
+        success: true,
 
-        data:data
+        data: data
 
     };
 
@@ -2645,7 +2642,7 @@ function parseStudentCSV(text) {
 
 
 /* =========================================================
-CSV ROW PARSER
+   CSV ROW PARSER
 ========================================================= */
 
 function parseCSVRows(text) {
@@ -2768,7 +2765,7 @@ function parseCSVRows(text) {
 
 
 /* =========================================================
-GET CSV VALUE
+   GET CSV VALUE
 ========================================================= */
 
 function getCSVValue(
@@ -2794,7 +2791,7 @@ function getCSVValue(
 
 
 /* =========================================================
-CSV PREVIEW
+   CSV PREVIEW
 ========================================================= */
 
 function renderCSVPreview() {
@@ -2849,7 +2846,7 @@ function renderCSVPreview() {
 
 
 /* =========================================================
-START CSV IMPORT
+   START CSV IMPORT
 ========================================================= */
 
 async function startStudentCSVImport() {
@@ -2948,7 +2945,7 @@ async function startStudentCSVImport() {
 
 
 /* =========================================================
-TOKEN PAGE
+   TOKEN PAGE
 ========================================================= */
 
 async function loadTokenPage() {
@@ -3020,7 +3017,7 @@ async function loadTokenPage() {
 
 
 /* =========================================================
-TOKEN GENERATOR
+   TOKEN GENERATOR
 ========================================================= */
 
 /**
@@ -3029,11 +3026,12 @@ TOKEN GENERATOR
  * Example:
  * SAF-2026-A8K3P7
  */
+
 function generateExamToken() {
 
     const year =
         new Date()
-            .getFullYear();
+        .getFullYear();
 
 
     const characters =
@@ -3111,7 +3109,7 @@ function generateExamToken() {
 
 
 /* =========================================================
-TOKEN FORM
+   TOKEN FORM
 ========================================================= */
 
 async function showTokenForm() {
@@ -3364,7 +3362,7 @@ async function showTokenForm() {
 
 
 /* =========================================================
-REGENERATE TOKEN
+   REGENERATE TOKEN
 ========================================================= */
 
 function regenerateExamToken() {
@@ -3385,7 +3383,7 @@ function regenerateExamToken() {
 
 
 /* =========================================================
-CREATE TOKEN
+   CREATE TOKEN
 ========================================================= */
 
 async function submitTokenCreate() {
@@ -3490,7 +3488,7 @@ async function submitTokenCreate() {
 
 
 /* =========================================================
-TOKEN LIST
+   TOKEN LIST
 ========================================================= */
 
 async function renderTokenList() {
@@ -3694,7 +3692,7 @@ async function renderTokenList() {
 
 
 /* =========================================================
-RESULT PAGE
+   RESULT PAGE
 ========================================================= */
 
 async function loadResultPage() {
@@ -3742,7 +3740,7 @@ async function loadResultPage() {
 
 
 /* =========================================================
-RESULT LIST
+   RESULT LIST
 ========================================================= */
 
 async function renderResultList() {
@@ -4016,7 +4014,7 @@ async function renderResultList() {
 
 
 /* =========================================================
-RESULT SELECT ALL
+   RESULT SELECT ALL
 ========================================================= */
 
 function toggleAllResults(checked) {
@@ -4040,7 +4038,7 @@ function toggleAllResults(checked) {
 
 
 /* =========================================================
-RESULT SELECT ALL BUTTON
+   RESULT SELECT ALL BUTTON
 ========================================================= */
 
 function selectAllResults() {
@@ -4065,7 +4063,7 @@ function selectAllResults() {
 
 
 /* =========================================================
-RESULT CLEAR SELECTION
+   RESULT CLEAR SELECTION
 ========================================================= */
 
 function clearResultSelection() {
@@ -4090,7 +4088,7 @@ function clearResultSelection() {
 
 
 /* =========================================================
-GET SELECTED RESULTS
+   GET SELECTED RESULTS
 ========================================================= */
 
 function getSelectedResultIndexes() {
@@ -4135,7 +4133,7 @@ function getSelectedResultIndexes() {
 
 
 /* =========================================================
-DELETE SELECTED RESULTS
+   DELETE SELECTED RESULTS
 ========================================================= */
 
 async function deleteSelectedResults() {
@@ -4264,7 +4262,7 @@ async function deleteSelectedResults() {
 
 
 /* =========================================================
-DELETE ALL RESULTS
+   DELETE ALL RESULTS
 ========================================================= */
 
 async function deleteAllResults() {
@@ -4382,7 +4380,7 @@ async function deleteAllResults() {
 
 
 /* =========================================================
-MESSAGE
+   MESSAGE
 ========================================================= */
 
 function showMessage(
@@ -4455,7 +4453,7 @@ function showMessage(
 
 
 /* =========================================================
-CSV ERROR
+   CSV ERROR
 ========================================================= */
 
 function showCSVError(message) {
@@ -4491,7 +4489,7 @@ function showCSVError(message) {
 
 
 /* =========================================================
-ESCAPE HTML
+   ESCAPE HTML
 ========================================================= */
 
 function escapeHtml(value) {
@@ -4524,7 +4522,7 @@ function escapeHtml(value) {
 
 
 /* =========================================================
-ESCAPE ATTRIBUTE
+   ESCAPE ATTRIBUTE
 ========================================================= */
 
 function escapeAttribute(value) {
@@ -4537,7 +4535,7 @@ function escapeAttribute(value) {
 
 
 /* =========================================================
-UI STYLES
+   UI STYLES
 ========================================================= */
 
 const inputStyle = `
@@ -4577,5 +4575,5 @@ const tableCellStyle = `
 
 
 /* =========================================================
-END OF TEACHER.JS
+   END OF TEACHER.JS
 ========================================================= */
