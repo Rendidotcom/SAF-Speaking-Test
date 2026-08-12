@@ -14,10 +14,9 @@
  * - Result Management
  *
  * Backend:
- * api.js
+ * - api.js
  * =========================================================
  */
-
 
 /* =========================================================
 GLOBAL STATE
@@ -36,9 +35,7 @@ INITIALIZE
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", function () {
-
     initializeTeacherDashboard();
-
 });
 
 
@@ -487,31 +484,55 @@ function showQuestionForm(question = null) {
 
 
     /*
-     * Support both new schema:
-     * title / answer
+     * Support backend field names:
      *
-     * and old data:
-     * question / answerKey
+     * title
+     * answer
+     * difficulty
+     * duration
+     *
+     * Also tolerate old frontend names:
+     *
+     * question
+     * answerKey
      */
 
     const titleValue =
-        editing
+        question
             ? (
-                question.title ||
-                question.question ||
+                question.title ??
+                question.question ??
                 ""
             )
             : "";
 
 
     const answerValue =
-        editing
+        question
             ? (
-                question.answer ||
-                question.answerKey ||
+                question.answer ??
+                question.answerKey ??
                 ""
             )
             : "";
+
+
+    const difficultyValue =
+        question
+            ? (
+                question.difficulty ??
+                "Easy"
+            )
+            : "Easy";
+
+
+    const durationValue =
+        question
+            ? (
+                question.duration ??
+                30
+            )
+            : 30;
 
 
     area.innerHTML = `
@@ -519,12 +540,15 @@ function showQuestionForm(question = null) {
         <div class="card-box">
 
             <h3>
-                ${editing
+                ${
+                    editing
                     ? "Edit Speaking Question"
-                    : "Add Speaking Question"}
+                    : "Add Speaking Question"
+                }
             </h3>
 
             <br>
+
 
             <label>
                 Title
@@ -533,38 +557,14 @@ function showQuestionForm(question = null) {
             <input
                 id="questionTitle"
                 type="text"
-                value="${escapeAttribute(
-                    titleValue
-                )}"
-                placeholder="Enter question title..."
+                value="${escapeAttribute(titleValue)}"
+                placeholder="Contoh: Greeting"
                 style="${inputStyle}"
             >
 
-            <br><br>
-
-            <label>
-                Question
-            </label>
-
-            <textarea
-                id="questionText"
-                rows="5"
-                style="
-                    width:100%;
-                    padding:12px;
-                    margin-top:8px;
-                    border:1px solid #ddd;
-                    border-radius:8px;
-                    resize:vertical;
-                "
-                placeholder="Enter speaking question..."
-            >${editing
-                ? escapeHtml(
-                    question.question || ""
-                )
-                : ""}</textarea>
 
             <br><br>
+
 
             <label>
                 Answer
@@ -580,13 +580,85 @@ function showQuestionForm(question = null) {
                     border:1px solid #ddd;
                     border-radius:8px;
                     resize:vertical;
+                    font-size:15px;
                 "
                 placeholder="Enter answer key..."
-            >${escapeHtml(
-                answerValue
-            )}</textarea>
+            >${escapeHtml(answerValue)}</textarea>
+
 
             <br><br>
+
+
+            <label>
+                Difficulty
+            </label>
+
+            <select
+                id="questionDifficulty"
+                style="${inputStyle}">
+
+                <option
+                    value="Easy"
+                    ${
+                        String(difficultyValue)
+                            .toLowerCase() === "easy"
+                        ? "selected"
+                        : ""
+                    }>
+
+                    Easy
+
+                </option>
+
+                <option
+                    value="Medium"
+                    ${
+                        String(difficultyValue)
+                            .toLowerCase() === "medium"
+                        ? "selected"
+                        : ""
+                    }>
+
+                    Medium
+
+                </option>
+
+                <option
+                    value="Hard"
+                    ${
+                        String(difficultyValue)
+                            .toLowerCase() === "hard"
+                        ? "selected"
+                        : ""
+                    }>
+
+                    Hard
+
+                </option>
+
+            </select>
+
+
+            <br><br>
+
+
+            <label>
+                Duration (seconds)
+            </label>
+
+            <input
+                id="questionDuration"
+                type="number"
+                min="1"
+                step="1"
+                value="${escapeAttribute(durationValue)}"
+                placeholder="30"
+                style="${inputStyle}"
+            >
+
+
+            <br><br>
+
 
             <div style="
                 display:flex;
@@ -606,6 +678,7 @@ function showQuestionForm(question = null) {
 
                 </button>
 
+
                 <button
                     class="btn"
                     onclick="renderQuestionList()">
@@ -615,6 +688,7 @@ function showQuestionForm(question = null) {
                 </button>
 
             </div>
+
 
             <div
                 id="questionMessage"
@@ -634,31 +708,54 @@ GET QUESTION FORM DATA
 
 function getQuestionFormData() {
 
+    const title =
+        document
+            .getElementById(
+                "questionTitle"
+            )
+            ?.value
+            .trim() || "";
+
+
+    const answer =
+        document
+            .getElementById(
+                "answerKey"
+            )
+            ?.value
+            .trim() || "";
+
+
+    const difficulty =
+        document
+            .getElementById(
+                "questionDifficulty"
+            )
+            ?.value || "Easy";
+
+
+    const duration =
+        document
+            .getElementById(
+                "questionDuration"
+            )
+            ?.value
+            .trim() || "30";
+
+
     return {
 
         title:
-            document
-                .getElementById(
-                    "questionTitle"
-                )
-                ?.value
-                .trim() || "",
-
-        question:
-            document
-                .getElementById(
-                    "questionText"
-                )
-                ?.value
-                .trim() || "",
+            title,
 
         answer:
-            document
-                .getElementById(
-                    "answerKey"
-                )
-                ?.value
-                .trim() || ""
+            answer,
+
+        difficulty:
+            difficulty,
+
+        duration:
+            Number(duration)
 
     };
 
@@ -688,11 +785,27 @@ async function submitQuestionInsert() {
     }
 
 
-    if (!data.question) {
+    if (!data.answer) {
 
         showMessage(
             "questionMessage",
-            "Question wajib diisi.",
+            "Answer wajib diisi.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !data.duration ||
+        data.duration <= 0
+    ) {
+
+        showMessage(
+            "questionMessage",
+            "Duration harus lebih dari 0 detik.",
             "error"
         );
 
@@ -707,19 +820,14 @@ async function submitQuestionInsert() {
             title:
                 data.title,
 
-            question:
-                data.question,
-
             answer:
                 data.answer,
 
-            /*
-             * Compatibility with previous
-             * teacher.js / API naming.
-             */
+            difficulty:
+                data.difficulty,
 
-            answerKey:
-                data.answer
+            duration:
+                data.duration
 
         });
 
@@ -767,6 +875,19 @@ async function submitQuestionUpdate(id) {
         getQuestionFormData();
 
 
+    if (!id) {
+
+        showMessage(
+            "questionMessage",
+            "Question ID tidak ditemukan.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
     if (!data.title) {
 
         showMessage(
@@ -780,11 +901,27 @@ async function submitQuestionUpdate(id) {
     }
 
 
-    if (!data.question) {
+    if (!data.answer) {
 
         showMessage(
             "questionMessage",
-            "Question wajib diisi.",
+            "Answer wajib diisi.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !data.duration ||
+        data.duration <= 0
+    ) {
+
+        showMessage(
+            "questionMessage",
+            "Duration harus lebih dari 0 detik.",
             "error"
         );
 
@@ -802,19 +939,14 @@ async function submitQuestionUpdate(id) {
             title:
                 data.title,
 
-            question:
-                data.question,
-
             answer:
                 data.answer,
 
-            /*
-             * Compatibility with previous
-             * teacher.js / API naming.
-             */
+            difficulty:
+                data.difficulty,
 
-            answerKey:
-                data.answer
+            duration:
+                data.duration
 
         });
 
@@ -939,7 +1071,7 @@ async function renderQuestionList() {
             <table style="
                 width:100%;
                 border-collapse:collapse;
-                min-width:900px;
+                min-width:850px;
             ">
 
                 <thead>
@@ -952,10 +1084,6 @@ async function renderQuestionList() {
 
                         <th style="${tableHeadStyle}">
                             Title
-                        </th>
-
-                        <th style="${tableHeadStyle}">
-                            Question
                         </th>
 
                         <th style="${tableHeadStyle}">
@@ -986,37 +1114,25 @@ async function renderQuestionList() {
     teacherQuestions.forEach(
         function (item, index) {
 
-            /*
-             * New schema:
-             * title / answer
-             *
-             * Legacy fallback:
-             * question / answerKey
-             */
-
             const title =
-                item.title ||
-                "";
-
-
-            const question =
-                item.question ||
+                item.title ??
+                item.question ??
                 "";
 
 
             const answer =
-                item.answer ||
-                item.answerKey ||
+                item.answer ??
+                item.answerKey ??
                 "";
 
 
             const difficulty =
-                item.difficulty ||
+                item.difficulty ??
                 "";
 
 
             const duration =
-                item.duration ||
+                item.duration ??
                 "";
 
 
@@ -1029,35 +1145,20 @@ async function renderQuestionList() {
                     </td>
 
                     <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            title
-                        )}
+                        ${escapeHtml(title)}
                     </td>
 
                     <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            question
-                        )}
+                        ${escapeHtml(answer)}
                     </td>
 
                     <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            answer
-                        )}
+                        ${escapeHtml(difficulty)}
                     </td>
 
                     <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            difficulty
-                        )}
-                    </td>
-
-                    <td style="${tableCellStyle}">
-                        ${escapeHtml(
-                            String(
-                                duration
-                            )
-                        )}
+                        ${escapeHtml(String(duration))}
+                        sec
                     </td>
 
                     <td style="${tableCellStyle}">
@@ -1288,9 +1389,11 @@ function showStudentForm(student = null) {
         <div class="card-box">
 
             <h3>
-                ${editing
+                ${
+                    editing
                     ? "Edit Student"
-                    : "Add Student"}
+                    : "Add Student"
+                }
             </h3>
 
             <br>
@@ -3267,6 +3370,7 @@ async function loadTokenPage() {
             justify-content:space-between;
             align-items:center;
             flex-wrap:wrap;
+            gap:15px;
         ">
 
             <div>
@@ -3326,6 +3430,10 @@ function showTokenForm() {
     if (!area) return;
 
 
+    /*
+     * Question list must already exist.
+     */
+
     area.innerHTML = `
 
         <div class="card-box">
@@ -3335,6 +3443,7 @@ function showTokenForm() {
             </h3>
 
             <br>
+
 
             <label>
                 Token
@@ -3347,7 +3456,39 @@ function showTokenForm() {
                 style="${inputStyle}"
             >
 
+
             <br><br>
+
+
+            <label>
+                Question ID
+            </label>
+
+            <select
+                id="tokenQuestionId"
+                style="${inputStyle}">
+
+                <option value="">
+                    -- Select Question --
+                </option>
+
+            </select>
+
+
+            <br>
+
+
+            <div
+                id="tokenQuestionInfo"
+                style="
+                    margin-top:8px;
+                    color:#666;
+                ">
+            </div>
+
+
+            <br><br>
+
 
             <button
                 class="btn teacher"
@@ -3357,6 +3498,7 @@ function showTokenForm() {
 
             </button>
 
+
             <button
                 class="btn"
                 onclick="renderTokenList()">
@@ -3365,10 +3507,263 @@ function showTokenForm() {
 
             </button>
 
+
             <div
                 id="tokenMessage"
                 style="margin-top:15px;">
             </div>
+
+        </div>
+
+    `;
+
+
+    populateTokenQuestionSelect();
+
+}
+
+
+/* =========================================================
+POPULATE TOKEN QUESTION SELECT
+========================================================= */
+
+async function populateTokenQuestionSelect() {
+
+    const select =
+        document.getElementById(
+            "tokenQuestionId"
+        );
+
+    if (!select) return;
+
+
+    try {
+
+        const response =
+            await apiGetQuestion();
+
+
+        if (
+            !response ||
+            !response.success
+        ) {
+
+            select.innerHTML = `
+
+                <option value="">
+                    Gagal mengambil question
+                </option>
+
+            `;
+
+            return;
+
+        }
+
+
+        teacherQuestions =
+            response.data || [];
+
+
+        if (
+            teacherQuestions.length === 0
+        ) {
+
+            select.innerHTML = `
+
+                <option value="">
+                    Belum ada question
+                </option>
+
+            `;
+
+            return;
+
+        }
+
+
+        let options = `
+
+            <option value="">
+                -- Select Question --
+            </option>
+
+        `;
+
+
+        teacherQuestions.forEach(
+            function (question) {
+
+                const id =
+                    String(
+                        question.id || ""
+                    );
+
+
+                const title =
+                    question.title ??
+                    question.question ??
+                    "";
+
+
+                const difficulty =
+                    question.difficulty ||
+                    "";
+
+
+                options += `
+
+                    <option
+                        value="${escapeAttribute(id)}">
+
+                        ${escapeHtml(id)}
+                        -
+                        ${escapeHtml(title)}
+                        ${
+                            difficulty
+                            ? " [" +
+                              escapeHtml(difficulty) +
+                              "]"
+                            : ""
+                        }
+
+                    </option>
+
+                `;
+
+            }
+        );
+
+
+        select.innerHTML =
+            options;
+
+
+        select.addEventListener(
+            "change",
+            function () {
+
+                showSelectedQuestionInfo(
+                    this.value
+                );
+
+            }
+        );
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "Question Select Error:",
+            err
+        );
+
+        select.innerHTML = `
+
+            <option value="">
+                Gagal mengambil question
+            </option>
+
+        `;
+
+    }
+
+}
+
+
+/* =========================================================
+SELECTED QUESTION INFO
+========================================================= */
+
+function showSelectedQuestionInfo(
+    questionId
+) {
+
+    const info =
+        document.getElementById(
+            "tokenQuestionInfo"
+        );
+
+    if (!info) return;
+
+
+    if (!questionId) {
+
+        info.innerHTML =
+            "";
+
+        return;
+
+    }
+
+
+    const question =
+        teacherQuestions.find(
+            function (item) {
+
+                return String(
+                    item.id || ""
+                ) === String(
+                    questionId
+                );
+
+            }
+        );
+
+
+    if (!question) {
+
+        info.innerHTML =
+            "";
+
+        return;
+
+    }
+
+
+    const title =
+        question.title ??
+        question.question ??
+        "";
+
+
+    const difficulty =
+        question.difficulty ||
+        "";
+
+
+    const duration =
+        question.duration ||
+        "";
+
+
+    info.innerHTML = `
+
+        <div style="
+            padding:10px;
+            background:#f5f7fa;
+            border-radius:8px;
+        ">
+
+            <strong>
+                ${escapeHtml(title)}
+            </strong>
+
+            <br>
+
+            Difficulty:
+            ${escapeHtml(
+                difficulty
+            )}
+
+            <br>
+
+            Duration:
+            ${escapeHtml(
+                String(duration)
+            )}
+            seconds
 
         </div>
 
@@ -3392,6 +3787,15 @@ async function submitTokenCreate() {
             .trim();
 
 
+    const questionId =
+        document
+            .getElementById(
+                "tokenQuestionId"
+            )
+            ?.value
+            .trim();
+
+
     if (!token) {
 
         showMessage(
@@ -3405,11 +3809,27 @@ async function submitTokenCreate() {
     }
 
 
+    if (!questionId) {
+
+        showMessage(
+            "tokenMessage",
+            "Question ID wajib dipilih.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
     const result =
         await apiCreateToken({
 
             token:
-                token
+                token,
+
+            questionId:
+                questionId
 
         });
 
@@ -3530,6 +3950,7 @@ async function renderTokenList() {
             <table style="
                 width:100%;
                 border-collapse:collapse;
+                min-width:700px;
             ">
 
                 <thead>
@@ -3542,6 +3963,10 @@ async function renderTokenList() {
 
                         <th style="${tableHeadStyle}">
                             Token
+                        </th>
+
+                        <th style="${tableHeadStyle}">
+                            Question ID
                         </th>
 
                         <th style="${tableHeadStyle}">
@@ -3571,6 +3996,15 @@ async function renderTokenList() {
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
                             item.token || ""
+                        )}
+                    </td>
+
+                    <td style="${tableCellStyle}">
+                        ${escapeHtml(
+                            String(
+                                item.questionId ||
+                                ""
+                            )
                         )}
                     </td>
 
@@ -3683,13 +4117,9 @@ async function renderResultList() {
 
             <div style="color:#b00020;">
 
-                Gagal mengambil result.
-
-                <br>
-
                 ${escapeHtml(
                     response?.message ||
-                    "Unknown error."
+                    "Gagal mengambil result."
                 )}
 
             </div>
@@ -3735,24 +4165,13 @@ async function renderResultList() {
     let html = `
 
         <div style="
-            margin-bottom:15px;
-        ">
-
-            <strong>
-                Total Results:
-                ${teacherResults.length}
-            </strong>
-
-        </div>
-
-        <div style="
             overflow-x:auto;
         ">
 
             <table style="
                 width:100%;
                 border-collapse:collapse;
-                min-width:800px;
+                min-width:850px;
             ">
 
                 <thead>
@@ -3787,21 +4206,33 @@ async function renderResultList() {
     teacherResults.forEach(
         function (item, index) {
 
-            const studentName =
-                item.nama ||
-                item.username ||
-                item.nis ||
+            /*
+             * Result compatibility:
+             *
+             * question
+             * title
+             * questionTitle
+             */
+
+            const question =
+                item.question ??
+                item.title ??
+                item.questionTitle ??
                 "";
 
 
-            const question =
-                item.question ||
-                item.title ||
+            const student =
+                item.nama ??
+                item.username ??
+                item.nis ??
+                item.studentName ??
                 "";
 
 
             const score =
                 item.score ??
+                item.totalScore ??
+                item.finalScore ??
                 "";
 
 
@@ -3815,21 +4246,19 @@ async function renderResultList() {
 
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
-                            studentName
+                            String(student)
                         )}
                     </td>
 
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
-                            question
+                            String(question)
                         )}
                     </td>
 
                     <td style="${tableCellStyle}">
                         ${escapeHtml(
-                            String(
-                                score
-                            )
+                            String(score)
                         )}
                     </td>
 
