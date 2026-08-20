@@ -6,49 +6,94 @@
  * File:
  * js/teacher.js
  *
- * Stable Foundation v7.1
+ * ==========================================================
+ * STABLE FOUNDATION
+ * ==========================================================
  *
- * UPDATE:
- * Reports Page
- * - Filter Class
- * - Preview Report
- * - Summary
+ * Version:
+ * teacher.js v7.3 Final Clean
+ *
+ * BASELINE:
+ * v7.2 Stable Foundation
+ *
+ * ==========================================================
+ * CHANGE CONTROL
+ * ==========================================================
+ *
+ * NO backend change
+ * NO API contract change
+ * NO QuestionId change
+ * NO Token logic change
+ * NO Score logic change
+ * NO Result structure change
+ *
+ * ==========================================================
+ * v7.3 FEATURES PRESERVED
+ * ==========================================================
+ *
+ * - Teacher Dashboard
+ * - Question Management
+ * - Student Management
+ * - Exam Token Management
+ * - Speaking Results
+ * - Result Checkbox
+ * - Select All
+ * - Delete Selected
+ * - Delete All
+ * - Reports Page
+ * - Class Filter
+ * - Report Summary
  * - Export Excel
  *
- * IMPORTANT:
- * - Teacher dashboard business logic
- * - No dependency on exam.js
- * - Question state uses APP.question
- * - Student state uses APP.student
- * - Token state uses APP.token
- * - Result state uses APP.result
+ * ==========================================================
+ * ARCHITECTURE
+ * ==========================================================
  *
- * RESULT API:
- * Supports:
+ * Teacher dashboard business logic only.
  *
- * 1. {
- *      success: true,
- *      data: [...]
- *    }
+ * This file:
  *
- * 2. {
- *      0: {...},
- *      1: {...},
- *      2: {...},
- *      success: true,
- *      message: "Success"
- *    }
+ * - DOES NOT call GAS directly.
+ * - DOES NOT depend on exam.js.
+ * - Uses existing API helper functions.
+ * - Preserves existing frontend/backend contracts.
  *
- * REPORT:
- * Uses existing Result API.
- * No backend change required.
+ * ==========================================================
+ * GLOBAL STATE
+ * ==========================================================
+ *
+ * APP.question
+ * APP.student
+ * APP.token
+ * APP.result
+ *
+ * ==========================================================
+ * RESULT API COMPATIBILITY
+ * ==========================================================
+ *
+ * Supported:
+ *
+ * 1.
+ * {
+ *     success: true,
+ *     data: [...]
+ * }
+ *
+ * 2.
+ * {
+ *     0: {...},
+ *     1: {...},
+ *     2: {...},
+ *     success: true,
+ *     message: "Success"
+ * }
  *
  * ==========================================================
  */
 
 
 /* ==========================================================
-INITIALIZE
+   INITIALIZE
 ========================================================== */
 
 document.addEventListener(
@@ -58,7 +103,7 @@ document.addEventListener(
 
 
 /* ==========================================================
-GLOBAL STATE
+   GLOBAL STATE
 ========================================================== */
 
 const APP = {
@@ -75,7 +120,7 @@ const APP = {
 
 
 /* ==========================================================
-STATE
+   PAGE STATE
 ========================================================== */
 
 const STATE = {
@@ -96,7 +141,7 @@ const STATE = {
 
 
 /* ==========================================================
-INITIALIZE
+   INITIALIZE
 ========================================================== */
 
 async function init() {
@@ -115,7 +160,7 @@ async function init() {
 
 
 /* ==========================================================
-SESSION
+   SESSION
 ========================================================== */
 
 function checkSession() {
@@ -168,7 +213,7 @@ function checkSession() {
 
 
 /* ==========================================================
-LOGOUT
+   LOGOUT
 ========================================================== */
 
 function logout() {
@@ -190,7 +235,7 @@ function logout() {
 
 
 /* ==========================================================
-LOGOUT BINDING
+   LOGOUT BINDING
 ========================================================== */
 
 function bindLogout() {
@@ -222,7 +267,7 @@ function bindLogout() {
 
 
 /* ==========================================================
-SIDEBAR MENU
+   SIDEBAR MENU
 ========================================================== */
 
 function bindMenu() {
@@ -296,7 +341,7 @@ function bindMenu() {
 
 
 /* ==========================================================
-CONTENT
+   CONTENT
 ========================================================== */
 
 function setContent(html) {
@@ -325,7 +370,7 @@ function setContent(html) {
 
 
 /* ==========================================================
-API ARRAY NORMALIZER
+   API ARRAY NORMALIZER
 ========================================================== */
 
 function normalizeApiArray(value) {
@@ -369,7 +414,7 @@ function normalizeApiArray(value) {
 
 
 /* ==========================================================
-DASHBOARD DATA
+   DASHBOARD DATA
 ========================================================== */
 
 async function refreshDashboard() {
@@ -456,7 +501,7 @@ async function refreshDashboard() {
 
 
 /* ==========================================================
-DASHBOARD COUNTERS
+   DASHBOARD COUNTERS
 ========================================================== */
 
 function updateDashboardCounters() {
@@ -484,7 +529,7 @@ function updateDashboardCounters() {
 
 
 /* ==========================================================
-DASHBOARD PAGE
+   DASHBOARD PAGE
 ========================================================== */
 
 function loadDashboard() {
@@ -515,7 +560,8 @@ function loadDashboard() {
         <table
             width="100%"
             cellpadding="8"
-            border="1">
+            border="1"
+        >
 
             <tr>
 
@@ -539,19 +585,27 @@ function loadDashboard() {
 
             <tr>
 
-                <td>
+                <td
+                    id="dashboardQuestionCount"
+                >
                     ${APP.question.length}
                 </td>
 
-                <td>
+                <td
+                    id="dashboardStudentCount"
+                >
                     ${APP.student.length}
                 </td>
 
-                <td>
+                <td
+                    id="dashboardTokenCount"
+                >
                     ${APP.token.length}
                 </td>
 
-                <td>
+                <td
+                    id="dashboardResultCount"
+                >
                     ${APP.result.length}
                 </td>
 
@@ -565,10 +619,17 @@ function loadDashboard() {
 
 
 /* ==========================================================
-QUESTION PAGE
+   QUESTION PAGE
 ========================================================== */
 
 function loadQuestionPage() {
+
+    STATE.questionEdit =
+        false;
+
+    STATE.questionId =
+        null;
+
 
     setContent(`
 
@@ -608,7 +669,9 @@ function loadQuestionPage() {
                 Difficulty
             </label>
 
-            <select id="difficulty">
+            <select
+                id="difficulty"
+            >
 
                 <option value="Easy">
                     Easy
@@ -643,7 +706,8 @@ function loadQuestionPage() {
             <button
                 id="btnSaveQuestion"
                 type="submit"
-                class="btn teacher">
+                class="btn teacher"
+            >
 
                 Save Question
 
@@ -651,7 +715,8 @@ function loadQuestionPage() {
 
             <button
                 type="button"
-                onclick="resetQuestionForm()">
+                onclick="resetQuestionForm()"
+            >
 
                 Cancel
 
@@ -701,106 +766,7 @@ function loadQuestionPage() {
 
 
 /* ==========================================================
-SAVE QUESTION
-========================================================== */
-
-async function saveQuestion(e) {
-
-    e.preventDefault();
-
-
-    const data = {
-
-        title:
-            document
-                .getElementById("title")
-                .value
-                .trim(),
-
-        answer:
-            document
-                .getElementById("answer")
-                .value
-                .trim(),
-
-        difficulty:
-            document
-                .getElementById("difficulty")
-                .value,
-
-        duration:
-            Number(
-                document
-                    .getElementById("duration")
-                    .value
-            ),
-
-        status:
-            "Active",
-
-        createdBy:
-            "Teacher"
-
-    };
-
-
-    let res;
-
-
-    if (
-        STATE.questionEdit
-    ) {
-
-        data.id =
-            STATE.questionId;
-
-
-        res =
-            await apiUpdateQuestion(
-                data
-            );
-
-    }
-
-    else {
-
-        res =
-            await apiInsertQuestion(
-                data
-            );
-
-    }
-
-
-    alert(
-        res &&
-        res.message
-            ? res.message
-            : "Operation completed."
-    );
-
-
-    if (
-        !res ||
-        res.success !== true
-    ) {
-
-        return;
-
-    }
-
-
-    resetQuestionForm();
-
-    await loadQuestions();
-
-    await refreshDashboard();
-
-}
-
-
-/* ==========================================================
-LOAD QUESTIONS
+   LOAD QUESTIONS
 ========================================================== */
 
 async function loadQuestions() {
@@ -915,7 +881,7 @@ async function loadQuestions() {
 
 
 /* ==========================================================
-RENDER QUESTIONS
+   RENDER QUESTIONS
 ========================================================== */
 
 function renderQuestions() {
@@ -948,10 +914,18 @@ function renderQuestions() {
 
     let html = `
 
+        <div
+            style="
+                overflow-x:auto;
+            "
+        >
+
         <table
             border="1"
             width="100%"
-            cellpadding="8">
+            cellpadding="8"
+            cellspacing="0"
+        >
 
             <thead>
 
@@ -1005,6 +979,7 @@ function renderQuestions() {
 
                     <td>
                         ${escapeHTML(q.duration)}
+                        seconds
                     </td>
 
                     <td>
@@ -1016,19 +991,17 @@ function renderQuestions() {
                         <button
                             type="button"
                             class="btn edit"
-                            onclick="editQuestion('${escapeAttribute(q.id)}')">
-
+                            onclick="editQuestion('${escapeAttribute(q.id)}')"
+                        >
                             Edit
-
                         </button>
 
                         <button
                             type="button"
                             class="btn delete"
-                            onclick="deleteQuestion('${escapeAttribute(q.id)}')">
-
+                            onclick="deleteQuestion('${escapeAttribute(q.id)}')"
+                        >
                             Delete
-
                         </button>
 
                     </td>
@@ -1047,6 +1020,8 @@ function renderQuestions() {
 
         </table>
 
+        </div>
+
     `;
 
 
@@ -1057,20 +1032,212 @@ function renderQuestions() {
 
 
 /* ==========================================================
-EDIT QUESTION
+   SAVE QUESTION
+========================================================== */
+
+async function saveQuestion(e) {
+
+    e.preventDefault();
+
+
+    const titleElement =
+        document.getElementById("title");
+
+    const answerElement =
+        document.getElementById("answer");
+
+    const difficultyElement =
+        document.getElementById("difficulty");
+
+    const durationElement =
+        document.getElementById("duration");
+
+
+    if (
+        !titleElement ||
+        !answerElement ||
+        !difficultyElement ||
+        !durationElement
+    ) {
+
+        alert(
+            "Question form is not available."
+        );
+
+        return;
+
+    }
+
+
+    const data = {
+
+        title:
+            titleElement.value.trim(),
+
+        answer:
+            answerElement.value.trim(),
+
+        difficulty:
+            difficultyElement.value,
+
+        duration:
+            Number(
+                durationElement.value
+            ),
+
+        status:
+            "ACTIVE",
+
+        createdBy:
+            "Teacher"
+
+    };
+
+
+    if (!data.title) {
+
+        alert("Title wajib diisi.");
+
+        return;
+
+    }
+
+
+    if (!data.answer) {
+
+        alert("Answer Key wajib diisi.");
+
+        return;
+
+    }
+
+
+    if (
+        !data.duration ||
+        data.duration <= 0
+    ) {
+
+        alert(
+            "Duration tidak valid."
+        );
+
+        return;
+
+    }
+
+
+    let res;
+
+
+    try {
+
+        if (
+            STATE.questionEdit === true &&
+            STATE.questionId
+        ) {
+
+            data.id =
+                STATE.questionId;
+
+
+            res =
+                await apiUpdateQuestion(
+                    data
+                );
+
+        }
+
+        else {
+
+            res =
+                await apiInsertQuestion(
+                    data
+                );
+
+        }
+
+
+        console.log(
+            "QUESTION SAVE RESPONSE:",
+            res
+        );
+
+
+        if (!res) {
+
+            alert(
+                "No response from API."
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            res.message ||
+            (
+                STATE.questionEdit
+                    ? "Question updated."
+                    : "Question created."
+            )
+        );
+
+
+        if (
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        resetQuestionForm();
+
+        await loadQuestions();
+
+        await refreshDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "SAVE QUESTION ERROR:",
+            err
+        );
+
+
+        alert(
+            err.message ||
+            "Unable to save question."
+        );
+
+    }
+
+}
+
+
+/* ==========================================================
+   EDIT QUESTION
 ========================================================== */
 
 function editQuestion(id) {
 
-    const item =
+    const question =
         APP.question.find(
-            q =>
-                String(q.id) ===
+            item =>
+                String(item.id) ===
                 String(id)
         );
 
 
-    if (!item) {
+    if (!question) {
+
+        alert(
+            "Question not found."
+        );
 
         return;
 
@@ -1081,31 +1248,54 @@ function editQuestion(id) {
         true;
 
     STATE.questionId =
-        item.id;
+        question.id;
 
 
-    document.getElementById(
-        "title"
-    ).value =
-        item.title || "";
+    const title =
+        document.getElementById("title");
+
+    const answer =
+        document.getElementById("answer");
+
+    const difficulty =
+        document.getElementById("difficulty");
+
+    const duration =
+        document.getElementById("duration");
 
 
-    document.getElementById(
-        "answer"
-    ).value =
-        item.answer || "";
+    if (title) {
+
+        title.value =
+            question.title || "";
+
+    }
 
 
-    document.getElementById(
-        "difficulty"
-    ).value =
-        item.difficulty || "Easy";
+    if (answer) {
+
+        answer.value =
+            question.answer || "";
+
+    }
 
 
-    document.getElementById(
-        "duration"
-    ).value =
-        item.duration || 30;
+    if (difficulty) {
+
+        difficulty.value =
+            question.difficulty ||
+            "Easy";
+
+    }
+
+
+    if (duration) {
+
+        duration.value =
+            question.duration ||
+            30;
+
+    }
 
 
     const button =
@@ -1121,14 +1311,34 @@ function editQuestion(id) {
 
     }
 
+
+    window.scrollTo({
+
+        top: 0,
+
+        behavior: "smooth"
+
+    });
+
 }
 
 
 /* ==========================================================
-DELETE QUESTION
+   DELETE QUESTION
 ========================================================== */
 
 async function deleteQuestion(id) {
+
+    if (!id) {
+
+        alert(
+            "Question ID is required."
+        );
+
+        return;
+
+    }
+
 
     if (
         !confirm(
@@ -1141,41 +1351,78 @@ async function deleteQuestion(id) {
     }
 
 
-    const res =
-        await apiDeleteQuestion({
+    try {
 
-            id: id
+        const res =
+            await apiDeleteQuestion({
 
-        });
+                id: id
 
-
-    alert(
-        res &&
-        res.message
-            ? res.message
-            : "Question deleted."
-    );
+            });
 
 
-    if (
-        !res ||
-        res.success !== true
-    ) {
+        console.log(
+            "DELETE QUESTION RESPONSE:",
+            res
+        );
 
-        return;
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Question deleted."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            String(
+                STATE.questionId
+            ) ===
+            String(id)
+        ) {
+
+            resetQuestionForm();
+
+        }
+
+
+        await loadQuestions();
+
+        await refreshDashboard();
 
     }
 
+    catch (err) {
 
-    await loadQuestions();
+        console.error(
+            "DELETE QUESTION ERROR:",
+            err
+        );
 
-    await refreshDashboard();
+
+        alert(
+            err.message ||
+            "Unable to delete question."
+        );
+
+    }
 
 }
 
 
 /* ==========================================================
-RESET QUESTION FORM
+   RESET QUESTION FORM
 ========================================================== */
 
 function resetQuestionForm() {
@@ -1231,7 +1478,7 @@ function resetQuestionForm() {
 
 
 /* ==========================================================
-SEARCH QUESTION
+   SEARCH QUESTION
 ========================================================== */
 
 function filterQuestion() {
@@ -1274,10 +1521,17 @@ function filterQuestion() {
 
 
 /* ==========================================================
-STUDENT PAGE
+   STUDENT PAGE
 ========================================================== */
 
 function loadStudentPage() {
+
+    STATE.studentEdit =
+        false;
+
+    STATE.studentId =
+        null;
+
 
     setContent(`
 
@@ -1348,7 +1602,8 @@ function loadStudentPage() {
             <button
                 id="btnSaveStudent"
                 type="submit"
-                class="btn teacher">
+                class="btn teacher"
+            >
 
                 Save Student
 
@@ -1356,7 +1611,8 @@ function loadStudentPage() {
 
             <button
                 type="button"
-                onclick="resetStudentForm()">
+                onclick="resetStudentForm()"
+            >
 
                 Cancel
 
@@ -1406,7 +1662,7 @@ function loadStudentPage() {
 
 
 /* ==========================================================
-SAVE STUDENT
+   SAVE STUDENT
 ========================================================== */
 
 async function saveStudent(e) {
@@ -1414,37 +1670,55 @@ async function saveStudent(e) {
     e.preventDefault();
 
 
+    const nisElement =
+        document.getElementById("nis");
+
+    const namaElement =
+        document.getElementById("nama");
+
+    const kelasElement =
+        document.getElementById("kelas");
+
+    const usernameElement =
+        document.getElementById("username");
+
+    const passwordElement =
+        document.getElementById("password");
+
+
+    if (
+        !nisElement ||
+        !namaElement ||
+        !kelasElement ||
+        !usernameElement ||
+        !passwordElement
+    ) {
+
+        alert(
+            "Student form is not available."
+        );
+
+        return;
+
+    }
+
+
     const data = {
 
         nis:
-            document
-                .getElementById("nis")
-                .value
-                .trim(),
+            nisElement.value.trim(),
 
         nama:
-            document
-                .getElementById("nama")
-                .value
-                .trim(),
+            namaElement.value.trim(),
 
         kelas:
-            document
-                .getElementById("kelas")
-                .value
-                .trim(),
+            kelasElement.value.trim(),
 
         username:
-            document
-                .getElementById("username")
-                .value
-                .trim(),
+            usernameElement.value.trim(),
 
         password:
-            document
-                .getElementById("password")
-                .value
-                .trim(),
+            passwordElement.value.trim(),
 
         status:
             "Active"
@@ -1452,63 +1726,89 @@ async function saveStudent(e) {
     };
 
 
-    let res;
-
-
     if (
-        STATE.studentEdit
+        STATE.studentEdit &&
+        STATE.studentId
     ) {
 
         data.id =
             STATE.studentId;
 
-
-        res =
-            await apiUpdateStudent(
-                data
-            );
-
-    }
-
-    else {
-
-        res =
-            await apiInsertStudent(
-                data
-            );
-
     }
 
 
-    alert(
-        res &&
-        res.message
-            ? res.message
-            : "Operation completed."
-    );
+    let res;
 
 
-    if (
-        !res ||
-        res.success !== true
-    ) {
+    try {
 
-        return;
+        if (
+            STATE.studentEdit
+        ) {
+
+            res =
+                await apiUpdateStudent(
+                    data
+                );
+
+        }
+
+        else {
+
+            res =
+                await apiInsertStudent(
+                    data
+                );
+
+        }
+
+
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Student saved."
+        );
+
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        resetStudentForm();
+
+        await loadStudents();
+
+        await refreshDashboard();
 
     }
 
+    catch (err) {
 
-    resetStudentForm();
+        console.error(
+            "SAVE STUDENT ERROR:",
+            err
+        );
 
-    await loadStudents();
 
-    await refreshDashboard();
+        alert(
+            err.message ||
+            "Unable to save student."
+        );
+
+    }
 
 }
 
 
 /* ==========================================================
-LOAD STUDENTS
+   LOAD STUDENTS
 ========================================================== */
 
 async function loadStudents() {
@@ -1524,6 +1824,10 @@ async function loadStudents() {
         return;
 
     }
+
+
+    table.innerHTML =
+        "<p>Loading students...</p>";
 
 
     try {
@@ -1577,10 +1881,18 @@ async function loadStudents() {
 
         let html = `
 
+            <div
+                style="
+                    overflow-x:auto;
+                "
+            >
+
             <table
                 border="1"
                 width="100%"
-                cellpadding="8">
+                cellpadding="8"
+                cellspacing="0"
+            >
 
                 <thead>
 
@@ -1611,6 +1923,11 @@ async function loadStudents() {
 
         APP.student.forEach(
             (s, i) => {
+
+                const studentId =
+                    s.id ??
+                    s.nis;
+
 
                 html += `
 
@@ -1645,19 +1962,17 @@ async function loadStudents() {
                             <button
                                 type="button"
                                 class="btn edit"
-                                onclick="editStudent('${escapeAttribute(s.id)}')">
-
+                                onclick="editStudent('${escapeAttribute(studentId)}')"
+                            >
                                 Edit
-
                             </button>
 
                             <button
                                 type="button"
                                 class="btn delete"
-                                onclick="deleteStudent('${escapeAttribute(s.id)}')">
-
+                                onclick="deleteStudent('${escapeAttribute(studentId)}')"
+                            >
                                 Delete
-
                             </button>
 
                         </td>
@@ -1675,6 +1990,8 @@ async function loadStudents() {
                 </tbody>
 
             </table>
+
+            </div>
 
         `;
 
@@ -1706,7 +2023,7 @@ async function loadStudents() {
 
 
 /* ==========================================================
-EDIT STUDENT
+   EDIT STUDENT
 ========================================================== */
 
 function editStudent(id) {
@@ -1714,12 +2031,19 @@ function editStudent(id) {
     const student =
         APP.student.find(
             item =>
-                String(item.id) ===
+                String(
+                    item.id ??
+                    item.nis
+                ) ===
                 String(id)
         );
 
 
     if (!student) {
+
+        alert(
+            "Student not found."
+        );
 
         return;
 
@@ -1730,37 +2054,64 @@ function editStudent(id) {
         true;
 
     STATE.studentId =
-        student.id;
+        student.id ??
+        student.nis;
 
 
-    document.getElementById(
-        "nis"
-    ).value =
-        student.nis || "";
+    const nis =
+        document.getElementById("nis");
+
+    const nama =
+        document.getElementById("nama");
+
+    const kelas =
+        document.getElementById("kelas");
+
+    const username =
+        document.getElementById("username");
+
+    const password =
+        document.getElementById("password");
 
 
-    document.getElementById(
-        "nama"
-    ).value =
-        student.nama || "";
+    if (nis) {
+
+        nis.value =
+            student.nis || "";
+
+    }
 
 
-    document.getElementById(
-        "kelas"
-    ).value =
-        student.kelas || "";
+    if (nama) {
+
+        nama.value =
+            student.nama || "";
+
+    }
 
 
-    document.getElementById(
-        "username"
-    ).value =
-        student.username || "";
+    if (kelas) {
+
+        kelas.value =
+            student.kelas || "";
+
+    }
 
 
-    document.getElementById(
-        "password"
-    ).value =
-        student.password || "";
+    if (username) {
+
+        username.value =
+            student.username || "";
+
+    }
+
+
+    if (password) {
+
+        password.value =
+            student.password || "";
+
+    }
 
 
     const button =
@@ -1776,14 +2127,34 @@ function editStudent(id) {
 
     }
 
+
+    window.scrollTo({
+
+        top: 0,
+
+        behavior: "smooth"
+
+    });
+
 }
 
 
 /* ==========================================================
-DELETE STUDENT
+   DELETE STUDENT
 ========================================================== */
 
 async function deleteStudent(id) {
+
+    if (!id) {
+
+        alert(
+            "Student ID is required."
+        );
+
+        return;
+
+    }
+
 
     if (
         !confirm(
@@ -1796,41 +2167,74 @@ async function deleteStudent(id) {
     }
 
 
-    const res =
-        await apiDeleteStudent({
+    try {
 
-            id: id
+        const res =
+            await apiDeleteStudent({
 
-        });
+                id: id,
 
+                nis: id
 
-    alert(
-        res &&
-        res.message
-            ? res.message
-            : "Student deleted."
-    );
+            });
 
 
-    if (
-        !res ||
-        res.success !== true
-    ) {
+        alert(
+            res &&
+            res.message
+                ? res.message
+                : "Student deleted."
+        );
 
-        return;
+
+        if (
+            !res ||
+            res.success !== true
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            String(
+                STATE.studentId
+            ) ===
+            String(id)
+        ) {
+
+            resetStudentForm();
+
+        }
+
+
+        await loadStudents();
+
+        await refreshDashboard();
 
     }
 
+    catch (err) {
 
-    await loadStudents();
+        console.error(
+            "DELETE STUDENT ERROR:",
+            err
+        );
 
-    await refreshDashboard();
+
+        alert(
+            err.message ||
+            "Unable to delete student."
+        );
+
+    }
 
 }
 
 
 /* ==========================================================
-RESET STUDENT FORM
+   RESET STUDENT FORM
 ========================================================== */
 
 function resetStudentForm() {
@@ -1872,7 +2276,7 @@ function resetStudentForm() {
 
 
 /* ==========================================================
-SEARCH STUDENT
+   SEARCH STUDENT
 ========================================================== */
 
 function filterStudent() {
@@ -1915,7 +2319,7 @@ function filterStudent() {
 
 
 /* ==========================================================
-TOKEN PAGE
+   TOKEN PAGE
 ========================================================== */
 
 function loadTokenPage() {
@@ -1967,7 +2371,8 @@ function loadTokenPage() {
 
             <button
                 type="submit"
-                class="btn teacher">
+                class="btn teacher"
+            >
 
                 Generate Token
 
@@ -2005,7 +2410,7 @@ function loadTokenPage() {
 
         form.addEventListener(
             "submit",
-            generateExamToken
+            createExamToken
         );
 
     }
@@ -2017,10 +2422,10 @@ function loadTokenPage() {
 
 
 /* ==========================================================
-GENERATE TOKEN
+   CREATE TOKEN
 ========================================================== */
 
-async function generateExamToken(e) {
+async function createExamToken(e) {
 
     e.preventDefault();
 
@@ -2030,12 +2435,10 @@ async function generateExamToken(e) {
             "tokenClass"
         );
 
-
     const expiredElement =
         document.getElementById(
             "expired"
         );
-
 
     const noteElement =
         document.getElementById(
@@ -2050,7 +2453,7 @@ async function generateExamToken(e) {
     ) {
 
         alert(
-            "Exam token form is not available."
+            "Token form is not available."
         );
 
         return;
@@ -2061,8 +2464,7 @@ async function generateExamToken(e) {
     const data = {
 
         kelas:
-            classElement.value
-                .trim(),
+            classElement.value.trim(),
 
         expired:
             Number(
@@ -2070,8 +2472,7 @@ async function generateExamToken(e) {
             ),
 
         note:
-            noteElement.value
-                .trim(),
+            noteElement.value.trim(),
 
         createdBy:
             "Teacher"
@@ -2155,15 +2556,9 @@ async function generateExamToken(e) {
         }
 
 
-        const expired =
-            document.getElementById(
-                "expired"
-            );
+        if (expiredElement) {
 
-
-        if (expired) {
-
-            expired.value =
+            expiredElement.value =
                 30;
 
         }
@@ -2194,7 +2589,7 @@ async function generateExamToken(e) {
 
 
 /* ==========================================================
-LOAD TOKENS
+   LOAD TOKENS
 ========================================================== */
 
 async function loadTokens() {
@@ -2210,6 +2605,10 @@ async function loadTokens() {
         return;
 
     }
+
+
+    table.innerHTML =
+        "<p>Loading tokens...</p>";
 
 
     try {
@@ -2263,10 +2662,18 @@ async function loadTokens() {
 
         let html = `
 
+            <div
+                style="
+                    overflow-x:auto;
+                "
+            >
+
             <table
                 border="1"
                 width="100%"
-                cellpadding="8">
+                cellpadding="8"
+                cellspacing="0"
+            >
 
                 <thead>
 
@@ -2313,10 +2720,9 @@ async function loadTokens() {
                             <button
                                 type="button"
                                 class="btn edit"
-                                onclick="disableExamToken('${escapeAttribute(t.token)}')">
-
+                                onclick="disableExamToken('${escapeAttribute(t.token)}')"
+                            >
                                 Disable
-
                             </button>
 
                           `
@@ -2334,25 +2740,35 @@ async function loadTokens() {
 
                         <td>
                             <b>
-                                ${escapeHTML(t.token)}
+                                ${escapeHTML(
+                                    t.token
+                                )}
                             </b>
                         </td>
 
                         <td>
-                            ${escapeHTML(t.kelas)}
+                            ${escapeHTML(
+                                t.kelas
+                            )}
                         </td>
 
                         <td>
-                            ${escapeHTML(t.status)}
+                            ${escapeHTML(
+                                t.status
+                            )}
                         </td>
 
                         <td>
-                            ${escapeHTML(t.expired)}
+                            ${escapeHTML(
+                                t.expired
+                            )}
                             minutes
                         </td>
 
                         <td>
-                            ${formatDate(t.createdAt)}
+                            ${formatDate(
+                                t.createdAt
+                            )}
                         </td>
 
                         <td>
@@ -2362,10 +2778,9 @@ async function loadTokens() {
                             <button
                                 type="button"
                                 class="btn delete"
-                                onclick="deleteExamToken('${escapeAttribute(t.token)}')">
-
+                                onclick="deleteExamToken('${escapeAttribute(t.token)}')"
+                            >
                                 Delete
-
                             </button>
 
                         </td>
@@ -2383,6 +2798,8 @@ async function loadTokens() {
                 </tbody>
 
             </table>
+
+            </div>
 
         `;
 
@@ -2414,7 +2831,7 @@ async function loadTokens() {
 
 
 /* ==========================================================
-DISABLE TOKEN
+   DISABLE TOKEN
 ========================================================== */
 
 async function disableExamToken(token) {
@@ -2500,7 +2917,7 @@ async function disableExamToken(token) {
 
 
 /* ==========================================================
-DELETE TOKEN
+   DELETE TOKEN
 ========================================================== */
 
 async function deleteExamToken(token) {
@@ -2586,7 +3003,7 @@ async function deleteExamToken(token) {
 
 
 /* ==========================================================
-SEARCH TOKEN
+   SEARCH TOKEN
 ========================================================== */
 
 function filterToken() {
@@ -2629,7 +3046,7 @@ function filterToken() {
 
 
 /* ==========================================================
-RESULT PAGE
+   RESULT PAGE
 ========================================================== */
 
 function loadResultPage() {
@@ -2642,14 +3059,59 @@ function loadResultPage() {
 
         <br>
 
-        <input
-            id="searchResult"
-            type="text"
-            placeholder="Search Student..."
-            onkeyup="filterResult()"
+        <div
+            style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+                align-items:center;
+            "
         >
 
-        <br><br>
+            <input
+                id="searchResult"
+                type="text"
+                placeholder="Search Student..."
+                onkeyup="filterResult()"
+                style="
+                    padding:9px;
+                    min-width:220px;
+                "
+            >
+
+            <button
+                type="button"
+                class="btn"
+                onclick="selectAllResults()"
+            >
+                ☑ Select All
+            </button>
+
+            <button
+                type="button"
+                class="btn delete"
+                onclick="deleteSelectedResults()"
+            >
+                🗑 Delete Selected
+            </button>
+
+            <button
+                type="button"
+                class="btn delete"
+                onclick="deleteAllResults()"
+            >
+                🗑 Delete All
+            </button>
+
+        </div>
+
+        <br>
+
+        <div id="resultSelectionStatus">
+            0 selected
+        </div>
+
+        <br>
 
         <div id="resultTable">
 
@@ -2666,7 +3128,7 @@ function loadResultPage() {
 
 
 /* ==========================================================
-LOAD RESULTS
+   LOAD RESULTS
 ========================================================== */
 
 async function loadResults() {
@@ -2682,6 +3144,10 @@ async function loadResults() {
         return;
 
     }
+
+
+    table.innerHTML =
+        "<p>Loading results...</p>";
 
 
     try {
@@ -2701,6 +3167,12 @@ async function loadResults() {
             res.success !== true
         ) {
 
+            APP.result = [];
+
+
+            updateResultCounter(0);
+
+
             table.innerHTML =
                 "<p style='color:red'>" +
                 escapeHTML(
@@ -2711,9 +3183,8 @@ async function loadResults() {
                 ) +
                 "</p>";
 
-            APP.result = [];
 
-            updateResultCounter(0);
+            updateResultSelectionStatus();
 
             return;
 
@@ -2738,6 +3209,8 @@ async function loadResults() {
 
             table.innerHTML =
                 "<p>No result found.</p>";
+
+            updateResultSelectionStatus();
 
             return;
 
@@ -2770,13 +3243,16 @@ async function loadResults() {
             ) +
             "</p>";
 
+
+        updateResultSelectionStatus();
+
     }
 
 }
 
 
 /* ==========================================================
-RENDER RESULT LIST
+   RENDER RESULT LIST
 ========================================================== */
 
 function renderResultList() {
@@ -2802,6 +3278,8 @@ function renderResultList() {
         table.innerHTML =
             "<p>No result found.</p>";
 
+        updateResultSelectionStatus();
+
         return;
 
     }
@@ -2809,14 +3287,33 @@ function renderResultList() {
 
     let html = `
 
+        <div
+            style="
+                overflow-x:auto;
+            "
+        >
+
         <table
             border="1"
             width="100%"
-            cellpadding="8">
+            cellpadding="8"
+            cellspacing="0"
+        >
 
             <thead>
 
                 <tr>
+
+                    <th>
+
+                        <input
+                            type="checkbox"
+                            id="selectAllResultsCheckbox"
+                            onchange="toggleAllResultCheckboxes(this)"
+                            aria-label="Select all results"
+                        >
+
+                    </th>
 
                     <th>No</th>
 
@@ -2853,19 +3350,11 @@ function renderResultList() {
         (r, i) => {
 
             const score =
-                r.score ??
-                r.totalScore ??
-                r.nilai ??
-                r.value ??
-                "-";
+                getResultScore(r);
 
 
             const accuracy =
-                r.accuracy ??
-                r.accuracyScore ??
-                r.pronunciationAccuracy ??
-                r.accuracyPercent ??
-                "-";
+                getResultAccuracy(r);
 
 
             const transcript =
@@ -2885,12 +3374,40 @@ function renderResultList() {
             const resultId =
                 r.id ??
                 r.resultId ??
-                "-";
+                "";
+
+
+            const safeResultId =
+                String(resultId);
 
 
             html += `
 
                 <tr>
+
+                    <td
+                        style="
+                            text-align:center;
+                        "
+                    >
+
+                        ${
+                            safeResultId
+                                ? `
+                                    <input
+                                        type="checkbox"
+                                        class="result-checkbox"
+                                        value="${escapeAttribute(safeResultId)}"
+                                        onchange="updateResultSelectionStatus()"
+                                        aria-label="Select result"
+                                    >
+                                  `
+                                : `
+                                    -
+                                  `
+                        }
+
+                    </td>
 
                     <td>
                         ${i + 1}
@@ -2936,14 +3453,21 @@ function renderResultList() {
 
                     <td>
 
-                        <button
-                            type="button"
-                            class="btn delete"
-                            onclick="deleteResult('${escapeAttribute(resultId)}')">
-
-                            Delete
-
-                        </button>
+                        ${
+                            safeResultId
+                                ? `
+                                    <button
+                                        type="button"
+                                        class="btn delete"
+                                        onclick="deleteResult('${escapeAttribute(safeResultId)}')"
+                                    >
+                                        Delete
+                                    </button>
+                                  `
+                                : `
+                                    -
+                                  `
+                        }
 
                     </td>
 
@@ -2961,22 +3485,478 @@ function renderResultList() {
 
         </table>
 
+        </div>
+
     `;
 
 
     table.innerHTML =
         html;
 
+
+    updateResultSelectionStatus();
+
 }
 
 
 /* ==========================================================
-DELETE RESULT
+   TOGGLE ALL RESULT CHECKBOXES
+========================================================== */
+
+function toggleAllResultCheckboxes(
+    source
+) {
+
+    const checkboxes =
+        document.querySelectorAll(
+            ".result-checkbox"
+        );
+
+
+    checkboxes.forEach(
+        checkbox => {
+
+            checkbox.checked =
+                source.checked;
+
+        }
+    );
+
+
+    updateResultSelectionStatus();
+
+}
+
+
+/* ==========================================================
+   SELECT ALL RESULTS
+========================================================== */
+
+function selectAllResults() {
+
+    const master =
+        document.getElementById(
+            "selectAllResultsCheckbox"
+        );
+
+
+    if (!master) {
+
+        return;
+
+    }
+
+
+    master.checked =
+        true;
+
+
+    toggleAllResultCheckboxes(
+        master
+    );
+
+}
+
+
+/* ==========================================================
+   GET SELECTED RESULT IDS
+========================================================== */
+
+function getSelectedResultIds() {
+
+    return Array
+        .from(
+            document.querySelectorAll(
+                ".result-checkbox:checked"
+            )
+        )
+        .map(
+            checkbox =>
+                checkbox.value
+        )
+        .filter(
+            id =>
+                id &&
+                id !== "-"
+        );
+
+}
+
+
+/* ==========================================================
+   UPDATE RESULT SELECTION STATUS
+========================================================== */
+
+function updateResultSelectionStatus() {
+
+    const selected =
+        getSelectedResultIds();
+
+
+    const status =
+        document.getElementById(
+            "resultSelectionStatus"
+        );
+
+
+    if (status) {
+
+        status.textContent =
+            selected.length +
+            " selected";
+
+    }
+
+
+    const checkboxes =
+        document.querySelectorAll(
+            ".result-checkbox"
+        );
+
+
+    const master =
+        document.getElementById(
+            "selectAllResultsCheckbox"
+        );
+
+
+    if (
+        master &&
+        checkboxes.length > 0
+    ) {
+
+        const checkedCount =
+            Array
+                .from(checkboxes)
+                .filter(
+                    checkbox =>
+                        checkbox.checked
+                )
+                .length;
+
+
+        master.checked =
+            checkedCount ===
+            checkboxes.length;
+
+
+        master.indeterminate =
+            checkedCount > 0 &&
+            checkedCount <
+            checkboxes.length;
+
+    }
+
+    else if (master) {
+
+        master.checked =
+            false;
+
+        master.indeterminate =
+            false;
+
+    }
+
+}
+
+
+/* ==========================================================
+   DELETE SELECTED RESULTS
+========================================================== */
+
+async function deleteSelectedResults() {
+
+    const selectedIds =
+        getSelectedResultIds();
+
+
+    if (
+        selectedIds.length === 0
+    ) {
+
+        alert(
+            "Please select at least one result."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Delete " +
+            selectedIds.length +
+            " selected result(s)?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    await deleteResultBatch(
+        selectedIds,
+        "selected"
+    );
+
+}
+
+
+/* ==========================================================
+   DELETE ALL RESULTS
+========================================================== */
+
+async function deleteAllResults() {
+
+    const allIds =
+        APP.result
+
+            .map(
+                result =>
+                    result.id ??
+                    result.resultId ??
+                    ""
+            )
+
+            .map(
+                id =>
+                    String(id)
+            )
+
+            .filter(
+                id =>
+                    id &&
+                    id !== "-"
+            );
+
+
+    if (
+        allIds.length === 0
+    ) {
+
+        alert(
+            "No results available to delete."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "WARNING!\n\n" +
+            "This will delete ALL " +
+            allIds.length +
+            " speaking results.\n\n" +
+            "Continue?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    await deleteResultBatch(
+        allIds,
+        "all"
+    );
+
+}
+
+
+/* ==========================================================
+   DELETE RESULT BATCH
+========================================================== */
+
+async function deleteResultBatch(
+    ids,
+    mode
+) {
+
+    if (
+        !Array.isArray(ids) ||
+        ids.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    const uniqueIds =
+        [
+            ...new Set(
+                ids.map(
+                    id =>
+                        String(id)
+                )
+            )
+        ]
+        .filter(
+            id =>
+                id &&
+                id !== "-"
+        );
+
+
+    if (
+        uniqueIds.length === 0
+    ) {
+
+        alert(
+            "No valid result ID found."
+        );
+
+        return;
+
+    }
+
+
+    const resultTable =
+        document.getElementById(
+            "resultTable"
+        );
+
+
+    if (resultTable) {
+
+        resultTable.innerHTML =
+            "<p>Deleting results...</p>";
+
+    }
+
+
+    let successCount =
+        0;
+
+
+    let failedCount =
+        0;
+
+
+    const errors = [];
+
+
+    for (
+        const id of uniqueIds
+    ) {
+
+        try {
+
+            const res =
+                await apiDeleteResult({
+
+                    id: id
+
+                });
+
+
+            if (
+                res &&
+                res.success === true
+            ) {
+
+                successCount++;
+
+            }
+
+            else {
+
+                failedCount++;
+
+
+                errors.push(
+                    res &&
+                    res.message
+                        ? res.message
+                        : (
+                            "Failed to delete " +
+                            id
+                        )
+                );
+
+            }
+
+        }
+
+        catch (err) {
+
+            failedCount++;
+
+
+            errors.push(
+                err.message ||
+                (
+                    "Failed to delete " +
+                    id
+                )
+            );
+
+        }
+
+    }
+
+
+    console.log(
+        "BATCH DELETE RESULT:",
+        {
+            mode: mode,
+            total: uniqueIds.length,
+            success: successCount,
+            failed: failedCount,
+            errors: errors
+        }
+    );
+
+
+    await loadResults();
+
+    await refreshDashboard();
+
+
+    if (
+        failedCount === 0
+    ) {
+
+        alert(
+            successCount +
+            " result(s) deleted successfully."
+        );
+
+    }
+
+    else {
+
+        alert(
+            successCount +
+            " result(s) deleted.\n" +
+            failedCount +
+            " result(s) failed."
+        );
+
+    }
+
+}
+
+
+/* ==========================================================
+   DELETE SINGLE RESULT
 ========================================================== */
 
 async function deleteResult(id) {
 
-    if (!id || id === "-") {
+    if (
+        !id ||
+        id === "-"
+    ) {
 
         alert(
             "Result ID is not available."
@@ -3051,7 +4031,7 @@ async function deleteResult(id) {
 
 
 /* ==========================================================
-SEARCH RESULT
+   SEARCH RESULT
 ========================================================== */
 
 function filterResult() {
@@ -3094,12 +4074,13 @@ function filterResult() {
 
 
 /* ==========================================================
-REPORT PAGE
+   REPORT PAGE
 ========================================================== */
 
 function loadReportsPage() {
 
-    STATE.reportClass = "";
+    STATE.reportClass =
+        "";
 
 
     setContent(`
@@ -3171,7 +4152,6 @@ function loadReportsPage() {
 
         <br>
 
-
         <div
             id="reportSummary"
         >
@@ -3181,7 +4161,6 @@ function loadReportsPage() {
         </div>
 
         <br>
-
 
         <div
             id="reportTable"
@@ -3200,7 +4179,7 @@ function loadReportsPage() {
 
 
 /* ==========================================================
-LOAD REPORTS
+   LOAD REPORTS
 ========================================================== */
 
 async function loadReports() {
@@ -3277,7 +4256,6 @@ async function loadReports() {
 
         updateReportClassOptions();
 
-
         renderReport();
 
     }
@@ -3310,7 +4288,7 @@ async function loadReports() {
 
 
 /* ==========================================================
-REFRESH REPORT
+   REFRESH REPORT
 ========================================================== */
 
 async function refreshReports() {
@@ -3321,7 +4299,7 @@ async function refreshReports() {
 
 
 /* ==========================================================
-REPORT CLASS OPTIONS
+   REPORT CLASS OPTIONS
 ========================================================== */
 
 function updateReportClassOptions() {
@@ -3340,7 +4318,8 @@ function updateReportClassOptions() {
 
 
     const currentValue =
-        STATE.reportClass || "";
+        STATE.reportClass ||
+        "";
 
 
     const classes =
@@ -3434,7 +4413,7 @@ function updateReportClassOptions() {
 
 
 /* ==========================================================
-FILTER REPORT CLASS
+   FILTER REPORT CLASS
 ========================================================== */
 
 function filterReportClass() {
@@ -3462,7 +4441,7 @@ function filterReportClass() {
 
 
 /* ==========================================================
-GET FILTERED REPORT DATA
+   GET FILTERED REPORT DATA
 ========================================================== */
 
 function getFilteredReportData() {
@@ -3508,7 +4487,7 @@ function getFilteredReportData() {
 
 
 /* ==========================================================
-RENDER REPORT
+   RENDER REPORT
 ========================================================== */
 
 function renderReport() {
@@ -3582,45 +4561,25 @@ function renderReport() {
 
                     <tr>
 
-                        <th>
-                            No
-                        </th>
+                        <th>No</th>
 
-                        <th>
-                            NIS
-                        </th>
+                        <th>NIS</th>
 
-                        <th>
-                            Student Name
-                        </th>
+                        <th>Student Name</th>
 
-                        <th>
-                            Class
-                        </th>
+                        <th>Class</th>
 
-                        <th>
-                            Question
-                        </th>
+                        <th>Question</th>
 
-                        <th>
-                            Score
-                        </th>
+                        <th>Score</th>
 
-                        <th>
-                            Accuracy
-                        </th>
+                        <th>Accuracy</th>
 
-                        <th>
-                            Transcript
-                        </th>
+                        <th>Transcript</th>
 
-                        <th>
-                            Feedback
-                        </th>
+                        <th>Feedback</th>
 
-                        <th>
-                            Date
-                        </th>
+                        <th>Date</th>
 
                     </tr>
 
@@ -3665,53 +4624,37 @@ function renderReport() {
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            r.nis
-                        )}
+                        ${escapeHTML(r.nis)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            r.nama
-                        )}
+                        ${escapeHTML(r.nama)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            r.kelas
-                        )}
+                        ${escapeHTML(r.kelas)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            r.question
-                        )}
+                        ${escapeHTML(r.question)}
                     </td>
 
                     <td>
                         <b>
-                            ${escapeHTML(
-                                score
-                            )}
+                            ${escapeHTML(score)}
                         </b>
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            accuracy
-                        )}
+                        ${escapeHTML(accuracy)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            transcript
-                        )}
+                        ${escapeHTML(transcript)}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            feedback
-                        )}
+                        ${escapeHTML(feedback)}
                     </td>
 
                     <td>
@@ -3746,7 +4689,7 @@ function renderReport() {
 
 
 /* ==========================================================
-REPORT SUMMARY
+   REPORT SUMMARY
 ========================================================== */
 
 function renderReportSummary(data) {
@@ -3781,14 +4724,20 @@ function renderReportSummary(data) {
         new Set();
 
 
-    let scoreTotal = 0;
+    let scoreTotal =
+        0;
 
-    let scoreCount = 0;
+
+    let scoreCount =
+        0;
 
 
-    let accuracyTotal = 0;
+    let accuracyTotal =
+        0;
 
-    let accuracyCount = 0;
+
+    let accuracyCount =
+        0;
 
 
     data.forEach(
@@ -4014,7 +4963,7 @@ function renderReportSummary(data) {
 
 
 /* ==========================================================
-GET RESULT SCORE
+   GET RESULT SCORE
 ========================================================== */
 
 function getResultScore(result) {
@@ -4038,7 +4987,7 @@ function getResultScore(result) {
 
 
 /* ==========================================================
-GET RESULT ACCURACY
+   GET RESULT ACCURACY
 ========================================================== */
 
 function getResultAccuracy(result) {
@@ -4062,7 +5011,7 @@ function getResultAccuracy(result) {
 
 
 /* ==========================================================
-PARSE NUMERIC VALUE
+   PARSE NUMERIC VALUE
 ========================================================== */
 
 function parseNumericValue(value) {
@@ -4104,7 +5053,7 @@ function parseNumericValue(value) {
 
 
 /* ==========================================================
-LOAD XLSX LIBRARY
+   LOAD XLSX LIBRARY
 ========================================================== */
 
 function ensureXLSX() {
@@ -4250,7 +5199,7 @@ function ensureXLSX() {
 
 
 /* ==========================================================
-EXPORT REPORT EXCEL
+   EXPORT REPORT EXCEL
 ========================================================== */
 
 async function exportReportExcel() {
@@ -4462,7 +5411,7 @@ async function exportReportExcel() {
 
 
 /* ==========================================================
-FORMAT DATE FOR EXCEL
+   FORMAT DATE FOR EXCEL
 ========================================================== */
 
 function formatDateForExcel(value) {
@@ -4499,7 +5448,7 @@ function formatDateForExcel(value) {
 
 
 /* ==========================================================
-SANITIZE FILE NAME
+   SANITIZE FILE NAME
 ========================================================== */
 
 function sanitizeFileName(value) {
@@ -4526,7 +5475,7 @@ function sanitizeFileName(value) {
 
 
 /* ==========================================================
-DASHBOARD COUNTERS
+   DASHBOARD COUNTERS
 ========================================================== */
 
 function updateQuestionCounter(total) {
@@ -4662,7 +5611,7 @@ function updateResultCounter(total) {
 
 
 /* ==========================================================
-ESCAPE HTML
+   ESCAPE HTML
 ========================================================== */
 
 function escapeHTML(value) {
@@ -4708,7 +5657,7 @@ function escapeHTML(value) {
 
 
 /* ==========================================================
-ESCAPE ATTRIBUTE
+   ESCAPE ATTRIBUTE
 ========================================================== */
 
 function escapeAttribute(value) {
@@ -4744,7 +5693,7 @@ function escapeAttribute(value) {
 
 
 /* ==========================================================
-FORMAT DATE
+   FORMAT DATE
 ========================================================== */
 
 function formatDate(value) {
@@ -4781,5 +5730,6 @@ function formatDate(value) {
 
 
 /* ==========================================================
-END OF FILE
+   END OF teacher.js v7.3
+   FINAL CLEAN
 ========================================================== */
