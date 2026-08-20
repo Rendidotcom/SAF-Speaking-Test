@@ -11,7 +11,7 @@
  * ==========================================================
  *
  * Version:
- * teacher.js v7.3 Final Clean
+ * teacher.js v7.3 Final Clean + CSV Import Restore
  *
  * BASELINE:
  * v7.2 Stable Foundation
@@ -28,12 +28,13 @@
  * NO Result structure change
  *
  * ==========================================================
- * v7.3 FEATURES PRESERVED
+ * v7.3 FEATURES
  * ==========================================================
  *
  * - Teacher Dashboard
  * - Question Management
  * - Student Management
+ * - Student CSV Import RESTORED
  * - Exam Token Management
  * - Speaking Results
  * - Result Checkbox
@@ -44,6 +45,24 @@
  * - Class Filter
  * - Report Summary
  * - Export Excel
+ *
+ * ==========================================================
+ * CSV IMPORT
+ * ==========================================================
+ *
+ * Expected CSV header:
+ *
+ * nis,nama,kelas,username,password,status
+ *
+ * Example:
+ *
+ * 262707003,Agha Mufarid,VII - C,Agha,12345,ACTIVE
+ *
+ * CSV import uses the existing:
+ *
+ * apiInsertStudent()
+ *
+ * No backend/API contract modification.
  *
  * ==========================================================
  * ARCHITECTURE
@@ -57,36 +76,6 @@
  * - DOES NOT depend on exam.js.
  * - Uses existing API helper functions.
  * - Preserves existing frontend/backend contracts.
- *
- * ==========================================================
- * GLOBAL STATE
- * ==========================================================
- *
- * APP.question
- * APP.student
- * APP.token
- * APP.result
- *
- * ==========================================================
- * RESULT API COMPATIBILITY
- * ==========================================================
- *
- * Supported:
- *
- * 1.
- * {
- *     success: true,
- *     data: [...]
- * }
- *
- * 2.
- * {
- *     0: {...},
- *     1: {...},
- *     2: {...},
- *     success: true,
- *     message: "Success"
- * }
  *
  * ==========================================================
  */
@@ -1604,21 +1593,105 @@ function loadStudentPage() {
                 type="submit"
                 class="btn teacher"
             >
-
                 Save Student
-
             </button>
 
             <button
                 type="button"
                 onclick="resetStudentForm()"
             >
-
                 Cancel
-
             </button>
 
         </form>
+
+
+        <!-- ==================================================
+             CSV IMPORT RESTORED
+        ================================================== -->
+
+        <br>
+
+        <div
+            style="
+                border:1px solid #ddd;
+                border-radius:8px;
+                padding:15px;
+                margin-top:10px;
+            "
+        >
+
+            <h3>
+                📥 Import Students from CSV
+            </h3>
+
+            <p>
+                Format CSV:
+            </p>
+
+            <code
+                style="
+                    display:block;
+                    background:#f5f5f5;
+                    padding:10px;
+                    overflow-x:auto;
+                "
+            >
+                nis,nama,kelas,username,password,status
+            </code>
+
+            <br>
+
+            <input
+                id="studentCsvFile"
+                type="file"
+                accept=".csv,text/csv"
+            >
+
+            <br><br>
+
+            <button
+                type="button"
+                class="btn teacher"
+                onclick="previewStudentCSV()"
+            >
+                Preview CSV
+            </button>
+
+            <button
+                type="button"
+                class="btn teacher"
+                onclick="importStudentCSV()"
+            >
+                Import CSV
+            </button>
+
+            <button
+                type="button"
+                onclick="resetStudentCSV()"
+            >
+                Clear
+            </button>
+
+            <br><br>
+
+            <div
+                id="studentCsvStatus"
+            >
+                No CSV selected.
+            </div>
+
+            <br>
+
+            <div
+                id="studentCsvPreview"
+                style="
+                    overflow-x:auto;
+                "
+            ></div>
+
+        </div>
+
 
         <br>
 
@@ -1632,9 +1705,7 @@ function loadStudentPage() {
         <br><br>
 
         <div id="studentTable">
-
             Loading...
-
         </div>
 
     `);
@@ -2319,6 +2390,1231 @@ function filterStudent() {
 
 
 /* ==========================================================
+   CSV IMPORT
+   FILE SELECTION
+========================================================== */
+
+function getStudentCSVFile() {
+
+    const input =
+        document.getElementById(
+            "studentCsvFile"
+        );
+
+
+    if (!input) {
+
+        return null;
+
+    }
+
+
+    if (
+        !input.files ||
+        input.files.length === 0
+    ) {
+
+        return null;
+
+    }
+
+
+    return input.files[0];
+
+}
+
+
+/* ==========================================================
+   CSV PARSER
+   Supports quoted commas
+========================================================== */
+
+function parseCSVLine(line) {
+
+    const result = [];
+
+    let current = "";
+
+    let insideQuotes = false;
+
+
+    for (
+        let i = 0;
+        i < line.length;
+        i++
+    ) {
+
+        const char =
+            line[i];
+
+
+        const next =
+            line[i + 1];
+
+
+        if (
+            char === '"' &&
+            insideQuotes &&
+            next === '"'
+        ) {
+
+            current += '"';
+
+            i++;
+
+            continue;
+
+        }
+
+
+        if (char === '"') {
+
+            insideQuotes =
+                !insideQuotes;
+
+            continue;
+
+        }
+
+
+        if (
+            char === "," &&
+            !insideQuotes
+        ) {
+
+            result.push(
+                current
+            );
+
+            current = "";
+
+            continue;
+
+        }
+
+
+        current += char;
+
+    }
+
+
+    result.push(
+        current
+    );
+
+
+    return result.map(
+        value =>
+            value
+                .trim()
+    );
+
+}
+
+
+/* ==========================================================
+   CSV PARSER
+   Supports quoted multiline fields
+========================================================== */
+
+function parseCSVText(text) {
+
+    const rows = [];
+
+    let row = [];
+
+    let field = "";
+
+    let insideQuotes = false;
+
+
+    for (
+        let i = 0;
+        i < text.length;
+        i++
+    ) {
+
+        const char =
+            text[i];
+
+        const next =
+            text[i + 1];
+
+
+        if (
+            char === '"' &&
+            insideQuotes &&
+            next === '"'
+        ) {
+
+            field += '"';
+
+            i++;
+
+            continue;
+
+        }
+
+
+        if (char === '"') {
+
+            insideQuotes =
+                !insideQuotes;
+
+            continue;
+
+        }
+
+
+        if (
+            char === "," &&
+            !insideQuotes
+        ) {
+
+            row.push(
+                field
+            );
+
+            field = "";
+
+            continue;
+
+        }
+
+
+        if (
+            (
+                char === "\n" ||
+                char === "\r"
+            ) &&
+            !insideQuotes
+        ) {
+
+            if (
+                char === "\r" &&
+                next === "\n"
+            ) {
+
+                i++;
+
+            }
+
+
+            row.push(
+                field
+            );
+
+            field = "";
+
+
+            if (
+                row.some(
+                    value =>
+                        String(value)
+                            .trim() !== ""
+                )
+            ) {
+
+                rows.push(
+                    row
+                );
+
+            }
+
+
+            row = [];
+
+            continue;
+
+        }
+
+
+        field += char;
+
+    }
+
+
+    if (
+        field !== "" ||
+        row.length > 0
+    ) {
+
+        row.push(
+            field
+        );
+
+        if (
+            row.some(
+                value =>
+                    String(value)
+                        .trim() !== ""
+            )
+        ) {
+
+            rows.push(
+                row
+            );
+
+        }
+
+    }
+
+
+    return rows;
+
+}
+
+
+/* ==========================================================
+   NORMALIZE CSV HEADER
+========================================================== */
+
+function normalizeCSVHeader(value) {
+
+    return String(
+        value || ""
+    )
+
+        .replace(
+            /^\uFEFF/,
+            ""
+        )
+
+        .trim()
+        .toLowerCase()
+        .replace(
+            /\s+/g,
+            ""
+        );
+
+}
+
+
+/* ==========================================================
+   READ STUDENT CSV
+========================================================== */
+
+async function readStudentCSV() {
+
+    const file =
+        getStudentCSVFile();
+
+
+    if (!file) {
+
+        throw new Error(
+            "Silakan pilih file CSV terlebih dahulu."
+        );
+
+    }
+
+
+    const fileName =
+        String(
+            file.name || ""
+        )
+        .toLowerCase();
+
+
+    if (
+        !fileName.endsWith(".csv")
+    ) {
+
+        throw new Error(
+            "File harus berformat CSV."
+        );
+
+    }
+
+
+    const text =
+        await file.text();
+
+
+    if (
+        !text ||
+        !text.trim()
+    ) {
+
+        throw new Error(
+            "File CSV kosong."
+        );
+
+    }
+
+
+    const rows =
+        parseCSVText(
+            text
+        );
+
+
+    if (
+        rows.length < 2
+    ) {
+
+        throw new Error(
+            "CSV tidak memiliki data siswa."
+        );
+
+    }
+
+
+    const headers =
+        rows[0].map(
+            normalizeCSVHeader
+        );
+
+
+    const requiredHeaders = [
+
+        "nis",
+
+        "nama",
+
+        "kelas",
+
+        "username",
+
+        "password",
+
+        "status"
+
+    ];
+
+
+    const missingHeaders =
+        requiredHeaders.filter(
+            header =>
+                !headers.includes(
+                    header
+                )
+        );
+
+
+    if (
+        missingHeaders.length > 0
+    ) {
+
+        throw new Error(
+            "Header CSV tidak sesuai. " +
+            "Header yang wajib: " +
+            "nis,nama,kelas,username,password,status"
+        );
+
+    }
+
+
+    const indexMap = {};
+
+
+    requiredHeaders.forEach(
+        header => {
+
+            indexMap[header] =
+                headers.indexOf(
+                    header
+                );
+
+        }
+    );
+
+
+    const students = [];
+
+
+    for (
+        let i = 1;
+        i < rows.length;
+        i++
+    ) {
+
+        const row =
+            rows[i];
+
+
+        const student = {
+
+            nis:
+                String(
+                    row[
+                        indexMap.nis
+                    ] ?? ""
+                ).trim(),
+
+            nama:
+                String(
+                    row[
+                        indexMap.nama
+                    ] ?? ""
+                ).trim(),
+
+            kelas:
+                String(
+                    row[
+                        indexMap.kelas
+                    ] ?? ""
+                ).trim(),
+
+            username:
+                String(
+                    row[
+                        indexMap.username
+                    ] ?? ""
+                ).trim(),
+
+            password:
+                String(
+                    row[
+                        indexMap.password
+                    ] ?? ""
+                ).trim(),
+
+            status:
+                String(
+                    row[
+                        indexMap.status
+                    ] ?? ""
+                ).trim()
+
+        };
+
+
+        /*
+         * Skip completely empty rows.
+         */
+
+        const isEmpty =
+            !student.nis &&
+            !student.nama &&
+            !student.kelas &&
+            !student.username &&
+            !student.password &&
+            !student.status;
+
+
+        if (isEmpty) {
+
+            continue;
+
+        }
+
+
+        /*
+         * Preserve CSV status when supplied.
+         * If empty, default to ACTIVE.
+         */
+
+        if (
+            !student.status
+        ) {
+
+            student.status =
+                "ACTIVE";
+
+        }
+
+
+        students.push(
+            student
+        );
+
+    }
+
+
+    return {
+
+        headers:
+            headers,
+
+        students:
+            students
+
+    };
+
+}
+
+
+/* ==========================================================
+   PREVIEW STUDENT CSV
+========================================================== */
+
+async function previewStudentCSV() {
+
+    const status =
+        document.getElementById(
+            "studentCsvStatus"
+        );
+
+    const preview =
+        document.getElementById(
+            "studentCsvPreview"
+        );
+
+
+    if (status) {
+
+        status.textContent =
+            "Reading CSV...";
+
+    }
+
+
+    if (preview) {
+
+        preview.innerHTML =
+            "";
+
+    }
+
+
+    try {
+
+        const data =
+            await readStudentCSV();
+
+
+        if (
+            !data.students.length
+        ) {
+
+            throw new Error(
+                "Tidak ada data siswa yang valid."
+            );
+
+        }
+
+
+        if (status) {
+
+            status.innerHTML =
+                "<b>" +
+                data.students.length +
+                "</b> student(s) ditemukan. " +
+                "Silakan periksa preview sebelum Import CSV.";
+
+        }
+
+
+        let html = `
+
+            <table
+                border="1"
+                width="100%"
+                cellpadding="8"
+                cellspacing="0"
+            >
+
+                <thead>
+
+                    <tr>
+
+                        <th>No</th>
+
+                        <th>NIS</th>
+
+                        <th>Name</th>
+
+                        <th>Class</th>
+
+                        <th>Username</th>
+
+                        <th>Password</th>
+
+                        <th>Status</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        data.students.forEach(
+            (student, index) => {
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${index + 1}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                student.nis
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                student.nama
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                student.kelas
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                student.username
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                student.password
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                student.status
+                            )}
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
+
+        html += `
+
+                </tbody>
+
+            </table>
+
+        `;
+
+
+        if (preview) {
+
+            preview.innerHTML =
+                html;
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "CSV PREVIEW ERROR:",
+            err
+        );
+
+
+        if (status) {
+
+            status.innerHTML =
+                "<span style='color:red'>" +
+                escapeHTML(
+                    err.message ||
+                    "CSV tidak dapat dibaca."
+                ) +
+                "</span>";
+
+        }
+
+    }
+
+}
+
+
+/* ==========================================================
+   IMPORT STUDENT CSV
+========================================================== */
+
+async function importStudentCSV() {
+
+    let data;
+
+
+    try {
+
+        data =
+            await readStudentCSV();
+
+    }
+
+    catch (err) {
+
+        alert(
+            err.message ||
+            "CSV tidak dapat dibaca."
+        );
+
+        return;
+
+    }
+
+
+    const students =
+        data.students;
+
+
+    if (
+        !students.length
+    ) {
+
+        alert(
+            "Tidak ada data siswa untuk diimport."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Import " +
+            students.length +
+            " student(s) dari CSV?\n\n" +
+            "Data akan dikirim melalui API student yang sudah ada."
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    const status =
+        document.getElementById(
+            "studentCsvStatus"
+        );
+
+
+    if (status) {
+
+        status.innerHTML =
+            "Import sedang berjalan...";
+
+    }
+
+
+    let successCount =
+        0;
+
+
+    let failedCount =
+        0;
+
+
+    const errors = [];
+
+
+    /*
+     * IMPORTANT:
+     *
+     * We intentionally use the existing
+     * apiInsertStudent() function.
+     *
+     * No new API contract.
+     * No direct GAS call.
+     */
+
+    for (
+        let i = 0;
+        i < students.length;
+        i++
+    ) {
+
+        const student =
+            students[i];
+
+
+        try {
+
+            /*
+             * Basic validation before API.
+             */
+
+            const missing = [];
+
+
+            if (!student.nis) {
+
+                missing.push(
+                    "nis"
+                );
+
+            }
+
+
+            if (!student.nama) {
+
+                missing.push(
+                    "nama"
+                );
+
+            }
+
+
+            if (!student.kelas) {
+
+                missing.push(
+                    "kelas"
+                );
+
+            }
+
+
+            if (!student.username) {
+
+                missing.push(
+                    "username"
+                );
+
+            }
+
+
+            if (!student.password) {
+
+                missing.push(
+                    "password"
+                );
+
+            }
+
+
+            if (
+                missing.length > 0
+            ) {
+
+                throw new Error(
+                    "Field kosong: " +
+                    missing.join(", ")
+                );
+
+            }
+
+
+            const payload = {
+
+                nis:
+                    student.nis,
+
+                nama:
+                    student.nama,
+
+                kelas:
+                    student.kelas,
+
+                username:
+                    student.username,
+
+                password:
+                    student.password,
+
+                status:
+                    student.status ||
+                    "ACTIVE"
+
+            };
+
+
+            console.log(
+                "CSV IMPORT STUDENT:",
+                i + 1,
+                payload
+            );
+
+
+            const res =
+                await apiInsertStudent(
+                    payload
+                );
+
+
+            console.log(
+                "CSV IMPORT RESPONSE:",
+                i + 1,
+                res
+            );
+
+
+            if (
+                res &&
+                res.success === true
+            ) {
+
+                successCount++;
+
+            }
+
+            else {
+
+                failedCount++;
+
+
+                errors.push({
+
+                    row:
+                        i + 2,
+
+                    nis:
+                        student.nis,
+
+                    nama:
+                        student.nama,
+
+                    message:
+                        res &&
+                        res.message
+                            ? res.message
+                            : "Import failed."
+
+                });
+
+            }
+
+        }
+
+        catch (err) {
+
+            failedCount++;
+
+
+            errors.push({
+
+                row:
+                    i + 2,
+
+                nis:
+                    student.nis,
+
+                nama:
+                    student.nama,
+
+                message:
+                    err.message ||
+                    "Import failed."
+
+            });
+
+        }
+
+
+        /*
+         * Update progress.
+         */
+
+        if (status) {
+
+            status.innerHTML =
+                "Importing: " +
+                (
+                    i + 1
+                ) +
+                " / " +
+                students.length +
+                "<br>" +
+                "Success: " +
+                successCount +
+                " | Failed: " +
+                failedCount;
+
+        }
+
+    }
+
+
+    console.log(
+        "CSV IMPORT COMPLETE:",
+        {
+
+            total:
+                students.length,
+
+            success:
+                successCount,
+
+            failed:
+                failedCount,
+
+            errors:
+                errors
+
+        }
+    );
+
+
+    /*
+     * Refresh student database after import.
+     */
+
+    await loadStudents();
+
+    await refreshDashboard();
+
+
+    /*
+     * Final result.
+     */
+
+    if (
+        failedCount === 0
+    ) {
+
+        if (status) {
+
+            status.innerHTML =
+                "<span style='color:green'>" +
+                "Import selesai. " +
+                successCount +
+                " student(s) berhasil diimport." +
+                "</span>";
+
+        }
+
+
+        alert(
+            "Import CSV berhasil.\n\n" +
+            successCount +
+            " student(s) berhasil diimport."
+        );
+
+    }
+
+    else {
+
+        let errorText =
+            "";
+
+
+        errors
+            .slice(
+                0,
+                10
+            )
+            .forEach(
+                error => {
+
+                    errorText +=
+                        "\nRow " +
+                        error.row +
+                        " - " +
+                        error.nis +
+                        " - " +
+                        error.nama +
+                        ": " +
+                        error.message;
+
+                }
+            );
+
+
+        if (
+            errors.length > 10
+        ) {
+
+            errorText +=
+                "\n... dan " +
+                (
+                    errors.length -
+                    10
+                ) +
+                " error lainnya.";
+
+        }
+
+
+        if (status) {
+
+            status.innerHTML =
+                "<span style='color:#b45309'>" +
+                "Import selesai dengan beberapa error.<br>" +
+                "Success: " +
+                successCount +
+                "<br>" +
+                "Failed: " +
+                failedCount +
+                "</span>";
+
+        }
+
+
+        alert(
+            "Import CSV selesai.\n\n" +
+            "Berhasil: " +
+            successCount +
+            "\n" +
+            "Gagal: " +
+            failedCount +
+            "\n\n" +
+            "Detail error:" +
+            errorText
+        );
+
+    }
+
+}
+
+
+/* ==========================================================
+   RESET CSV
+========================================================== */
+
+function resetStudentCSV() {
+
+    const input =
+        document.getElementById(
+            "studentCsvFile"
+        );
+
+
+    const status =
+        document.getElementById(
+            "studentCsvStatus"
+        );
+
+
+    const preview =
+        document.getElementById(
+            "studentCsvPreview"
+        );
+
+
+    if (input) {
+
+        input.value =
+            "";
+
+    }
+
+
+    if (status) {
+
+        status.textContent =
+            "No CSV selected.";
+
+    }
+
+
+    if (preview) {
+
+        preview.innerHTML =
+            "";
+
+    }
+
+}
+
+
+/* ==========================================================
    TOKEN PAGE
 ========================================================== */
 
@@ -2373,9 +3669,7 @@ function loadTokenPage() {
                 type="submit"
                 class="btn teacher"
             >
-
                 Generate Token
-
             </button>
 
         </form>
@@ -2392,9 +3686,7 @@ function loadTokenPage() {
         <br><br>
 
         <div id="tokenTable">
-
             Loading...
-
         </div>
 
     `);
@@ -3114,9 +4406,7 @@ function loadResultPage() {
         <br>
 
         <div id="resultTable">
-
             Loading...
-
         </div>
 
     `);
@@ -4132,9 +5422,7 @@ function loadReportsPage() {
                 class="btn teacher"
                 onclick="refreshReports()"
             >
-
                 Refresh Report
-
             </button>
 
 
@@ -4143,9 +5431,7 @@ function loadReportsPage() {
                 class="btn teacher"
                 onclick="exportReportExcel()"
             >
-
                 📥 Export Excel
-
             </button>
 
         </div>
@@ -4155,9 +5441,7 @@ function loadReportsPage() {
         <div
             id="reportSummary"
         >
-
             Loading summary...
-
         </div>
 
         <br>
@@ -4165,9 +5449,7 @@ function loadReportsPage() {
         <div
             id="reportTable"
         >
-
             Loading report...
-
         </div>
 
     `);
@@ -5731,5 +7013,5 @@ function formatDate(value) {
 
 /* ==========================================================
    END OF teacher.js v7.3
-   FINAL CLEAN
+   FINAL CLEAN + CSV IMPORT RESTORE
 ========================================================== */
